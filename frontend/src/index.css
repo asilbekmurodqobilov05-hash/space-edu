@@ -5,14 +5,24 @@
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
 
-  --color-space-900: #04080f;
-  --color-space-800: #070d1a;
-  --color-space-700: #0d1a2e;
+  /* Deep space backgrounds */
+  --color-space-900: #030208;
+  --color-space-800: #06040f;
+  --color-space-700: #0d0a1e;
 
-  --color-neon-blue: #00e5ff;
-  --color-neon-purple: #b537f2;
-  --color-neon-pink: #ff007f;
-  --color-neon-green: #39ff8f;
+  /* Astronomical violet palette */
+  --color-violet:       #8b5cf6;
+  --color-violet-light: #a78bfa;
+  --color-violet-pale:  #c4b5fd;
+  --color-violet-dark:  #6d28d9;
+  --color-violet-deep:  #4c1d95;
+  --color-indigo:       #6366f1;
+
+  /* Keep neon-blue / neon-purple for compatibility with other views */
+  --color-neon-blue:   #00e5ff;
+  --color-neon-purple: #8b5cf6;
+  --color-neon-pink:   #c084fc;
+  --color-neon-green:  #4ade80;
 }
 
 @layer base {
@@ -21,7 +31,8 @@
   }
 
   body {
-    @apply bg-space-900 text-white font-sans overflow-x-hidden;
+    @apply text-white font-sans overflow-x-hidden;
+    background: #030208;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -151,5 +162,51 @@
   .card-lift:hover {
     transform: translateY(-3px);
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+
+  /* Floating animation */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-14px); }
+  }
+
+  /* Neon shimmer sweep */
+  .shimmer-blue {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer-blue::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(0,229,255,0.12) 50%, transparent 70%);
+    animation: shimmer 2.8s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* Neon border pulse */
+  .border-pulse-blue {
+    animation: border-pulse 3s ease-in-out infinite;
+  }
+  @keyframes border-pulse {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(0,229,255,0.2); }
+    50%       { box-shadow: 0 0 0 1px rgba(0,229,255,0.6), 0 0 20px rgba(0,229,255,0.15); }
+  }
+
+  /* Scroll-based reveal helper */
+  .reveal-up {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22,1,0.36,1);
+  }
+  .reveal-up.visible {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
