@@ -1,9 +1,10 @@
-import { useRef, useMemo, useEffect, useLayoutEffect, useCallback } from "react";
+import { useRef, useMemo, useEffect, useLayoutEffect, useCallback, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { useSpaceRunHud } from "./spaceRunHudStore";
 import { useSpaceArcadeStore } from "./spaceArcadeStore";
 import { playCoinSound, playExplosionSound } from "./spaceRunSounds";
@@ -61,6 +62,7 @@ const _camQ = new THREE.Quaternion();
 const _powerCol = new THREE.Color();
 const TEXTURE_LOADING_MANAGER = new THREE.LoadingManager();
 const TEXTURE_CACHE = new Map();
+const GEOMETRY_CACHE = new Map();
 
 function clamp01(x) {
   return THREE.MathUtils.clamp(x, 0, 1);
@@ -520,6 +522,26 @@ function preloadGameTextures() {
   });
 }
 
+function loadTextureCached(path, isColor = false) {
+  if (!path) return null;
+  if (TEXTURE_CACHE.has(path)) return TEXTURE_CACHE.get(path);
+  const tex = new THREE.TextureLoader(TEXTURE_LOADING_MANAGER).load(path);
+  tex.colorSpace = isColor ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.needsUpdate = true;
+  TEXTURE_CACHE.set(path, tex);
+  return tex;
+}
+
+function firstMeshGeometry(root) {
+  let found = null;
+  root?.traverse?.((obj) => {
+    if (!found && obj?.isMesh && obj.geometry) found = obj.geometry;
+  });
+  return found;
+}
+
 const nebulaSkyVertexShader = `
 varying vec2 vUv;
 varying vec3 vWorldPos;
@@ -795,6 +817,11 @@ function StarMotionLines({ speedRef }) {
     g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     return g;
   }, [pos]);
+  useEffect(() => {
+    return () => {
+      geom.dispose();
+    };
+  }, [geom]);
 
   useEffect(() => {
     for (let i = 0; i < N; i++) {
@@ -1011,6 +1038,11 @@ function CinematicPlanets() {
   const earthNormal = useMemo(() => createProceduralNormalTexture(32), []);
   const sunRough = useMemo(() => createProceduralRoughnessTexture(41), []);
   const sunNormal = useMemo(() => createProceduralNormalTexture(42), []);
+  const nsSun = useMemo(() => new THREE.Vector2(0.3, 0.3), []);
+  const nsMars = useMemo(() => new THREE.Vector2(0.35, 0.35), []);
+  const nsSaturn = useMemo(() => new THREE.Vector2(0.2, 0.2), []);
+  const nsGas = useMemo(() => new THREE.Vector2(0.2, 0.2), []);
+  const nsEarth = useMemo(() => new THREE.Vector2(0.28, 0.28), []);
   const sunRef = useRef(null);
   const saturnRef = useRef(null);
   const earthRef = useRef(null);
@@ -1098,7 +1130,7 @@ function CinematicPlanets() {
       <group position={[-74, 3, -178]}>
         <mesh ref={sunRef} scale={68}>
           <sphereGeometry args={[1, 96, 72]} />
-          <meshPhongMaterial map={sunMap} normalMap={sunNormal ?? undefined} normalScale={new THREE.Vector2(0.3, 0.3)} color="#ffd776" emissive="#ff8a00" emissiveIntensity={1.95} specular="#fef3c7" shininess={22} />
+          <meshPhongMaterial map={sunMap} normalMap={sunNormal ?? undefined} normalScale={nsSun} color="#ffd776" emissive="#ff8a00" emissiveIntensity={1.95} specular="#fef3c7" shininess={22} />
         </mesh>
         <mesh scale={76}>
           <sphereGeometry args={[1, 64, 48]} />
@@ -1109,7 +1141,7 @@ function CinematicPlanets() {
       <group ref={marsG} scale={14.4}>
         <mesh>
           <sphereGeometry args={[1, 64, 48]} />
-          <meshPhongMaterial map={marsMap} normalMap={marsNormal ?? undefined} normalScale={new THREE.Vector2(0.35, 0.35)} shininess={10} specular="#6b4a3b" emissive="#d4622a" emissiveIntensity={0.1} />
+          <meshPhongMaterial map={marsMap} normalMap={marsNormal ?? undefined} normalScale={nsMars} shininess={10} specular="#6b4a3b" emissive="#d4622a" emissiveIntensity={0.1} />
         </mesh>
         <mesh scale={1.03}>
           <sphereGeometry args={[1, 32, 24]} />
@@ -1125,7 +1157,7 @@ function CinematicPlanets() {
         <group ref={saturnRef} scale={13.2}>
           <mesh>
             <sphereGeometry args={[1, 64, 48]} />
-            <meshPhongMaterial map={gasGreenMap} normalMap={gasNormal ?? undefined} normalScale={new THREE.Vector2(0.2, 0.2)} shininess={14} specular="#c9d8a6" emissive="#6b8f3a" emissiveIntensity={0.06} />
+            <meshPhongMaterial map={gasGreenMap} normalMap={gasNormal ?? undefined} normalScale={nsSaturn} shininess={14} specular="#c9d8a6" emissive="#6b8f3a" emissiveIntensity={0.06} />
           </mesh>
           <mesh rotation={[Math.PI / 2.65, 0, 0]}>
             <ringGeometry args={[1.35, 2.75, 128]} />
@@ -1141,7 +1173,7 @@ function CinematicPlanets() {
       <group ref={gasG} scale={11.2}>
         <mesh ref={gasRef}>
           <sphereGeometry args={[1, 64, 48]} />
-          <meshPhongMaterial map={gasGreenMap} normalMap={gasNormal ?? undefined} normalScale={new THREE.Vector2(0.2, 0.2)} shininess={16} specular="#9bd5d1" emissive="#355e5a" emissiveIntensity={0.04} />
+          <meshPhongMaterial map={gasGreenMap} normalMap={gasNormal ?? undefined} normalScale={nsGas} shininess={16} specular="#9bd5d1" emissive="#355e5a" emissiveIntensity={0.04} />
         </mesh>
         <mesh scale={1.025}>
           <sphereGeometry args={[1, 40, 32]} />
@@ -1152,7 +1184,7 @@ function CinematicPlanets() {
       <group ref={earthG} scale={8.6}>
         <mesh ref={earthRef}>
           <sphereGeometry args={[1, 64, 48]} />
-          <meshPhongMaterial map={earthMap} normalMap={earthNormal ?? undefined} normalScale={new THREE.Vector2(0.28, 0.28)} shininess={28} specular="#cbd5e1" emissive="#1e3a5f" emissiveIntensity={0.04} />
+          <meshPhongMaterial map={earthMap} normalMap={earthNormal ?? undefined} normalScale={nsEarth} shininess={28} specular="#cbd5e1" emissive="#1e3a5f" emissiveIntensity={0.04} />
         </mesh>
         <mesh ref={cloudRef} scale={1.018}>
           <sphereGeometry args={[1, 48, 40]} />
@@ -1410,7 +1442,7 @@ function RendererSetup() {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
     gl.toneMappingExposure = 0.98;
     gl.outputColorSpace = THREE.SRGBColorSpace;
-    gl.shadowMap.enabled = false;
+    gl.shadowMap.enabled = true;
     gl.shadowMap.type = THREE.PCFSoftShadowMap;
   }, [gl]);
   return null;
@@ -1436,8 +1468,9 @@ function EngineParticles({ shipX, shipY, boostingRef, runningRef, speedRef }) {
   useEffect(() => {
     return () => {
       spriteTex?.dispose?.();
+      geom.dispose();
     };
-  }, [spriteTex]);
+  }, [geom, spriteTex]);
 
   useFrame((_, delta) => {
     const mesh = ref.current;
@@ -1545,65 +1578,144 @@ export function SpaceRunScene({ inputRef, runningRef }) {
   const boostingRef = useRef(false);
   const groupRef = useRef(null);
   const meteorIM = useRef(null);
-  const coinSprites = useRef([]);
-  const specSprites = useRef([]);
+  const coinIM = useRef(null);
+  const specIM = useRef(null);
   const shieldIM = useRef(null);
   const slowIM = useRef(null);
   const magnetIM = useRef(null);
+  const [modelGeometries, setModelGeometries] = useState(null);
 
-  const meteorGeom = useMemo(() => createRockAsteroidGeometry(), []);
-  const crystalGeom = useMemo(() => createCrystalFlowerGeometry(), []);
-  const slowStarGeom = useMemo(() => new THREE.IcosahedronGeometry(0.48, 0), []);
-  const magnetGeom = useMemo(() => createMagnetMergeGeometry(), []);
+  const meteorFallbackGeom = useMemo(() => createRockAsteroidGeometry(), []);
+  const coinFallbackGeom = useMemo(() => new THREE.CylinderGeometry(0.42, 0.42, 0.12, 48), []);
+  const specCoinFallbackGeom = useMemo(() => new THREE.CylinderGeometry(0.48, 0.48, 0.14, 48), []);
+  const crystalFallbackGeom = useMemo(() => createCrystalFlowerGeometry(), []);
+  const slowFallbackGeom = useMemo(() => new THREE.IcosahedronGeometry(0.48, 0), []);
+  const magnetFallbackGeom = useMemo(() => createMagnetMergeGeometry(), []);
+
+  const shieldColorMap = useMemo(() => loadTextureCached("/models/space-run/powerup-shield/albedo.jpg", true), []);
+  const shieldNormalMap = useMemo(() => loadTextureCached("/models/space-run/powerup-shield/normal.jpg"), []);
+  const shieldRoughMap = useMemo(() => loadTextureCached("/models/space-run/powerup-shield/roughness.jpg"), []);
+  const shieldMetalMap = useMemo(() => loadTextureCached("/models/space-run/powerup-shield/metalness.jpg"), []);
+  const slowColorMap = useMemo(() => loadTextureCached("/models/space-run/powerup-slow/albedo.jpg", true), []);
+  const slowNormalMap = useMemo(() => loadTextureCached("/models/space-run/powerup-slow/normal.jpg"), []);
+  const slowRoughMap = useMemo(() => loadTextureCached("/models/space-run/powerup-slow/roughness.jpg"), []);
+  const slowMetalMap = useMemo(() => loadTextureCached("/models/space-run/powerup-slow/metalness.jpg"), []);
+  const magnetColorMap = useMemo(() => loadTextureCached("/models/space-run/powerup-magnet/albedo.jpg", true), []);
+  const magnetNormalMap = useMemo(() => loadTextureCached("/models/space-run/powerup-magnet/normal.jpg"), []);
+  const magnetRoughMap = useMemo(() => loadTextureCached("/models/space-run/powerup-magnet/roughness.jpg"), []);
+  const magnetMetalMap = useMemo(() => loadTextureCached("/models/space-run/powerup-magnet/metalness.jpg"), []);
+  const asteroidColorMap = useMemo(() => loadTextureCached("/models/space-run/asteroid/albedo.jpg", true), []);
+  const asteroidNormalMap = useMemo(() => loadTextureCached("/models/space-run/asteroid/normal.jpg"), []);
+  const asteroidRoughMap = useMemo(() => loadTextureCached("/models/space-run/asteroid/roughness.jpg"), []);
+  const asteroidMetalMap = useMemo(() => loadTextureCached("/models/space-run/asteroid/metalness.jpg"), []);
+  const coinColorMap = useMemo(() => loadTextureCached("/models/space-run/coin/albedo.jpg", true), []);
+  const coinNormalMap = useMemo(() => loadTextureCached("/models/space-run/coin/normal.jpg"), []);
+  const coinRoughMap = useMemo(() => loadTextureCached("/models/space-run/coin/roughness.jpg"), []);
+  const coinMetalMap = useMemo(() => loadTextureCached("/models/space-run/coin/metalness.jpg"), []);
+  const specCoinColorMap = useMemo(() => loadTextureCached("/models/space-run/coin-special/albedo.jpg", true), []);
+  const specCoinNormalMap = useMemo(() => loadTextureCached("/models/space-run/coin-special/normal.jpg"), []);
+  const specCoinRoughMap = useMemo(() => loadTextureCached("/models/space-run/coin-special/roughness.jpg"), []);
+  const specCoinMetalMap = useMemo(() => loadTextureCached("/models/space-run/coin-special/metalness.jpg"), []);
 
   const shieldMat = useMemo(
     () =>
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshPhysicalMaterial({
         color: "#c4b5fd",
+        map: shieldColorMap ?? undefined,
+        normalMap: shieldNormalMap ?? undefined,
+        roughnessMap: shieldRoughMap ?? undefined,
+        metalnessMap: shieldMetalMap ?? undefined,
         emissive: "#7c3aed",
-        emissiveIntensity: 0.85,
-        metalness: 0.35,
-        roughness: 0.22,
+        emissiveIntensity: 0.8,
+        metalness: 0.45,
+        roughness: 0.28,
+        clearcoat: 0.25,
+        clearcoatRoughness: 0.22,
       }),
-    []
+    [shieldColorMap, shieldMetalMap, shieldNormalMap, shieldRoughMap]
   );
   const slowMat = useMemo(
     () =>
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshPhysicalMaterial({
         color: "#e2e8f0",
+        map: slowColorMap ?? undefined,
+        normalMap: slowNormalMap ?? undefined,
+        roughnessMap: slowRoughMap ?? undefined,
+        metalnessMap: slowMetalMap ?? undefined,
         emissive: "#94a3b8",
         emissiveIntensity: 0.35,
-        metalness: 0.88,
-        roughness: 0.18,
+        metalness: 0.78,
+        roughness: 0.24,
+        clearcoat: 0.18,
+        clearcoatRoughness: 0.24,
       }),
-    []
+    [slowColorMap, slowMetalMap, slowNormalMap, slowRoughMap]
   );
   const magnetMat = useMemo(() => {
-    const map = createMagnetTipTexture();
-    return new THREE.MeshStandardMaterial({
+    return new THREE.MeshPhysicalMaterial({
       color: "#e2e8f0",
-      map: map ?? undefined,
+      map: magnetColorMap ?? undefined,
+      normalMap: magnetNormalMap ?? undefined,
+      roughnessMap: magnetRoughMap ?? undefined,
+      metalnessMap: magnetMetalMap ?? undefined,
       metalness: 0.78,
       roughness: 0.28,
       emissive: "#16a34a",
-      emissiveIntensity: 0.22,
+      emissiveIntensity: 0.4,
+      clearcoat: 0.2,
+      clearcoatRoughness: 0.3,
     });
-  }, []);
+  }, [magnetColorMap, magnetMetalMap, magnetNormalMap, magnetRoughMap]);
 
   const meteorMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
         color: "#7c5c3e",
-        roughness: 0.92,
+        map: asteroidColorMap ?? undefined,
+        normalMap: asteroidNormalMap ?? undefined,
+        roughnessMap: asteroidRoughMap ?? undefined,
+        metalnessMap: asteroidMetalMap ?? undefined,
+        roughness: 0.95,
         metalness: 0.05,
         emissive: "#3d2918",
         emissiveIntensity: 0.04,
       }),
-    []
+    [asteroidColorMap, asteroidMetalMap, asteroidNormalMap, asteroidRoughMap]
   );
-
-  const coinTex = useMemo(() => loadCoinSpriteTexture("/textures/space-run/coin-3d.png", "gold"), []);
-  const specCoinTex = useMemo(() => loadCoinSpriteTexture("/textures/space-run/coin-special-3d.png", "silver"), []);
+  const coinMat = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: "#fef08a",
+        map: coinColorMap ?? undefined,
+        normalMap: coinNormalMap ?? undefined,
+        roughnessMap: coinRoughMap ?? undefined,
+        metalnessMap: coinMetalMap ?? undefined,
+        metalness: 0.96,
+        roughness: 0.12,
+        clearcoat: 0.7,
+        clearcoatRoughness: 0.08,
+        emissive: "#f59e0b",
+        emissiveIntensity: 0.08,
+      }),
+    [coinColorMap, coinMetalMap, coinNormalMap, coinRoughMap]
+  );
+  const specCoinMat = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: "#e2e8f0",
+        map: specCoinColorMap ?? undefined,
+        normalMap: specCoinNormalMap ?? undefined,
+        roughnessMap: specCoinRoughMap ?? undefined,
+        metalnessMap: specCoinMetalMap ?? undefined,
+        metalness: 0.9,
+        roughness: 0.16,
+        clearcoat: 0.55,
+        clearcoatRoughness: 0.12,
+        emissive: "#93c5fd",
+        emissiveIntensity: 0.1,
+      }),
+    [specCoinColorMap, specCoinMetalMap, specCoinNormalMap, specCoinRoughMap]
+  );
   const acquireObstacle = useCallback(() => {
     const pool = obstaclePool.current;
     if (pool.length > 0) return pool.pop();
@@ -1612,6 +1724,52 @@ export function SpaceRunScene({ inputRef, runningRef }) {
   const releaseObstacle = useCallback((o) => {
     obstaclePool.current.push(resetObstacleObject(o));
   }, []);
+  const meteorGeom = modelGeometries?.meteor ?? meteorFallbackGeom;
+  const coinGeom = modelGeometries?.coin ?? coinFallbackGeom;
+  const specCoinGeom = modelGeometries?.specCoin ?? specCoinFallbackGeom;
+  const crystalGeom = modelGeometries?.shield ?? crystalFallbackGeom;
+  const slowStarGeom = modelGeometries?.slow ?? slowFallbackGeom;
+  const magnetGeom = modelGeometries?.magnet ?? magnetFallbackGeom;
+
+  useEffect(() => {
+    let cancelled = false;
+    const loader = new GLTFLoader(TEXTURE_LOADING_MANAGER);
+    const modelDefs = [
+      ["meteor", "/models/space-run/asteroid/asteroid.glb", meteorFallbackGeom, 0.65],
+      ["coin", "/models/space-run/coin/coin.glb", coinFallbackGeom, 0.58],
+      ["specCoin", "/models/space-run/coin-special/coin-special.glb", specCoinFallbackGeom, 0.62],
+      ["shield", "/models/space-run/powerup-shield/powerup-shield.glb", crystalFallbackGeom, 0.55],
+      ["slow", "/models/space-run/powerup-slow/powerup-slow.glb", slowFallbackGeom, 0.55],
+      ["magnet", "/models/space-run/powerup-magnet/powerup-magnet.glb", magnetFallbackGeom, 0.55],
+    ];
+    const loadOne = ([key, path, fallback, scale]) =>
+      new Promise((resolve) => {
+        if (GEOMETRY_CACHE.has(path)) {
+          resolve([key, GEOMETRY_CACHE.get(path)]);
+          return;
+        }
+        loader.load(
+          path,
+          (gltf) => {
+            const src = firstMeshGeometry(gltf.scene) ?? fallback;
+            const next = src.clone();
+            next.scale(scale, scale, scale);
+            next.computeVertexNormals();
+            GEOMETRY_CACHE.set(path, next);
+            resolve([key, next]);
+          },
+          undefined,
+          () => resolve([key, fallback])
+        );
+      });
+    Promise.all(modelDefs.map(loadOne)).then((pairs) => {
+      if (cancelled) return;
+      setModelGeometries(Object.fromEntries(pairs));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [coinFallbackGeom, crystalFallbackGeom, magnetFallbackGeom, meteorFallbackGeom, slowFallbackGeom, specCoinFallbackGeom]);
 
   const syncHud = useCallback(() => {
     const e = elapsed.current;
@@ -1648,14 +1806,28 @@ export function SpaceRunScene({ inputRef, runningRef }) {
       im.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, -24), radius);
     };
     setCullSphere(meteorIM.current, 96);
+    setCullSphere(coinIM.current, 90);
+    setCullSphere(specIM.current, 90);
     setCullSphere(shieldIM.current, 84);
     setCullSphere(slowIM.current, 84);
     setCullSphere(magnetIM.current, 84);
     return () => {
       obstacles.current = [];
       obstaclePool.current = [];
+      meteorFallbackGeom.dispose();
+      coinFallbackGeom.dispose();
+      specCoinFallbackGeom.dispose();
+      crystalFallbackGeom.dispose();
+      slowFallbackGeom.dispose();
+      magnetFallbackGeom.dispose();
+      shieldMat.dispose();
+      slowMat.dispose();
+      magnetMat.dispose();
+      meteorMat.dispose();
+      coinMat.dispose();
+      specCoinMat.dispose();
     };
-  }, []);
+  }, [coinFallbackGeom, coinMat, crystalFallbackGeom, magnetFallbackGeom, magnetMat, meteorFallbackGeom, meteorMat, shieldMat, slowFallbackGeom, slowMat, specCoinFallbackGeom, specCoinMat]);
 
   useFrame((state, delta) => {
     const hud = useSpaceRunHud.getState();
@@ -1707,6 +1879,10 @@ export function SpaceRunScene({ inputRef, runningRef }) {
 
     elapsed.current += dt;
     const e = elapsed.current;
+    const pulse = 0.65 + Math.sin(e * 3.4) * 0.25;
+    shieldMat.emissiveIntensity = 0.6 + pulse * 0.35;
+    slowMat.emissiveIntensity = 0.22 + pulse * 0.22;
+    magnetMat.emissiveIntensity = 0.28 + pulse * 0.34;
     const diff = 1 + Math.min(2.2, e * 0.07);
     const baseV = 13 + Math.min(26, e * 0.5);
     const vz = baseV * diff * slowMul * boostMul;
@@ -1926,21 +2102,19 @@ export function SpaceRunScene({ inputRef, runningRef }) {
         _m.compose(_p, _q, _s);
         meteorIM.current?.setMatrixAt(mi++, _m);
       } else if (o.type === "coin" && !o.special && ci < MAX_COIN_INSTANCES) {
-        const s = coinSprites.current[ci++];
-        if (s) {
-          s.visible = true;
-          s.position.set(o.x, o.y, o.z);
-          s.scale.setScalar(Math.max(0.26, o.scale * 1.95));
-          if (s.material) s.material.rotation = (o.rz ?? 0) * 0.18;
-        }
+        _p.set(o.x, o.y, o.z);
+        _e.set(0, o.ry, o.rz);
+        _q.setFromEuler(_e);
+        _s.setScalar(Math.max(0.26, o.scale * 1.95));
+        _m.compose(_p, _q, _s);
+        coinIM.current?.setMatrixAt(ci++, _m);
       } else if (o.type === "coin" && o.special && si < MAX_SPEC_INSTANCES) {
-        const s = specSprites.current[si++];
-        if (s) {
-          s.visible = true;
-          s.position.set(o.x, o.y, o.z);
-          s.scale.setScalar(Math.max(0.32, o.scale * 2.15));
-          if (s.material) s.material.rotation = (o.rz ?? 0) * 0.22;
-        }
+        _p.set(o.x, o.y, o.z);
+        _e.set(0, o.ry, o.rz);
+        _q.setFromEuler(_e);
+        _s.setScalar(Math.max(0.32, o.scale * 2.15));
+        _m.compose(_p, _q, _s);
+        specIM.current?.setMatrixAt(si++, _m);
       } else if (o.type === "power" && o.power === "shield" && shi < MAX_SHIELD_INST) {
         _p.set(o.x, o.y, o.z);
         _e.set(o.rx, o.ry, o.rz);
@@ -1982,13 +2156,13 @@ export function SpaceRunScene({ inputRef, runningRef }) {
       meteorIM.current.count = mi;
       meteorIM.current.instanceMatrix.needsUpdate = true;
     }
-    for (let i = ci; i < MAX_COIN_INSTANCES; i++) {
-      const s = coinSprites.current[i];
-      if (s) s.visible = false;
+    if (coinIM.current) {
+      coinIM.current.count = ci;
+      coinIM.current.instanceMatrix.needsUpdate = true;
     }
-    for (let i = si; i < MAX_SPEC_INSTANCES; i++) {
-      const s = specSprites.current[i];
-      if (s) s.visible = false;
+    if (specIM.current) {
+      specIM.current.count = si;
+      specIM.current.instanceMatrix.needsUpdate = true;
     }
     if (shieldIM.current) {
       shieldIM.current.count = shi;
@@ -2033,7 +2207,7 @@ export function SpaceRunScene({ inputRef, runningRef }) {
       <fogExp2 attach="fog" args={["#030510", 0.012]} />
       <hemisphereLight intensity={0.18} color="#8ea7d3" groundColor="#09040f" />
       <ambientLight intensity={0.08} />
-      <directionalLight position={[-74, 20, -168]} intensity={1.55} color="#ffe7b3" castShadow={false} />
+      <directionalLight position={[-74, 20, -168]} intensity={1.55} color="#ffe7b3" castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
       <pointLight position={[-74, 3, -178]} intensity={3.2} color="#ffd089" distance={430} decay={1.55} />
       <pointLight position={[98, 36, -150]} intensity={2.25} color="#f59e0b" distance={260} decay={1.45} />
 
@@ -2052,50 +2226,12 @@ export function SpaceRunScene({ inputRef, runningRef }) {
 
       <EngineParticles shipX={shipX} shipY={shipY} boostingRef={boostingRef} runningRef={runningRef} speedRef={speedRef} />
 
-      <instancedMesh ref={meteorIM} args={[meteorGeom, meteorMat, MAX_METEOR_INSTANCES]} />
-      <group>
-        {Array.from({ length: MAX_COIN_INSTANCES }).map((_, i) => (
-          <sprite
-            key={`coin-sprite-${i}`}
-            ref={(el) => {
-              coinSprites.current[i] = el;
-            }}
-            visible={false}
-            scale={[0.7, 0.7, 0.7]}
-          >
-            <spriteMaterial
-              map={coinTex ?? undefined}
-              transparent
-              depthWrite={false}
-              alphaTest={0.06}
-              blending={THREE.AdditiveBlending}
-              color="#fef08a"
-            />
-          </sprite>
-        ))}
-        {Array.from({ length: MAX_SPEC_INSTANCES }).map((_, i) => (
-          <sprite
-            key={`spec-coin-sprite-${i}`}
-            ref={(el) => {
-              specSprites.current[i] = el;
-            }}
-            visible={false}
-            scale={[0.85, 0.85, 0.85]}
-          >
-            <spriteMaterial
-              map={specCoinTex ?? undefined}
-              transparent
-              depthWrite={false}
-              alphaTest={0.06}
-              blending={THREE.AdditiveBlending}
-              color="#e2e8f0"
-            />
-          </sprite>
-        ))}
-      </group>
-      <instancedMesh ref={shieldIM} args={[crystalGeom, shieldMat, MAX_SHIELD_INST]} />
-      <instancedMesh ref={slowIM} args={[slowStarGeom, slowMat, MAX_SLOW_INST]} />
-      <instancedMesh ref={magnetIM} args={[magnetGeom, magnetMat, MAX_MAGNET_INST]} />
+      <instancedMesh ref={meteorIM} args={[meteorGeom, meteorMat, MAX_METEOR_INSTANCES]} castShadow receiveShadow />
+      <instancedMesh ref={coinIM} args={[coinGeom, coinMat, MAX_COIN_INSTANCES]} castShadow receiveShadow />
+      <instancedMesh ref={specIM} args={[specCoinGeom, specCoinMat, MAX_SPEC_INSTANCES]} castShadow receiveShadow />
+      <instancedMesh ref={shieldIM} args={[crystalGeom, shieldMat, MAX_SHIELD_INST]} castShadow receiveShadow />
+      <instancedMesh ref={slowIM} args={[slowStarGeom, slowMat, MAX_SLOW_INST]} castShadow receiveShadow />
+      <instancedMesh ref={magnetIM} args={[magnetGeom, magnetMat, MAX_MAGNET_INST]} castShadow receiveShadow />
 
       <EffectComposer multisampling={4}>
         <Bloom luminanceThreshold={0.74} luminanceSmoothing={0.58} mipmapBlur intensity={0.14} radius={0.78} />
