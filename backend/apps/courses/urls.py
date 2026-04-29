@@ -1,10 +1,12 @@
-from django.urls import path
+from rest_framework.routers import DefaultRouter
 
 from . import views
 
-urlpatterns = [
-    path('levels/', views.LevelListView.as_view()),
-    path('levels/<slug:level_slug>/units/', views.UnitsByLevelView.as_view()),
-    path('units/<slug:slug>/', views.UnitDetailView.as_view()),
-    path('lessons/<slug:slug>/', views.LessonDetailView.as_view()),
-]
+router = DefaultRouter()
+router.register('levels',    views.LevelViewSet,        basename='level')
+router.register('units',     views.UnitViewSet,         basename='unit')
+router.register('lessons',   views.LessonViewSet,       basename='lesson')
+router.register('sections',  views.SectionViewSet,      basename='section')
+router.register('questions', views.QuizQuestionViewSet, basename='question')
+
+urlpatterns = router.urls

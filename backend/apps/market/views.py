@@ -1,18 +1,28 @@
 from django.db import transaction
-from rest_framework import generics, status
-from rest_framework.permissions import AllowAny
+from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from apps.permissions import AdminWriteOrReadOnly
 
 from .models import MarketItem, UserInventory
 from .serializers import MarketItemSerializer, PurchaseSerializer, UserInventorySerializer
 
 
-class MarketItemListView(generics.ListAPIView):
+class MarketItemViewSet(viewsets.ModelViewSet):
     serializer_class = MarketItemSerializer
-    permission_classes = [AllowAny]
-    queryset = MarketItem.objects.filter(is_active=True)
-    pagination_class = None
+    permission_classes = [AdminWriteOrReadOnly]
+    lookup_field = 'slug'
+
+    def get_queryset(self):
+        qs = MarketItem.objects.all()
+        # Non-staff see only active items
+        if not (self.request.user.is_authenticated and self.request.user.is_staff):
+            qs = qs.filter(is_active=True)
+        item_type = self.request.query_params.get('type')
+        if item_type:
+            qs = qs.filter(item_type=item_type)
+        return qs
 
 
 class PurchaseView(APIView):

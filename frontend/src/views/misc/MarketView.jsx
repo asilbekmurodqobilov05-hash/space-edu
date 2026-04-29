@@ -1,164 +1,155 @@
-﻿import { motion } from 'motion/react';
-import { ShoppingCart, Battery, Check, Lock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
+import { ShoppingCart, Fuel, Check, Lock, Loader } from 'lucide-react';
+import api from '@/lib/api';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
-import { useTranslation } from '@/hooks/useTranslation';
 
-const marketItems = [
-  {
-    id: 'mini_mars',
-    nameKey: 'miniMars',
-    descKey: 'miniMarsDesc',
-    cost: 150,
-    image: 'https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?auto=format&fit=crop&q=80&w=600',
-  },
-  {
-    id: 'astro_book',
-    nameKey: 'astroBook',
-    descKey: 'astroBookDesc',
-    cost: 50,
-    image: 'https://images.unsplash.com/photo-1614728263952-84ea256f9679?auto=format&fit=crop&q=80&w=600',
-  },
-  {
-    id: 'telescope_upgrade',
-    nameKey: 'telescopeUpgrade',
-    descKey: 'telescopeUpgradeDesc',
-    cost: 300,
-    image: 'https://images.unsplash.com/photo-1518066000714-58c45f1a2c0a?auto=format&fit=crop&q=80&w=600',
-  },
-  {
-    id: 'space_suit_patch',
-    nameKey: 'spaceSuitPatch',
-    descKey: 'spaceSuitPatchDesc',
-    cost: 100,
-    image: 'https://images.unsplash.com/photo-1584972208009-159e4b788787?auto=format&fit=crop&q=80&w=600',
-  },
-  {
-    id: 'mini_iss',
-    nameKey: 'miniIss',
-    descKey: 'miniIssDesc',
-    cost: 500,
-    image: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&q=80&w=600',
-  },
-  {
-    id: 'rocket_blueprint',
-    nameKey: 'rocketBlueprint',
-    descKey: 'rocketBlueprintDesc',
-    cost: 200,
-    image: 'https://images.unsplash.com/photo-1517976487492-5750f3195933?auto=format&fit=crop&q=80&w=600',
-  },
-];
-
-export default function MarketView() {
-  const { fuel, inventory, buyItem } = useGamificationStore();
-  const { t } = useTranslation();
-
-  const handleBuy = (itemId, cost) => {
-    buyItem(itemId, cost);
-  };
-
-  const steps = [t('market', 'simpleStep1'), t('market', 'simpleStep2'), t('market', 'simpleStep3')];
+function ItemCard({ item, owned, onBuy, fuel, buying }) {
+  const canAfford = fuel >= item.cost_fuel;
+  const isFree = item.cost_fuel === 0;
 
   return (
-    <div className="min-h-screen pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
-      <div className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
-        <div>
-          <p className="text-orange-400 text-sm font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-            <ShoppingCart className="w-4 h-4" />
-            {t('market', 'hub')}
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            {t('market', 'title')}{' '}
-            <span className="text-orange-400">{t('market', 'titleHighlight')}</span>
-          </h1>
-          <p className="mt-3 text-white/70 text-base max-w-xl leading-relaxed">
-            {t('market', 'subtitle')}
-          </p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`bg-white/4 border rounded-2xl p-5 flex flex-col gap-4 transition-colors
+        ${owned ? 'border-green-500/25' : canAfford ? 'border-white/10 hover:border-white/20' : 'border-white/6 opacity-70'}`}
+    >
+      {/* Image */}
+      <div className="h-32 rounded-xl bg-white/4 flex items-center justify-center overflow-hidden border border-white/6">
+        {item.image_url
+          ? <img src={item.image_url} alt={item.title_en} className="w-full h-full object-cover" />
+          : <span className="text-4xl">{item.item_type === 'spaceship' ? '🚀' : item.item_type === 'boost' ? '⚡' : '🏅'}</span>
+        }
+      </div>
+
+      {/* Info */}
+      <div className="flex-1">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="font-bold text-white text-sm">{item.title_en}</h3>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold
+            ${item.item_type === 'spaceship' ? 'bg-blue-500/15 text-blue-400' :
+              item.item_type === 'boost' ? 'bg-yellow-500/15 text-yellow-400' :
+              'bg-purple-500/15 text-purple-400'}`}>
+            {item.item_type}
+          </span>
         </div>
+        <p className="text-white/40 text-xs">{item.description_en}</p>
+      </div>
 
-        <div className="glass rounded-2xl px-5 py-4 border border-orange-500/25 flex items-center gap-4 shrink-0">
-          <Battery className="w-8 h-8 text-orange-400" />
-          <div>
-            <p className="text-xs text-white/50 font-semibold uppercase">{t('market', 'availableFuel')}</p>
-            <p className="text-2xl font-bold text-white">
-              {fuel} <span className="text-orange-400 text-lg font-semibold">{t('market', 'units')}</span>
-            </p>
-          </div>
+      {/* Action */}
+      {owned ? (
+        <div className="flex items-center gap-2 text-green-400 text-sm font-semibold">
+          <Check className="w-4 h-4" /> Owned
         </div>
-      </div>
-
-      <div className="mb-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <p className="text-sm font-bold text-white mb-3">{t('market', 'simpleHowTitle')}</p>
-        <ol className="space-y-2 text-sm text-white/75 list-decimal list-inside">
-          {steps.map((s) => (
-            <li key={s}>{s}</li>
-          ))}
-        </ol>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {marketItems.map((item, index) => {
-          const isOwned = inventory.includes(item.id);
-          const canAfford = fuel >= item.cost;
-
-          return (
-            <motion.article
-              key={item.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`rounded-2xl border overflow-hidden flex flex-col bg-space-900/40 ${
-                isOwned ? 'border-green-500/35' : canAfford ? 'border-white/12' : 'border-white/8 opacity-75'
-              }`}
-            >
-              <div className="relative h-36">
-                <img
-                  src={item.image}
-                  alt={t('market', item.nameKey)}
-                  referrerPolicy="no-referrer"
-                  className={`w-full h-full object-cover ${!canAfford && !isOwned ? 'grayscale opacity-55' : ''}`}
-                />
-              </div>
-              <div className="p-4 flex flex-col flex-1 gap-3">
-                <div>
-                  <h2 className="text-lg font-bold text-white">{t('market', item.nameKey)}</h2>
-                  <p className="text-white/60 text-sm mt-1 leading-snug">{t('market', item.descKey)}</p>
-                </div>
-                <div className="flex items-center justify-between text-sm mt-auto pt-1">
-                  <span className="text-white/45">{t('market', 'priceLabel')}</span>
-                  <span className="font-mono font-bold text-orange-300">{item.cost}</span>
-                </div>
-                {isOwned ? (
-                  <div className="flex items-center justify-center gap-2 text-green-400 font-semibold py-2.5 rounded-xl bg-green-500/10 border border-green-500/25">
-                    <Check className="w-4 h-4" />
-                    {t('market', 'acquired')}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleBuy(item.id, item.cost)}
-                    disabled={!canAfford}
-                    className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors ${
-                      canAfford
-                        ? 'bg-orange-500 text-white hover:bg-orange-400'
-                        : 'bg-white/5 text-white/35 border border-white/10 cursor-not-allowed flex items-center justify-center gap-2'
-                    }`}
-                  >
-                    {canAfford ? (
-                      t('market', 'purchase')
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4" />
-                        {t('market', 'insufficient')}
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            </motion.article>
-          );
-        })}
-      </div>
-    </div>
+      ) : (
+        <button
+          onClick={() => onBuy(item.slug)}
+          disabled={!canAfford || buying}
+          className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all
+            ${canAfford ? 'bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/25' :
+              'bg-white/4 text-white/25 border border-white/8 cursor-not-allowed'}`}
+        >
+          {buying ? <Loader className="w-4 h-4 animate-spin" /> : <Fuel className="w-4 h-4" />}
+          {isFree ? 'Free' : `${item.cost_fuel} Fuel`}
+          {!canAfford && !buying && <Lock className="w-3 h-3" />}
+        </button>
+      )}
+    </motion.div>
   );
 }
 
+export default function MarketView() {
+  const { isAuthenticated } = useAuthStore();
+  const { fuel, spend_fuel } = useGamificationStore();
+
+  const [items, setItems] = useState([]);
+  const [inventory, setInventory] = useState(new Set());
+  const [loading, setLoading] = useState(true);
+  const [buying, setBuying] = useState(null);
+  const [error, setError] = useState('');
+  const currentFuel = useGamificationStore((s) => s.fuel);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [{ data: itemsData }, inventoryRes] = await Promise.all([
+          api.get('/market/items/'),
+          isAuthenticated ? api.get('/market/inventory/') : Promise.resolve({ data: [] }),
+        ]);
+        setItems(itemsData);
+        setInventory(new Set(inventoryRes.data.map((i) => i.item.slug)));
+      } catch { /* show empty */ } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [isAuthenticated]);
+
+  const handleBuy = async (slug) => {
+    if (!isAuthenticated) { setError('Sign in to purchase items.'); return; }
+    setBuying(slug);
+    setError('');
+    try {
+      await api.post('/market/purchase/', { item_slug: slug });
+      setInventory((prev) => new Set([...prev, slug]));
+      // Sync fuel from API
+      const { data } = await api.get('/gamification/profile/');
+      useGamificationStore.getState().syncFromAPI(data);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Purchase failed.');
+    } finally {
+      setBuying(null);
+    }
+  };
+
+  return (
+    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+
+      {/* Header */}
+      <div className="text-center mb-12">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          className="w-16 h-16 mx-auto rounded-2xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center mb-5">
+          <ShoppingCart className="w-8 h-8 text-orange-400" />
+        </motion.div>
+        <h1 className="text-4xl font-black text-white mb-2">Space Market</h1>
+        <p className="text-white/40 text-sm max-w-sm mx-auto">Spend your fuel on ships, boosts and badges</p>
+
+        {/* Fuel balance */}
+        <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-orange-500/10 border border-orange-500/20 rounded-full">
+          <Fuel className="w-4 h-4 text-orange-400" />
+          <span className="text-orange-400 font-bold">{currentFuel}</span>
+          <span className="text-white/40 text-sm">fuel available</span>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm text-center">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <Loader className="w-8 h-8 text-white/30 animate-spin" />
+        </div>
+      ) : items.length === 0 ? (
+        <p className="text-center text-white/25 py-20">No items in the market yet.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {items.map((item) => (
+            <ItemCard
+              key={item.slug}
+              item={item}
+              owned={inventory.has(item.slug)}
+              onBuy={handleBuy}
+              fuel={currentFuel}
+              buying={buying === item.slug}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
