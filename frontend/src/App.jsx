@@ -9,6 +9,13 @@ import GlobalLanguageBar from "@/components/layout/GlobalLanguageBar";
 
 import HomeView from "@/views/home/HomeView";
 import LearnView from "@/views/learn/LearnView";
+import PhysicsView from "@/views/learn/PhysicsView";
+import PhysicsTopicView from "@/views/learn/PhysicsTopicView";
+import PhysicsLessonView from "@/views/learn/PhysicsLessonView";
+import AstronomyView from "@/views/learn/AstronomyView";
+import CreativityView from "@/views/learn/CreativityView";
+import InterviewsView from "@/views/learn/InterviewsView";
+import ProblemsView from "@/views/learn/ProblemsView";
 import UnitView from "@/views/learn/UnitView";
 import LessonView from "@/views/learn/LessonView";
 import ExploreView from "@/views/explore/ExploreView";
@@ -43,6 +50,13 @@ export default function App() {
           <Routes location={location} key={location.pathname}>
             <Route path="/"                    element={<PageTransition><HomeView /></PageTransition>} />
             <Route path="/learn"               element={<PageTransition><LearnView /></PageTransition>} />
+            <Route path="/learn/physics"       element={<PageTransition><PhysicsView /></PageTransition>} />
+            <Route path="/learn/physics/:topicId" element={<PageTransition><PhysicsTopicView /></PageTransition>} />
+            <Route path="/learn/physics/:topicId/lesson/:lessonIdx" element={<PageTransition><PhysicsLessonView /></PageTransition>} />
+            <Route path="/learn/astronomy"     element={<PageTransition><AstronomyView /></PageTransition>} />
+            <Route path="/learn/creativity"    element={<PageTransition><CreativityView /></PageTransition>} />
+            <Route path="/learn/interviews"    element={<PageTransition><InterviewsView /></PageTransition>} />
+            <Route path="/learn/problems"      element={<PageTransition><ProblemsView /></PageTransition>} />
             <Route path="/unit/:unitId"        element={<PageTransition><UnitView /></PageTransition>} />
             <Route path="/lesson/:unitId/:lessonId" element={<PageTransition><LessonView /></PageTransition>} />
             <Route path="/explore"             element={<PageTransition><ExploreView /></PageTransition>} />
