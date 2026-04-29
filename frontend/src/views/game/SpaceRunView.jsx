@@ -325,13 +325,13 @@ export default function SpaceRunView() {
         onTouchCancel={onTouchEnd}
       >
         <div
-          className="absolute left-0 top-0 h-full w-[48vw] min-w-[340px] max-w-[680px] z-[12] pointer-events-none opacity-[0.72]"
+          className="absolute left-0 top-0 h-full w-[42vw] min-w-[300px] max-w-[600px] z-[10] pointer-events-none opacity-[0.52] blur-[0.2px]"
           style={{
-            maskImage: "linear-gradient(to right, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.78) 52%, rgba(0,0,0,0.28) 76%, rgba(0,0,0,0) 100%)",
-            WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.78) 52%, rgba(0,0,0,0.28) 76%, rgba(0,0,0,0) 100%)",
+            maskImage: "linear-gradient(to right, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.72) 48%, rgba(0,0,0,0.22) 72%, rgba(0,0,0,0) 100%)",
+            WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.72) 48%, rgba(0,0,0,0.22) 72%, rgba(0,0,0,0) 100%)",
           }}
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_42%,rgba(56,189,248,0.14)_0%,rgba(59,130,246,0.08)_22%,rgba(15,23,42,0.42)_54%,rgba(2,6,23,0)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_40%,rgba(59,130,246,0.14)_0%,rgba(79,70,229,0.1)_20%,rgba(17,24,39,0.45)_52%,rgba(2,6,23,0)_100%)]" />
           <MiniSolarSystem frozen={false} />
         </div>
 
@@ -339,7 +339,7 @@ export default function SpaceRunView() {
           key={gameKey}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false }}
-          camera={{ position: [0, 2.55, 11.4], fov: 49, near: 0.1, far: 220 }}
+          camera={{ position: [0, 2.9, 12.8], fov: 60, near: 0.1, far: 360 }}
         >
           <SpaceRunScene inputRef={inputRef} runningRef={runningRef} />
         </Canvas>
