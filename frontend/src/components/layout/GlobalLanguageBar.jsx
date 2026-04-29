@@ -7,14 +7,14 @@ const LANGS = [
   { code: "RUS", label: "Русский",   short: "RU",  flag: "🇷🇺" },
 ];
 
-// Shown on all routes — useful on /space-game where the main nav is hidden
+// Useful when main navigation is hidden, but we hide it inside Space Run
 export default function GlobalLanguageBar() {
   const { pathname } = useLocation();
   const language  = useUserStore((s) => s.language);
   const setLanguage = useUserStore((s) => s.setLanguage);
 
-  // Only show on space-game (nav handles language on other routes)
-  if (pathname !== "/space-game") return null;
+  // Hide inside the game view (user requested to remove this overlay)
+  if (pathname === "/space-game") return null;
 
   return (
     <div
