@@ -18,6 +18,7 @@ import { SpaceRunScene } from "@/game/spaceRun/SpaceRunScene";
 import { useSpaceRunHud } from "@/game/spaceRun/spaceRunHudStore";
 import { useSpaceArcadeStore, SHIP_SKINS, skinPrice } from "@/game/spaceRun/spaceArcadeStore";
 import { resumeAudio, startEngineHum, startSpaceMusic, stopEngineHum, stopSpaceMusic } from "@/game/spaceRun/spaceRunSounds";
+import MiniSolarSystem from "@/components/layout/MiniSolarSystem";
 
 export default function SpaceRunView() {
   const [gameKey, setGameKey] = useState(0);
@@ -156,7 +157,7 @@ export default function SpaceRunView() {
   const timeDisplay = started && !gameOver ? survivalSec.toFixed(0) + "s" : null;
 
   return (
-    <div className="fixed inset-0 z-[42] bg-[#050214] flex flex-col">
+    <div className="fixed inset-0 z-[42] bg-[#040712] flex flex-col">
       <header
         className="shrink-0 relative border-b border-cyan-500/15 bg-[linear-gradient(180deg,rgba(12,8,40,0.92)_0%,rgba(5,2,20,0.88)_100%)] backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.35)]"
         style={{ paddingTop: "max(0.65rem, env(safe-area-inset-top))" }}
@@ -323,11 +324,22 @@ export default function SpaceRunView() {
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchEnd}
       >
+        <div
+          className="absolute left-0 top-0 h-full w-[48vw] min-w-[340px] max-w-[680px] z-[12] pointer-events-none opacity-[0.72]"
+          style={{
+            maskImage: "linear-gradient(to right, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.78) 52%, rgba(0,0,0,0.28) 76%, rgba(0,0,0,0) 100%)",
+            WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.78) 52%, rgba(0,0,0,0.28) 76%, rgba(0,0,0,0) 100%)",
+          }}
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_42%,rgba(56,189,248,0.14)_0%,rgba(59,130,246,0.08)_22%,rgba(15,23,42,0.42)_54%,rgba(2,6,23,0)_100%)]" />
+          <MiniSolarSystem frozen={false} />
+        </div>
+
         <Canvas
           key={gameKey}
-          dpr={[1, 1.5]}
-          gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-          camera={{ position: [0, 2.4, 12], fov: 52, near: 0.1, far: 200 }}
+          dpr={[1, 2]}
+          gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false }}
+          camera={{ position: [0, 2.55, 11.4], fov: 49, near: 0.1, far: 220 }}
         >
           <SpaceRunScene inputRef={inputRef} runningRef={runningRef} />
         </Canvas>
@@ -442,7 +454,7 @@ export default function SpaceRunView() {
         )}
 
         {started && !gameOver && (
-          <div className="pointer-events-none absolute bottom-3 left-3 right-3 flex justify-between text-[10px] sm:text-xs text-white/50">
+          <div className="pointer-events-none absolute bottom-3 left-3 right-3 flex justify-between text-xs sm:text-sm font-semibold text-white/85 [text-shadow:1px_1px_2px_rgba(0,0,0,0.8)] bg-black/45 rounded-lg px-3 py-2 backdrop-blur-[1px]">
             <span>{activePower ? `Power: ${activePower}` : "Hold Shift/Space to boost · blue shield · purple slow · green magnet"}</span>
             <span className="hidden sm:inline">Esc pause</span>
           </div>
