@@ -68,7 +68,7 @@ export default function DailyChallengeView() {
           </div>
           <h2 className="text-3xl font-bold mb-4">Challenge Completed!</h2>
           <p className="text-gray-400 mb-8">You've already completed today's challenge. Come back tomorrow for more XP!</p>
-          <Link to="/profile" className="px-6 py-3 bg-neon-blue text-space-900 font-bold rounded-full hover:shadow-[0_0_20px_rgba(0,243,255,0.4)] transition-all inline-block">
+          <Link to="/profile" className="px-8 py-3.5 bg-violet text-white font-[800] rounded-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all inline-block uppercase text-xs tracking-widest">
             View Profile
           </Link>
         </div>
@@ -90,9 +90,9 @@ export default function DailyChallengeView() {
           className="glass p-8 rounded-3xl relative overflow-hidden"
         >
           {/* Progress Bar */}
-          <div className="absolute top-0 left-0 w-full h-2 bg-space-800">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-white/5">
             <motion.div 
-              className="h-full bg-neon-blue"
+              className="h-full bg-violet"
               initial={{ width: `${(currentIndex / questions.length) * 100}%` }}
               animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
             />
@@ -102,9 +102,9 @@ export default function DailyChallengeView() {
             <span className="text-neon-purple font-bold bg-neon-purple/10 px-4 py-1 rounded-full">
               Question {currentIndex + 1}/{questions.length}
             </span>
-            <div className={`flex items-center gap-2 font-mono text-xl ${timeLeft <= 5 ? 'text-red-400' : 'text-neon-blue'}`}>
+            <div className={`flex items-center gap-2 font-[800] text-xl ${timeLeft <= 5 ? 'text-red-400' : 'text-violet'}`}>
               <Timer className="w-5 h-5" />
-              00:{timeLeft.toString().padStart(2, '0')}
+              {timeLeft.toString().padStart(2, '0')}s
             </div>
           </div>
 
@@ -124,7 +124,7 @@ export default function DailyChallengeView() {
                   btnClass = "opacity-50 border-transparent";
                 }
               } else if (selectedAnswer === idx) {
-                btnClass = "border-neon-blue bg-neon-blue/20";
+                btnClass = "border-violet/40 bg-violet/10 text-violet-light";
               }
 
               return (
@@ -151,10 +151,10 @@ export default function DailyChallengeView() {
               >
                 <button
                   onClick={handleNext}
-                  className="px-8 py-3 bg-neon-blue text-space-900 font-bold rounded-full hover:shadow-[0_0_20px_rgba(0,243,255,0.4)] transition-all flex items-center gap-2"
+                  className="px-8 py-4 bg-violet text-white font-[800] rounded-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all flex items-center gap-2 uppercase text-xs tracking-widest"
                 >
                   {currentIndex < questions.length - 1 ? 'Next Question' : 'Finish Challenge'}
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </motion.div>
             )}
@@ -167,10 +167,10 @@ export default function DailyChallengeView() {
           animate={{ opacity: 1, scale: 1 }}
           className="glass p-8 md:p-12 rounded-3xl text-center relative overflow-hidden"
         >
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-64 bg-neon-blue/20 blur-[100px] rounded-full pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-64 bg-violet/10 blur-[100px] rounded-full pointer-events-none" />
           
-          <div className="w-24 h-24 mx-auto bg-space-800 rounded-full flex items-center justify-center mb-6 border-4 border-neon-blue relative z-10">
-            <Award className="w-12 h-12 text-neon-blue" />
+          <div className="w-24 h-24 mx-auto bg-white/[0.03] rounded-3xl flex items-center justify-center mb-8 border border-white/10 relative z-10 shadow-2xl">
+            <Award className="w-12 h-12 text-violet" />
           </div>
           
           <h2 className="text-4xl font-bold mb-2">Challenge Complete!</h2>
@@ -191,10 +191,10 @@ export default function DailyChallengeView() {
           </div>
 
           <div className="flex justify-center gap-4">
-            <Link to="/profile" className="px-8 py-4 bg-neon-blue text-space-900 font-bold rounded-full hover:shadow-[0_0_20px_rgba(0,243,255,0.4)] transition-all">
+            <Link to="/profile" className="px-8 py-4 bg-violet text-white font-[800] rounded-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all uppercase text-xs tracking-widest">
               View Profile
             </Link>
-            <Link to="/leaderboard" className="px-8 py-4 glass text-white font-bold rounded-full hover:bg-white/10 transition-all">
+            <Link to="/leaderboard" className="px-8 py-4 glass text-white font-[800] rounded-2xl hover:bg-white/10 transition-all uppercase text-xs tracking-widest">
               Leaderboard
             </Link>
           </div>

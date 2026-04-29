@@ -140,8 +140,8 @@ export default function ExploreView() {
           transition={{ duration: 0.5 }}
           className="glass p-8 rounded-3xl relative overflow-hidden group flex flex-col"
         >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-neon-blue/20 rounded-full blur-2xl group-hover:bg-neon-blue/30 transition-colors" />
-          <Sparkles className="w-10 h-10 text-neon-blue mb-6" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-violet/20 rounded-full blur-2xl group-hover:bg-violet/30 transition-colors" />
+          <Sparkles className="w-10 h-10 text-violet-light mb-6" />
           <h2 className="text-2xl font-bold mb-4">
             {t('explore', 'quizTitle')}
           </h2>
@@ -155,7 +155,7 @@ export default function ExploreView() {
               setQuizScore(0);
               setQuizFinished(false);
             }}
-            className="px-6 py-3 bg-neon-blue/20 text-neon-blue border border-neon-blue/50 rounded-full font-medium hover:bg-neon-blue hover:text-space-900 transition-all box-glow-blue self-start"
+            className="px-6 py-3 bg-violet/20 text-violet-light border border-violet/50 rounded-full font-[800] text-xs uppercase tracking-widest hover:bg-violet hover:text-white transition-all box-glow-purple self-start"
           >
             {t('explore', 'startQuiz')}
           </button>
@@ -246,12 +246,12 @@ export default function ExploreView() {
             >
               <div
                 ref={cardRef}
-                className="w-full max-w-sm bg-gradient-to-br from-space-800 to-space-900 border border-neon-blue/30 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,243,255,0.2)] text-left relative overflow-hidden"
+                className="w-full max-w-sm bg-gradient-to-br from-space-800 to-space-900 border border-violet/30 rounded-2xl p-6 shadow-[0_0_30px_rgba(139,92,246,0.2)] text-left relative overflow-hidden"
               >
-                <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-neon-blue to-neon-purple" />
+                <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-violet to-violet-light" />
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-full bg-space-700 flex items-center justify-center border-2 border-neon-blue">
-                    <User className="w-8 h-8 text-neon-blue" />
+                  <div className="w-16 h-16 rounded-full bg-space-700 flex items-center justify-center border-2 border-violet">
+                    <User className="w-8 h-8 text-violet" />
                   </div>
                   <div>
                     <p className="text-xs text-neon-blue uppercase tracking-wider font-bold">

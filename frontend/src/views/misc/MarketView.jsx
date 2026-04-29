@@ -1,68 +1,93 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { ShoppingCart, Fuel, Check, Lock, Loader } from 'lucide-react';
+import { ShoppingCart, Fuel, Check, Lock, Loader, Sparkles, Rocket, Zap, Award } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import GlassCard from '@/components/ui/GlassCard';
 
 function ItemCard({ item, owned, onBuy, fuel, buying }) {
   const canAfford = fuel >= item.cost_fuel;
   const isFree = item.cost_fuel === 0;
 
+  const getAccent = () => {
+    if (item.item_type === 'spaceship') return '#6366f1';
+    if (item.item_type === 'boost') return '#fbbf24';
+    return '#a78bfa';
+  };
+
+  const accent = getAccent();
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`bg-white/4 border rounded-2xl p-5 flex flex-col gap-4 transition-colors
-        ${owned ? 'border-green-500/25' : canAfford ? 'border-white/10 hover:border-white/20' : 'border-white/6 opacity-70'}`}
-    >
-      {/* Image */}
-      <div className="h-32 rounded-xl bg-white/4 flex items-center justify-center overflow-hidden border border-white/6">
-        {item.image_url
-          ? <img src={item.image_url} alt={item.title_en} className="w-full h-full object-cover" />
-          : <span className="text-4xl">{item.item_type === 'spaceship' ? '🚀' : item.item_type === 'boost' ? '⚡' : '🏅'}</span>
-        }
+    <GlassCard accent={accent} delay={0} className={`h-full flex flex-col ${!owned && !canAfford ? 'opacity-60' : ''}`}>
+      {/* Type badge */}
+      <div className="absolute top-6 right-6">
+        <span 
+          className="text-[9px] font-[800] uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border"
+          style={{ 
+            color: accent, 
+            background: `${accent}15`, 
+            borderColor: `${accent}30` 
+          }}
+        >
+          {item.item_type}
+        </span>
+      </div>
+
+      {/* Image / Icon container */}
+      <div className="relative h-40 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center overflow-hidden mb-6 group-hover:border-white/10 transition-colors shadow-inner">
+        {item.image_url ? (
+          <img src={item.image_url} alt={item.title_en} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+        ) : (
+          <div className="text-5xl transition-transform duration-500 group-hover:scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+            {item.item_type === 'spaceship' ? '🚀' : item.item_type === 'boost' ? '⚡' : '🏅'}
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
       </div>
 
       {/* Info */}
-      <div className="flex-1">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-bold text-white text-sm">{item.title_en}</h3>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold
-            ${item.item_type === 'spaceship' ? 'bg-blue-500/15 text-blue-400' :
-              item.item_type === 'boost' ? 'bg-yellow-500/15 text-yellow-400' :
-              'bg-purple-500/15 text-purple-400'}`}>
-            {item.item_type}
-          </span>
-        </div>
-        <p className="text-white/40 text-xs">{item.description_en}</p>
+      <div className="flex-1 mb-8">
+        <h3 className="text-xl font-[900] text-white tracking-tight mb-2">{item.title_en}</h3>
+        <p className="text-white/40 text-[13px] leading-relaxed line-clamp-2">
+          {item.description_en}
+        </p>
       </div>
 
-      {/* Action */}
-      {owned ? (
-        <div className="flex items-center gap-2 text-green-400 text-sm font-semibold">
-          <Check className="w-4 h-4" /> Owned
-        </div>
-      ) : (
-        <button
-          onClick={() => onBuy(item.slug)}
-          disabled={!canAfford || buying}
-          className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all
-            ${canAfford ? 'bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/25' :
-              'bg-white/4 text-white/25 border border-white/8 cursor-not-allowed'}`}
-        >
-          {buying ? <Loader className="w-4 h-4 animate-spin" /> : <Fuel className="w-4 h-4" />}
-          {isFree ? 'Free' : `${item.cost_fuel} Fuel`}
-          {!canAfford && !buying && <Lock className="w-3 h-3" />}
-        </button>
-      )}
-    </motion.div>
+      {/* Action footer */}
+      <div className="pt-6 border-t border-white/5">
+        {owned ? (
+          <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-[800] uppercase tracking-widest">
+            <Check className="w-4 h-4" /> Collected
+          </div>
+        ) : (
+          <button
+            onClick={() => onBuy(item.slug)}
+            disabled={!canAfford || buying}
+            className={`w-full flex items-center justify-center gap-3 py-3.5 rounded-xl font-[800] text-xs uppercase tracking-widest transition-all
+              ${canAfford 
+                ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 active:scale-[0.98]' 
+                : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'}`}
+          >
+            {buying ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Fuel className="w-4 h-4" />
+                {isFree ? 'Claim Free' : `${item.cost_fuel} Fuel`}
+                {!canAfford && <Lock className="w-3.5 h-3.5 ml-1 opacity-50" />}
+              </>
+            )}
+          </button>
+        )}
+      </div>
+    </GlassCard>
   );
 }
 
 export default function MarketView() {
   const { isAuthenticated } = useAuthStore();
-  const { fuel, spend_fuel } = useGamificationStore();
+  const { fuel } = useGamificationStore();
 
   const [items, setItems] = useState([]);
   const [inventory, setInventory] = useState(new Set());
@@ -74,13 +99,19 @@ export default function MarketView() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [{ data: itemsData }, inventoryRes] = await Promise.all([
+        const [itemsRes, inventoryRes] = await Promise.all([
           api.get('/market/items/'),
           isAuthenticated ? api.get('/market/inventory/') : Promise.resolve({ data: [] }),
         ]);
+        
+        // Handle paginated or non-paginated response
+        const itemsData = Array.isArray(itemsRes.data) ? itemsRes.data : itemsRes.data.results || [];
         setItems(itemsData);
+        
         setInventory(new Set(inventoryRes.data.map((i) => i.item.slug)));
-      } catch { /* show empty */ } finally {
+      } catch (err) {
+        console.error("Market data fetch error:", err);
+      } finally {
         setLoading(false);
       }
     };
@@ -94,7 +125,6 @@ export default function MarketView() {
     try {
       await api.post('/market/purchase/', { item_slug: slug });
       setInventory((prev) => new Set([...prev, slug]));
-      // Sync fuel from API
       const { data } = await api.get('/gamification/profile/');
       useGamificationStore.getState().syncFromAPI(data);
     } catch (err) {
@@ -105,51 +135,78 @@ export default function MarketView() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+    <div className="relative min-h-screen pt-32 pb-24 px-4 overflow-hidden">
+      {/* Decorative ambient glows */}
+      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[140px] pointer-events-none z-0"
+        style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.03) 0%, transparent 70%)' }} />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[140px] pointer-events-none z-0"
+        style={{ background: 'radial-gradient(circle, rgba(0,229,255,0.03) 0%, transparent 70%)' }} />
 
-      {/* Header */}
-      <div className="text-center mb-12">
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-          className="w-16 h-16 mx-auto rounded-2xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center mb-5">
-          <ShoppingCart className="w-8 h-8 text-orange-400" />
-        </motion.div>
-        <h1 className="text-4xl font-black text-white mb-2">Space Market</h1>
-        <p className="text-white/40 text-sm max-w-sm mx-auto">Spend your fuel on ships, boosts and badges</p>
+      <div className="max-w-7xl mx-auto relative z-10">
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16">
+          <div className="text-center md:text-left">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+              <p className="text-[11px] font-[800] tracking-[0.3em] uppercase text-orange-400 mb-3">Galactic Supply</p>
+              <h1 className="text-[clamp(36px,5vw,56px)] font-[900] tracking-tight leading-[1] text-white">Space <span className="text-glow-purple text-violet">Market</span></h1>
+              <p className="text-white/40 text-base mt-4 max-w-md font-[500]">Acquire premium equipment and badges using your mission fuel.</p>
+            </motion.div>
+          </div>
 
-        {/* Fuel balance */}
-        <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-orange-500/10 border border-orange-500/20 rounded-full">
-          <Fuel className="w-4 h-4 text-orange-400" />
-          <span className="text-orange-400 font-bold">{currentFuel}</span>
-          <span className="text-white/40 text-sm">fuel available</span>
+          {/* Balance Display */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            className="flex items-center gap-6 p-1.5 pr-6 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-xl"
+          >
+            <div className="w-14 h-14 rounded-[1.1rem] bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+              <Fuel className="w-6 h-6 text-orange-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-[900] text-white tracking-tighter">{currentFuel.toLocaleString()}</p>
+              <p className="text-[10px] font-[800] uppercase tracking-widest text-orange-400/60">Available Fuel</p>
+            </div>
+          </motion.div>
         </div>
+
+        {error && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+            className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-[700] text-center tracking-wide">
+            {error}
+          </motion.div>
+        )}
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <Loader className="w-10 h-10 text-violet-light animate-spin" />
+            <p className="text-[11px] font-[800] uppercase tracking-[0.2em] text-white/20">Establishing connection...</p>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-32 bg-white/[0.01] border border-dashed border-white/5 rounded-3xl">
+            <p className="text-white/20 font-bold italic">The black market is currently empty.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {items.map((item, i) => (
+              <motion.div
+                key={item.slug}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <ItemCard
+                  item={item}
+                  owned={inventory.has(item.slug)}
+                  onBuy={handleBuy}
+                  fuel={currentFuel}
+                  buying={buying === item.slug}
+                />
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm text-center">
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader className="w-8 h-8 text-white/30 animate-spin" />
-        </div>
-      ) : items.length === 0 ? (
-        <p className="text-center text-white/25 py-20">No items in the market yet.</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {items.map((item) => (
-            <ItemCard
-              key={item.slug}
-              item={item}
-              owned={inventory.has(item.slug)}
-              onBuy={handleBuy}
-              fuel={currentFuel}
-              buying={buying === item.slug}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

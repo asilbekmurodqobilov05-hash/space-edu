@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import GlassCard from '@/components/ui/GlassCard';
 
 const XP_PER_LEVEL = (lvl) => Math.pow(lvl - 1, 2) * 100;
 
@@ -13,43 +14,55 @@ function XpBar({ xp, level }) {
   const needed = XP_PER_LEVEL(level + 1) - XP_PER_LEVEL(level);
   const pct = Math.min(100, Math.round((current / needed) * 100));
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex justify-between text-xs text-white/40">
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-between text-[11px] font-[700] uppercase tracking-wider text-white/30">
         <span>Level {level}</span>
         <span>{current} / {needed} XP</span>
         <span>Level {level + 1}</span>
       </div>
-      <div className="h-2 bg-white/8 rounded-full overflow-hidden">
+      <div className="h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
-          transition={{ duration: 1, ease: 'easeOut' }}
-          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500"
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          className="h-full rounded-full bg-gradient-to-r from-violet to-violet-light"
+          style={{ boxShadow: '0 0 12px rgba(139,92,246,0.6)' }}
         />
       </div>
     </div>
   );
 }
 
-function StatCard({ icon: Icon, label, value, color }) {
+function StatItem({ icon: Icon, label, value, color }) {
   return (
-    <div className="bg-white/4 border border-white/8 rounded-2xl p-4 flex flex-col gap-2">
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${color}`}>
-        <Icon className="w-5 h-5" />
+    <GlassCard accent={color} delay={0} className="!p-5 flex flex-col gap-3">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center" 
+        style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
+        <Icon className="w-5 h-5" style={{ color }} />
       </div>
-      <p className="text-2xl font-black text-white">{value}</p>
-      <p className="text-xs text-white/40 font-semibold uppercase tracking-wide">{label}</p>
-    </div>
+      <div>
+        <p className="text-2xl font-[900] text-white tracking-tight">{value}</p>
+        <p className="text-[10px] font-[800] uppercase tracking-[0.2em] text-white/30 mt-1">{label}</p>
+      </div>
+    </GlassCard>
   );
 }
 
-function BadgeCard({ badge }) {
+function BadgeItem({ badge, i }) {
   return (
-    <div className="bg-white/4 border border-white/8 rounded-2xl p-3 flex flex-col items-center gap-2 text-center">
-      <div className="text-2xl">{badge.icon}</div>
-      <p className="text-xs font-bold text-white">{badge.title_en}</p>
-      <p className="text-xs text-white/30">{badge.description_en}</p>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: i * 0.05 }}
+      className="group relative flex flex-col items-center p-4 rounded-2xl bg-white/[0.02] border border-white/5 transition-all hover:bg-white/[0.05] hover:border-violet/30"
+    >
+      <div className="text-3xl mb-3 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] transition-transform group-hover:scale-110">
+        {badge.icon}
+      </div>
+      <p className="text-[11px] font-[800] text-white text-center line-clamp-1">{badge.title_en}</p>
+      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-transparent to-violet/5 pointer-events-none" />
+    </motion.div>
   );
 }
 
@@ -115,140 +128,132 @@ export default function ProfileView() {
   const displayStreak = gamProfile?.streak ?? streak;
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto">
-
-      {/* Header card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/4 border border-white/10 rounded-3xl p-6 mb-6"
-      >
-        <div className="flex items-start gap-5">
-          {/* Avatar */}
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600/30 to-purple-600/30 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
-            {user?.avatar_url
-              ? <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-              : <User className="w-10 h-10 text-white/40" />
-            }
-          </div>
-
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            {!editing ? (
-              <>
-                <h1 className="text-xl font-black text-white truncate">
-                  {user?.first_name} {user?.last_name}
-                </h1>
-                <p className="text-white/40 text-sm">@{user?.username}</p>
-                {user?.astronaut_name && (
-                  <p className="text-blue-400 text-sm font-semibold mt-1">✦ {user.astronaut_name}</p>
-                )}
-                <p className="text-white/30 text-xs mt-1">{user?.email}</p>
-              </>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <input
-                  value={editForm.astronaut_name}
-                  onChange={(e) => setEditForm((f) => ({ ...f, astronaut_name: e.target.value }))}
-                  placeholder="Astronaut name"
-                  className="bg-white/5 border border-white/15 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-blue-500/60"
-                />
-                <select
-                  value={editForm.language}
-                  onChange={(e) => setEditForm((f) => ({ ...f, language: e.target.value }))}
-                  className="bg-slate-900 border border-white/15 rounded-xl px-3 py-2 text-white text-sm outline-none"
-                >
-                  <option value="en">English</option>
-                  <option value="uz">O'zbek</option>
-                  <option value="ru">Русский</option>
-                </select>
+    <div className="relative min-h-screen pt-32 pb-24 px-4 overflow-hidden">
+      {/* Decorative ambient glows */}
+      <div className="fixed top-[-15%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[140px] pointer-events-none z-0"
+        style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.05) 0%, transparent 70%)' }} />
+      
+      <div className="max-w-3xl mx-auto relative z-10">
+        
+        {/* Header card */}
+        <GlassCard accent="#8b5cf6" delay={0} className="mb-8 !p-8">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8">
+            {/* Avatar container */}
+            <div className="relative group">
+              <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-violet/20 to-violet-deep/20 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden shadow-2xl">
+                {user?.avatar_url
+                  ? <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                  : <User className="w-12 h-12 text-white/20" />
+                }
               </div>
-            )}
+              <div className="absolute -inset-2 rounded-[2rem] border border-violet/20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            </div>
+
+            {/* Info section */}
+            <div className="flex-1 text-center sm:text-left min-w-0">
+              {!editing ? (
+                <>
+                  <div className="flex items-center justify-center sm:justify-start gap-3 mb-1">
+                    <h1 className="text-3xl font-[900] text-white tracking-tight">
+                      {user?.first_name} {user?.last_name}
+                    </h1>
+                    <button onClick={startEdit} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                      <Edit2 className="w-3.5 h-3.5 text-white/40 hover:text-white" />
+                    </button>
+                  </div>
+                  <p className="text-violet-light font-[700] text-sm tracking-wide">@{user?.username}</p>
+                  
+                  {user?.astronaut_name && (
+                    <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet/10 border border-violet/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-violet animate-pulse" />
+                      <span className="text-[11px] font-[800] uppercase tracking-wider text-violet-pale">{user.astronaut_name}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col gap-3 mt-2">
+                  <input
+                    value={editForm.astronaut_name}
+                    onChange={(e) => setEditForm((f) => ({ ...f, astronaut_name: e.target.value }))}
+                    placeholder="Astronaut Alias"
+                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm outline-none focus:border-violet/50 transition-colors"
+                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={editForm.language}
+                      onChange={(e) => setEditForm((f) => ({ ...f, language: e.target.value }))}
+                      className="flex-1 bg-[#0d0a1e] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm outline-none focus:border-violet/50"
+                    >
+                      <option value="en">English</option>
+                      <option value="uz">O'zbek</option>
+                      <option value="ru">Русский</option>
+                    </select>
+                    <button onClick={saveEdit} disabled={saving} className="px-5 rounded-xl bg-violet hover:bg-violet-dark text-white font-bold text-sm transition-all shadow-lg shadow-violet/20">
+                      {saving ? '...' : 'Save'}
+                    </button>
+                    <button onClick={() => setEditing(false)} className="px-5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 text-sm font-bold">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Edit / Save buttons */}
-          <div className="flex gap-2 shrink-0">
-            {!editing ? (
-              <button onClick={startEdit} className="w-9 h-9 rounded-xl bg-white/6 hover:bg-white/10 flex items-center justify-center transition-colors">
-                <Edit2 className="w-4 h-4 text-white/60" />
-              </button>
-            ) : (
-              <>
-                <button onClick={saveEdit} disabled={saving} className="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-500 flex items-center justify-center transition-colors">
-                  <Check className="w-4 h-4 text-white" />
-                </button>
-                <button onClick={() => setEditing(false)} className="w-9 h-9 rounded-xl bg-white/6 hover:bg-white/10 flex items-center justify-center transition-colors">
-                  <X className="w-4 h-4 text-white/60" />
-                </button>
-              </>
-            )}
+          <div className="mt-10 pt-8 border-t border-white/5">
+            <XpBar xp={displayXp} level={displayLevel} />
           </div>
+        </GlassCard>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <StatItem icon={Star}  label="Rank"   value={displayLevel}   color="#fbbf24" />
+          <StatItem icon={Zap}   label="XP"     value={displayXp.toLocaleString()}   color="#a78bfa" />
+          <StatItem icon={Fuel}  label="Fuel"   value={displayFuel}    color="#f97316" />
+          <StatItem icon={Flame} label="Streak" value={`${displayStreak}d`} color="#ef4444" />
         </div>
 
-        {/* XP bar */}
-        <div className="mt-5">
-          <XpBar xp={displayXp} level={displayLevel} />
-        </div>
-      </motion.div>
-
-      {/* Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6"
-      >
-        <StatCard icon={Star}  label="Level"  value={displayLevel}   color="bg-yellow-500/15 text-yellow-400" />
-        <StatCard icon={Zap}   label="XP"     value={displayXp.toLocaleString()}   color="bg-blue-500/15 text-blue-400" />
-        <StatCard icon={Fuel}  label="Fuel"   value={displayFuel}    color="bg-orange-500/15 text-orange-400" />
-        <StatCard icon={Flame} label="Streak" value={`${displayStreak}d`} color="bg-red-500/15 text-red-400" />
-      </motion.div>
-
-      {/* Badges */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-white/4 border border-white/8 rounded-3xl p-5 mb-6"
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <Shield className="w-5 h-5 text-purple-400" />
-          <h2 className="font-bold text-white">Badges</h2>
-          <span className="text-white/30 text-sm ml-auto">{displayBadges.length} earned</span>
-        </div>
-        {displayBadges.length === 0 ? (
-          <p className="text-white/25 text-sm text-center py-6">
-            Complete lessons and challenges to earn badges
-          </p>
-        ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            {displayBadges.map((b, i) => (
-              <BadgeCard key={b.badge?.slug || b.id || i} badge={b.badge || b} />
-            ))}
+        {/* Badges Section */}
+        <GlassCard accent="#c084fc" delay={0.1} className="mb-8">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-violet/10 border border-violet/20 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-violet-light" />
+            </div>
+            <div>
+              <h2 className="text-lg font-[900] text-white">Achievements</h2>
+              <p className="text-[10px] font-[700] uppercase tracking-widest text-white/30">{displayBadges.length} earned</p>
+            </div>
           </div>
-        )}
-      </motion.div>
+          
+          {displayBadges.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-white/5 rounded-2xl">
+              <p className="text-white/20 text-sm font-[600]">Complete missions to earn badges</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+              {displayBadges.map((b, i) => (
+                <BadgeItem key={b.badge?.slug || b.id || i} badge={b.badge || b} i={i} />
+              ))}
+            </div>
+          )}
+        </GlassCard>
 
-      {/* Account actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="flex gap-3"
-      >
-        <button
-          onClick={handleLogout}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/4 border border-white/8 hover:bg-white/8 text-white/60 hover:text-white font-semibold text-sm transition-all"
-        >
-          <LogOut className="w-4 h-4" /> Sign Out
-        </button>
-        <button
-          onClick={handleDelete}
-          className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-red-500/8 border border-red-500/15 hover:bg-red-500/15 text-red-400 font-semibold text-sm transition-all"
-        >
-          <Trash2 className="w-4 h-4" /> Delete Account
-        </button>
-      </motion.div>
+        {/* Account Actions */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            onClick={handleLogout}
+            className="flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] hover:border-white/10 text-white font-[800] text-xs uppercase tracking-widest transition-all"
+          >
+            <LogOut className="w-4 h-4" /> Sign Out from Earth
+          </button>
+          <button
+            onClick={handleDelete}
+            className="flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 hover:border-red-500/20 text-red-500/60 hover:text-red-500 font-[800] text-xs uppercase tracking-widest transition-all"
+          >
+            <Trash2 className="w-4 h-4" /> Abort Mission
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -127,7 +127,7 @@ export default function PhysicsLessonView() {
   const parts = [1, 2, 3, 4, 5];
 
   return (
-    <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: '#030208' }}>
+    <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
       <SectionPageHeader 
         title={lessonName} 
         color={topic.color} 

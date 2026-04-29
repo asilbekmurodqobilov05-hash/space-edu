@@ -117,7 +117,7 @@ export default function PhysicsTopicView() {
   }
 
   return (
-    <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: '#030208' }}>
+    <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
       <SectionPageHeader title={topic.title} color={topic.color} backPath="/learn/physics" />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>

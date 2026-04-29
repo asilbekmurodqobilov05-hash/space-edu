@@ -39,9 +39,9 @@ export default function NewsView() {
           <motion.h1
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-4xl md:text-5xl font-bold mb-4"
+            className="text-4xl md:text-5xl font-[900] mb-4 text-white"
           >
-            Space <span className="text-glow-blue text-neon-blue">News</span>
+            Space <span className="text-glow-purple text-violet">News</span>
           </motion.h1>
           <p className="text-gray-400 max-w-2xl text-lg">
             Stay updated with the latest discoveries, launches, and
@@ -56,12 +56,12 @@ export default function NewsView() {
           className="glass p-4 rounded-xl max-w-sm border-l-4 border-l-neon-purple relative group"
         >
           <div className="flex justify-between items-center mb-1">
-            <p className="text-xs text-neon-purple font-bold uppercase tracking-wider">
+            <p className="text-[10px] text-violet-light font-[800] uppercase tracking-[0.2em]">
               Daily Fact
             </p>
             <button
               onClick={generateNewFact}
-              className="text-gray-400 hover:text-neon-purple transition-colors"
+              className="text-white/20 hover:text-violet-light transition-colors"
               title="Generate new fact"
             >
               <RefreshCw className="w-4 h-4" />
@@ -77,10 +77,10 @@ export default function NewsView() {
           <button
             key={category}
             onClick={() => setActiveCategory(category)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`px-6 py-2.5 rounded-full text-xs font-[800] uppercase tracking-widest transition-all ${
               activeCategory === category
-                ? "bg-neon-blue text-space-900 box-glow-blue"
-                : "glass text-gray-300 hover:text-white hover:bg-white/10"
+                ? "bg-violet text-white box-glow-purple"
+                : "glass text-white/40 hover:text-white hover:bg-white/10"
             }`}
           >
             {category}
@@ -131,7 +131,7 @@ export default function NewsView() {
                     referrerPolicy="no-referrer"
                   />
                   <div className="absolute top-4 left-4 z-20">
-                    <span className="px-3 py-1 bg-black/50 backdrop-blur-md rounded-full text-xs font-medium text-neon-blue border border-neon-blue/30">
+                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-[800] text-violet-light border border-violet/30 uppercase tracking-wider">
                       {item.category}
                     </span>
                   </div>
@@ -142,14 +142,14 @@ export default function NewsView() {
                     <Calendar className="w-3 h-3" />
                     {item.date}
                   </div>
-                  <h3 className="text-xl font-bold mb-3 group-hover:text-neon-blue transition-colors">
+                  <h3 className="text-xl font-[800] mb-3 group-hover:text-violet transition-colors">
                     {item.title}
                   </h3>
                   <p className="text-gray-400 text-sm mb-6 flex-grow">
                     {item.summary}
                   </p>
 
-                  <button className="flex items-center gap-2 text-sm font-medium text-white hover:text-neon-blue transition-colors mt-auto">
+                  <button className="flex items-center gap-2 text-xs font-[800] text-white/60 hover:text-violet transition-all mt-auto uppercase tracking-wider">
                     Read Full Story <ExternalLink className="w-4 h-4" />
                   </button>
                 </div>
