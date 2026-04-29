@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Astra.uz</title>
+  <style>
+    :root {
+      --text: #e8f1ff;
+      --dim: #9db0ce;
+      --acc: #40e0d0;
+      --err: #ff8fa6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 12%, #122958 0%, #020617 45%, #01030a 100%);
+    }
+
+    .bg,
+    .shooting {
+      position: fixed;
+      inset: 0;
+      pointer-events: none
+    }
+
+    .bg {
+      z-index: 1
+    }
+
+    .s {
+      position: absolute;
+      inset: -10%;
+      background-repeat: repeat;
+      animation: drift linear infinite
+    }
+
+    .s1 {
+      background-image: radial-gradient(1px 1px at 30px 50px, rgba(255, 255, 255, .65), transparent 76%), radial-gradient(1px 1px at 180px 120px, rgba(64, 224, 208, .7), transparent 76%);
+      background-size: 320px 240px;
+      opacity: .45;
+      animation-duration: 120s
+    }
+
+    .s2 {
+      background-image: radial-gradient(1.2px 1.2px at 74px 66px, rgba(255, 255, 255, .85), transparent 76%), radial-gradient(1.2px 1.2px at 245px 170px, rgba(64, 224, 208, .88), transparent 76%);
+      background-size: 480px 330px;
+      opacity: .6;
+      animation-duration: 86s;
+      animation-direction: reverse
+    }
+
+    .shooting {
+      z-index: 2
+    }
+
+    .shot {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: #eafaff;
+      box-shadow: 0 0 10px rgba(255, 255, 255, .9)
+    }
+
+    .shot:after {
+      content: "";
+      position: absolute;
+      left: -90px;
+      top: 50%;
+      width: 90px;
+      height: 2px;
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, rgba(64, 224, 208, 0), rgba(160, 230, 255, .85))
+    }
+
+    .a {
+      top: 18%;
+      left: -10%;
+      animation: shoot 7s linear infinite .2s
+    }
+
+    .b {
+      top: 44%;
+      left: -22%;
+      animation: shoot 8.5s linear infinite 2s
+    }
+
+    .c {
+      top: 70%;
+      left: -15%;
+      animation: shoot 7.7s linear infinite 1.3s
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 16px
+    }
+
+    .card {
+      width: min(94vw, 560px);
+      padding: 20px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .03)), rgba(2, 6, 23, .4);
+      backdrop-filter: blur(20px) saturate(120%);
+      -webkit-backdrop-filter: blur(20px) saturate(120%);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .52)
+    }
+
+    .card.collecting {
+      animation: collectIntoMail .58s cubic-bezier(.32,.72,.2,1) forwards;
+      pointer-events: none;
+    }
+
+    .logo-wrap {
+      display: grid;
+      place-items: center;
+      margin-bottom: 8px
+    }
+
+    .logo {
+      width: 120px;
+      filter: drop-shadow(0 0 16px rgba(64, 224, 208, .35))
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.45rem
+    }
+
+    .sub {
+      text-align: center;
+      color: var(--dim);
+      font-size: .9rem;
+      margin: 0 0 12px
+    }
+
+    .guide {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 10px;
+      align-items: center;
+      background: rgba(255, 255, 255, .03);
+      padding: 8px;
+      border-radius: 14px;
+      margin-bottom: 12px
+    }
+
+    #astroHead {
+      transition: transform .15s ease;
+      transform-origin: center bottom
+    }
+
+    #astroHead.tilt {
+      transform: rotate(-10deg) translateY(-2px)
+    }
+
+    .guide p {
+      font-size: .84rem;
+      line-height: 1.4;
+      color: #c7d8f6;
+      min-height: 44px
+    }
+
+    .grid {
+      display: grid;
+      gap: 10px
+    }
+
+    .field {
+      position: relative
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      outline: none;
+      color: var(--text);
+      font-size: .95rem;
+      padding: 13px 12px 13px 40px;
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid rgba(255, 255, 255, .1)
+    }
+
+    .field select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding-right: 42px;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #8ac7ea 50%),
+        linear-gradient(135deg, #8ac7ea 50%, transparent 50%);
+      background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      cursor: pointer;
+    }
+
+    .field select:hover,
+    .field select:focus {
+      box-shadow: 0 0 0 2px rgba(64, 224, 208, .12), 0 0 18px rgba(64, 224, 208, .18);
+    }
+
+    .field select,
+    .field select option {
+      color: #0b1220;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: rgba(64, 224, 208, .35);
+      box-shadow: 0 0 0 2px rgba(64, 224, 208, .1)
+    }
+
+    #launchDate {
+      color-scheme: dark
+    }
+
+    .icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      fill: #8ac7ea
+    }
+
+    .pass input {
+      padding-right: 46px
+    }
+
+    .eye {
+      position: absolute;
+      right: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .06);
+      color: #b8dcff;
+      display: grid;
+      place-items: center;
+      cursor: pointer
+    }
+
+    .agree {
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      border-radius: 14px;
+      padding: 10px;
+      background: rgba(255, 255, 255, .05);
+      border: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    .agree label {
+      font-size: .86rem;
+      color: #bfd0ec;
+      line-height: 1.45
+    }
+
+    .btn {
+      border: none;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: .96rem;
+      color: #f6fbff;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(130deg, rgba(10, 35, 68, .8), rgba(28, 18, 75, .7), rgba(10, 59, 63, .76));
+      border: 1px solid rgba(64, 224, 208, .25)
+    }
+
+    .tip {
+      position: absolute;
+      right: 6px;
+      top: -7px;
+      font-size: .71rem;
+      color: #ffdbe2;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255, 78, 117, .95), rgba(255, 154, 187, .92));
+      opacity: 0;
+      transform: translateX(-6px) scale(.95);
+      transition: .24s;
+      pointer-events: none;
+      white-space: nowrap
+    }
+
+    .field.invalid .tip {
+      opacity: 1;
+      transform: translateX(0) scale(1)
+    }
+
+    .status {
+      margin-top: 8px;
+      min-height: 18px;
+      font-size: .86rem;
+      color: #9cb0d2
+    }
+
+    .mail,
+    .rocket {
+      position: fixed;
+      left: 50%;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 5;
+      transform: translateX(-50%);
+    }
+
+    .mail {
+      bottom: 18%;
+      z-index: 6;
+    }
+
+    .rocket {
+      bottom: -150px;
+    }
+
+    .mail.show { opacity: 1; }
+    .rocket.approach { animation: rocketApproach .9s ease-out forwards; opacity: 1; }
+    .mail.into { animation: mailIntoRocket .55s ease-in forwards; }
+    .rocket.fly { animation: rocketFly 1.9s cubic-bezier(.36,.07,.19,.97) forwards; }
+
+    @keyframes drift {
+      from {
+        transform: translate3d(0, 0, 0) scale(1)
+      }
+
+      to {
+        transform: translate3d(-7%, -8%, 0) scale(1.08)
+      }
+    }
+
+    @keyframes shoot {
+      0% {
+        transform: translateX(0) translateY(0);
+        opacity: 0
+      }
+
+      10% {
+        opacity: 1
+      }
+
+      100% {
+        transform: translateX(125vw) translateY(24vh);
+        opacity: 0
+      }
+    }
+
+    @keyframes rocketApproach {
+      from { bottom: -150px; transform: translateX(-50%) scale(.85); }
+      to { bottom: 16.5%; transform: translateX(-50%) scale(1); }
+    }
+
+    @keyframes mailIntoRocket {
+      from { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+      to { transform: translateX(-50%) translateY(-38px) scale(.2); opacity: 0; }
+    }
+
+    @keyframes rocketFly {
+      0% { bottom: 16.5%; transform: translateX(-50%) rotate(0deg) scale(1); opacity: 1; }
+      100% { bottom: 120%; transform: translateX(-56%) rotate(16deg) scale(.38); opacity: 0; }
+    }
+
+    @keyframes collectIntoMail {
+      0% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); }
+      100% { transform: translateY(260px) scale(.12); opacity: 0; filter: blur(3px); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="s s1"></div>
+    <div class="s s2"></div>
+  </div>
+  <div class="shooting" aria-hidden="true"><span class="shot a"></span><span class="shot b"></span><span
+      class="shot c"></span></div>
+
+  <main class="wrap">
+    <section class="card">
+      <div class="logo-wrap">
+        <svg class="logo" viewBox="0 0 160 160" aria-hidden="true">
+          <defs>
+            <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#7ce6ff" />
+              <stop offset="100%" stop-color="#2f6fff" />
+            </linearGradient>
+            <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#45b0ff" />
+              <stop offset="100%" stop-color="#7df4ff" />
+            </linearGradient>
+          </defs>
+          <path d="M42 124L80 34L118 124H97L80 79L63 124Z" fill="url(#g1)" opacity=".96" />
+          <path d="M24 108L103 72Q112 69 118 74L140 89L132 96L116 84Q112 81 108 82L34 114Z" fill="url(#g2)" />
+          <path d="M51 109L114 82Q120 80 123 83L136 91" fill="none" stroke="#4ca7ff" stroke-width="3" />
+          <polygon points="128,72 148,79 134,94" fill="#89f2ff" />
+        </svg>
+      </div>
+      <h1>Astra.uz</h1>
+      <p class="sub">Bolalar uchun interaktiv kosmik ro'yxatdan o'tish</p>
+
+      <div class="guide">
+        <svg id="astroHead" width="80" height="80" viewBox="0 0 80 80" aria-hidden="true">
+          <defs>
+            <radialGradient id="h" cx="40%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#f9f9fa" />
+              <stop offset="100%" stop-color="#b8bcc2" />
+            </radialGradient>
+            <radialGradient id="v" cx="35%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#303236" />
+              <stop offset="100%" stop-color="#05060a" />
+            </radialGradient>
+          </defs>
+          <circle cx="40" cy="40" r="34" fill="url(#h)" stroke="#aeb3ba" stroke-width="2" />
+          <ellipse cx="40" cy="41" rx="24" ry="19" fill="url(#v)" stroke="#8a9098" stroke-width="1.5" />
+          <ellipse cx="30" cy="32" rx="7" ry="5" fill="rgba(255,255,255,.34)" />
+          <rect x="18" y="57" width="44" height="10" rx="5" fill="#d8dce1" stroke="#b9bec5" stroke-width="1.2" />
+          <ellipse cx="10" cy="40" rx="5" ry="10" fill="#c2c7cd" />
+          <ellipse cx="70" cy="40" rx="5" ry="10" fill="#c2c7cd" />
+          <g id="eyesOpen">
+            <circle cx="33" cy="43" r="1.3" fill="#79c6ff" />
+            <circle cx="47" cy="43" r="1.3" fill="#79c6ff" />
+          </g>
+          <g id="eyesClosed" style="display:none">
+            <path d="M30 43 Q33 45 36 43" stroke="#79c6ff" stroke-width="1.2" fill="none" />
+            <path d="M44 43 Q47 45 50 43" stroke="#79c6ff" stroke-width="1.2" fill="none" />
+          </g>
+        </svg>
+        <p id="guideText">Salom! Men Astro-Ustozman. Ismingizni kiriting.</p>
+      </div>
+
+      <form id="registerForm" class="grid" novalidate>
+        <div class="field" data-tip="To'liq ism kiriting"><svg class="icon" viewBox="0 0 24 24">
+            <path
+              d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.4 0-8 2-8 4.5 0 .8.7 1.5 1.5 1.5h13c.8 0 1.5-.7 1.5-1.5C20 16 16.4 14 12 14Z" />
+          </svg><input id="fullName" type="text" placeholder="To'liq ism" /><span class="tip">Ism kamida 3 harf</span>
+        </div>
+        <div class="field" data-tip="Email manzilni kiriting"><svg class="icon" viewBox="0 0 24 24">
+            <path d="m12 2 2.4 5 5.4.8-3.9 3.8.9 5.4L12 14.8 7.2 17l.9-5.4L4.2 7.8 9.6 7Z" />
+          </svg><input id="email" type="email" placeholder="Email manzil" /><span class="tip">Email noto'g'ri</span>
+        </div>
+        <div class="field" data-tip="Rolangizni tanlang"><svg class="icon" viewBox="0 0 24 24">
+            <path d="M4 4h16v4H4Zm2 6h12v10H6Z" />
+          </svg><select id="pilotRole">
+            <option value="">Pilot rolini tanlang</option>
+            <option>Captain</option>
+            <option>Engineer</option>
+            <option>Navigator</option>
+            <option>Explorer</option>
+          </select></div>
+        <div class="field" data-tip="Sanani tanlang"><svg class="icon" viewBox="0 0 24 24">
+            <path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v12a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V6a2 2 0 0 1 2-2h3Z" />
+          </svg><input id="launchDate" type="date" /><span class="tip">Sana kerak</span></div>
+        <div class="field pass" data-tip="Parol kamida 6 ta belgi"><svg class="icon" viewBox="0 0 24 24">
+            <path d="M6 10V8a6 6 0 0 1 12 0v2h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z" />
+          </svg><input id="spaceId" type="password" placeholder="Space ID / Parol" /><button class="eye" type="button"
+            id="toggleEye"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7Z" />
+            </svg></button><span class="tip">Parol qisqa</span></div>
+        <div class="agree"><input id="agreement" type="checkbox" /><label for="agreement">Missiya qoidalariga
+            roziman.</label></div>
+        <button class="btn" type="submit">Launch / Ro'yxatdan o'tish</button>
+      </form>
+      <p id="status" class="status"></p>
+    </section>
+  </main>
+
+  <div id="mail" class="mail" aria-hidden="true">
+    <svg width="72" height="72" viewBox="0 0 90 90">
+      <rect x="12" y="22" width="66" height="48" rx="6" fill="#e8f4ff" stroke="rgba(100,180,255,.6)" stroke-width="1.5"/>
+      <path d="M12 28 L45 52 L78 28" fill="none" stroke="rgba(100,160,220,.55)" stroke-width="1.5"/>
+      <line x1="12" y1="70" x2="45" y2="46" stroke="rgba(100,160,220,.35)" stroke-width="1"/>
+      <line x1="78" y1="70" x2="45" y2="46" stroke="rgba(100,160,220,.35)" stroke-width="1"/>
+      <text x="38" y="43" font-size="10" fill="rgba(64,224,208,.9)">★</text>
+    </svg>
+  </div>
+
+  <div id="rocket" class="rocket" aria-hidden="true">
+    <svg width="84" height="112" viewBox="0 0 86 120">
+      <defs>
+        <linearGradient id="rb" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#e8f7ff"/><stop offset="100%" stop-color="#9ecfff"/>
+        </linearGradient>
+      </defs>
+      <path d="M43 8 C59 20,63 38,60 72 L26 72 C23 38,27 20,43 8Z" fill="url(#rb)" stroke="#78b9ff" stroke-width="1.5"/>
+      <circle cx="43" cy="39" r="10" fill="#173f73" stroke="#90d0ff" stroke-width="2"/>
+      <path d="M26 62 L12 78 L26 76Z" fill="#8bc5ff"/><path d="M60 62 L74 78 L60 76Z" fill="#8bc5ff"/>
+    </svg>
+  </div>
+
+  <script>
+    (function () {
+      var form = document.getElementById("registerForm"), status = document.getElementById("status"), spaceId = document.getElementById("spaceId"), toggleEye = document.getElementById("toggleEye"), guide = document.getElementById("guideText"), astro = document.getElementById("astroHead"), eyesOpen = document.getElementById("eyesOpen"), eyesClosed = document.getElementById("eyesClosed"), mail = document.getElementById("mail"), rocket = document.getElementById("rocket"), card = document.querySelector(".card");
+      function tilt() { astro.classList.add("tilt"); setTimeout(function () { astro.classList.remove("tilt"); }, 180) }
+      form.querySelectorAll("input,select").forEach(function (el) { el.addEventListener("input", tilt); el.addEventListener("focus", function () { var f = el.closest(".field"); if (f && f.dataset.tip) guide.textContent = f.dataset.tip; }); });
+      spaceId.addEventListener("focus", function () { eyesOpen.style.display = "none"; eyesClosed.style.display = "block"; });
+      spaceId.addEventListener("blur", function () { eyesOpen.style.display = "block"; eyesClosed.style.display = "none"; });
+      toggleEye.addEventListener("click", function () {
+        var start = spaceId.selectionStart || spaceId.value.length;
+        var end = spaceId.selectionEnd || spaceId.value.length;
+        spaceId.type = spaceId.type === "password" ? "text" : "password";
+        spaceId.focus();
+        try { spaceId.setSelectionRange(start, end); } catch (e) {}
+      });
+      function invalid(el, on) { if (!el) return; el.classList.toggle("invalid", on) }
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var full = document.getElementById("fullName"), email = document.getElementById("email"), date = document.getElementById("launchDate"), role = document.getElementById("pilotRole"), agree = document.getElementById("agreement");
+        invalid(full.closest(".field"), full.value.trim().length < 3);
+        invalid(email.closest(".field"), !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()));
+        invalid(date.closest(".field"), !date.value);
+        invalid(spaceId.closest(".field"), spaceId.value.trim().length < 6);
+        var ok = full.value.trim().length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()) && date.value && spaceId.value.trim().length >= 6 && role.value && agree.checked;
+        status.textContent = ok ? "Parvozga ruxsat berildi! Koinot sizni kutmoqda." : "Koordinatalarda xatolik: ma'lumotlarni tekshiring.";
+        status.style.color = ok ? "#96f5be" : "#ffb3c2";
+        if (ok) {
+          card.classList.add("collecting");
+          setTimeout(function () {
+            mail.classList.add("show");
+            rocket.classList.add("approach");
+            rocket.addEventListener("animationend", function onApproach() {
+              rocket.removeEventListener("animationend", onApproach);
+              mail.classList.add("into");
+              mail.addEventListener("animationend", function onInto() {
+                mail.removeEventListener("animationend", onInto);
+                mail.classList.remove("show", "into");
+                rocket.classList.remove("approach");
+                rocket.classList.add("fly");
+                rocket.addEventListener("animationend", function onFly() {
+                  rocket.removeEventListener("animationend", onFly);
+                  rocket.classList.remove("fly");
+                });
+              });
+            });
+          }, 520);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

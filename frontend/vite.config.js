@@ -20,5 +20,19 @@ export default defineConfig(({ mode }) => {
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
+    build: {
+      target: 'es2020',
+      minify: 'esbuild',
+      cssMinify: true,
+      sourcemap: false,
+      assetsInlineLimit: 4096,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            three: ['three', '@react-three/fiber', '@react-three/drei', '@react-three/postprocessing'],
+          },
+        },
+      },
+    },
   };
 });
