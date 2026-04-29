@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Star, ChevronRight, HelpCircle, Sparkles } from 'lucide-react';
@@ -11,7 +11,7 @@ export default function LessonView() {
   const { unitId, lessonId } = useParams();
   const navigate = useNavigate();
   const { completeLesson, resumeLesson } = useLearningStore();
-  const { setContext } = useAIStore();
+  const { setContext, setIsSupportOpen } = useAIStore();
   
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -309,10 +309,11 @@ export default function LessonView() {
                             <button 
                               onClick={() => {
                                 setContext(`the question: "${questionData.question}" in the lesson "${lesson.title}"`);
+                                setIsSupportOpen(true);
                               }}
                               className="mt-4 flex items-center gap-2 px-4 py-2 bg-neon-blue/20 border border-neon-blue/30 rounded-xl text-neon-blue text-sm font-bold hover:bg-neon-blue/30 transition-colors"
                             >
-                              <Sparkles className="w-4 h-4" /> Open Space edu AI tutor
+                              <Sparkles className="w-4 h-4" /> Open AI Support Chat
                             </button>
                           )}
                         </div>

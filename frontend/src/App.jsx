@@ -5,7 +5,7 @@ import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Navigation from '@/components/layout/Navigation';
 import ParticleBackground from '@/components/layout/ParticleBackground';
 import PageTransition from '@/components/layout/PageTransition';
-import AskCosmos from '@/features/ai/AskCosmos';
+import ChatSystem from '@/features/chat/ChatSystem';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import LevelGate from '@/components/LevelGate';
 import Footer from "@/components/layout/Footer";
@@ -140,7 +140,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {!isGame && !isAuth && <AskCosmos />}
+      {!isGame && !isAuth && <ChatSystem />}
       {!isGame && !isAuth && <Footer />}
     </div>
   );

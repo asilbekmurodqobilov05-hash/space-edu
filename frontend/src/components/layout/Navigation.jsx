@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useUserStore } from "@/store/useUserStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const LANG_META = {
@@ -172,6 +173,7 @@ export default function Navigation() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState(null);
   const location = useLocation();
+  const { isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
 
   const mainNav  = MAIN_NAV(t);
@@ -248,14 +250,24 @@ export default function Navigation() {
             {(close) => features.map((f) => <DropLink key={f.path} {...f} close={() => close(false)} />)}
           </Dropdown>
 
-          <Dropdown label="Profile" icon={User} isActive={profileHasActive}>
-            {(close) => PROFILE_ITEMS.map((p) => <DropLink key={p.path} {...p} close={() => close(false)} />)}
-          </Dropdown>
+          <LangDropdown />
         </div>
 
-        {/* Right — language dropdown */}
+        {/* Right — Profile or Login */}
         <div className="flex items-center flex-shrink-0">
-          <LangDropdown />
+          {isAuthenticated ? (
+            <Dropdown label="Profile" icon={User} isActive={profileHasActive}>
+              {(close) => PROFILE_ITEMS.map((p) => <DropLink key={p.path} {...p} close={() => close(false)} />)}
+            </Dropdown>
+          ) : (
+            <Link 
+              to="/register"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-bold transition-all duration-200 whitespace-nowrap bg-violet/20 border border-violet/30 text-violet-pale hover:bg-violet/30 hover:scale-105"
+            >
+              <User className="w-3.5 h-3.5" strokeWidth={2.5} />
+              Log in
+            </Link>
+          )}
         </div>
       </div>
 
@@ -277,7 +289,18 @@ export default function Navigation() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <LangDropdown />
+          {isAuthenticated ? (
+            <Dropdown label="Profile" icon={User} isActive={profileHasActive}>
+              {(close) => PROFILE_ITEMS.map((p) => <DropLink key={p.path} {...p} close={() => close(false)} />)}
+            </Dropdown>
+          ) : (
+            <Link 
+              to="/register"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet/20 border border-violet/30 text-violet-pale"
+            >
+              Log in
+            </Link>
+          )}
           <button
             type="button"
             className="flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200"
@@ -326,7 +349,7 @@ export default function Navigation() {
               {/* Features accordion */}
               {[
                 { key: 'features', label: 'Features', icon: LayoutGrid, items: features },
-                { key: 'profile',  label: 'Profile',  icon: User,        items: PROFILE_ITEMS },
+                { key: 'lang',     label: 'Language', icon: Globe,      items: [] },
               ].map(({ key, label, icon: Icon, items }) => (
                 <div key={key} className="rounded-xl overflow-hidden"
                   style={{ border: '1px solid rgba(139,92,246,0.15)' }}>
@@ -345,17 +368,38 @@ export default function Navigation() {
                       <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
                         transition={{ duration: 0.22 }} className="overflow-hidden">
                         <div className={`p-2 ${key === 'features' ? 'grid grid-cols-2 sm:grid-cols-3 gap-1' : 'flex flex-col gap-1'}`}>
-                          {items.map(({ path, label: lbl, icon: ItemIcon }) => (
-                            <Link key={path} to={path} onClick={() => setIsMobileOpen(false)}
-                              className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-medium transition-all"
-                              style={isActive(path)
-                                ? { color:'#c4b5fd', background:'rgba(139,92,246,0.18)' }
-                                : { color:'rgba(255,255,255,0.5)' }}
-                            >
-                              <ItemIcon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />
-                              <span className="truncate">{lbl}</span>
-                            </Link>
-                          ))}
+                          {key === 'lang' ? (
+                            <div className="flex flex-col gap-1">
+                              {Object.entries(LANG_META).map(([code, { flag, label: lbl }]) => {
+                                const { language, setLanguage } = useUserStore();
+                                return (
+                                  <button
+                                    key={code}
+                                    onClick={() => { setLanguage(code); setIsMobileOpen(false); }}
+                                    className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-medium transition-all"
+                                    style={language === code
+                                      ? { color:'#c4b5fd', background:'rgba(139,92,246,0.18)' }
+                                      : { color:'rgba(255,255,255,0.5)' }}
+                                  >
+                                    <span className="text-base leading-none">{flag}</span>
+                                    <span>{lbl}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            items.map(({ path, label: lbl, icon: ItemIcon }) => (
+                              <Link key={path} to={path} onClick={() => setIsMobileOpen(false)}
+                                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-medium transition-all"
+                                style={isActive(path)
+                                  ? { color:'#c4b5fd', background:'rgba(139,92,246,0.18)' }
+                                  : { color:'rgba(255,255,255,0.5)' }}
+                              >
+                                <ItemIcon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />
+                                <span className="truncate">{lbl}</span>
+                              </Link>
+                            ))
+                          )}
                         </div>
                       </motion.div>
                     )}
