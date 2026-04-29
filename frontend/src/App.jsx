@@ -29,6 +29,7 @@ import NewsView from "@/views/community/NewsView";
 import LiveSpaceView from "@/views/community/LiveSpaceView";
 import CareersView from "@/views/profile/CareersView";
 import PortfolioView from "@/views/profile/PortfolioView";
+import ProfileView from "@/views/profile/ProfileView";
 import HistoryView from "@/views/misc/HistoryView";
 import MarketView from "@/views/misc/MarketView";
 import UzSpaceView from "@/views/misc/UzSpaceView";
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="/live"               element={<PageTransition><LiveSpaceView /></PageTransition>} />
             <Route path="/careers"             element={<PageTransition><CareersView /></PageTransition>} />
             <Route path="/portfolio"           element={<PageTransition><PortfolioView /></PageTransition>} />
+            <Route path="/profile"             element={<PageTransition><ProfileView /></PageTransition>} />
             <Route path="/history"             element={<PageTransition><HistoryView /></PageTransition>} />
             <Route path="/market"              element={<PageTransition><MarketView /></PageTransition>} />
             <Route path="/uzb"                 element={<PageTransition><UzSpaceView /></PageTransition>} />
