@@ -14,12 +14,23 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password2')
+        fields = ('first_name', 'last_name', 'email', 'date_of_birth', 'password', 'password2')
+        extra_kwargs = {
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+            'date_of_birth': {'required': True},
+        }
 
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError('This email is already registered.')
         return value.lower()
+
+    def validate_date_of_birth(self, value):
+        from datetime import date
+        if value >= date.today():
+            raise serializers.ValidationError('Date of birth must be in the past.')
+        return value
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
@@ -29,6 +40,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password2')
+        email = validated_data['email']
+        # Auto-generate username from email (before the @)
+        base = email.split('@')[0]
+        username = base
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f'{base}{counter}'
+            counter += 1
+        validated_data['username'] = username
         return User.objects.create_user(**validated_data)
 
 
@@ -38,8 +58,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'id', 'username', 'email', 'avatar_url',
-            'astronaut_name', 'language', 'date_joined',
+            'id', 'username', 'first_name', 'last_name', 'email',
+            'date_of_birth', 'avatar_url', 'astronaut_name', 'language', 'date_joined',
         )
         read_only_fields = fields
 

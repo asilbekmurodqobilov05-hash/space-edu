@@ -19,6 +19,11 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'apps.accounts',
+    'apps.gamification',
+    'apps.courses',
+    'apps.progress',
+    'apps.market',
+    'apps.chat',
 ]
 
 MIDDLEWARE = [

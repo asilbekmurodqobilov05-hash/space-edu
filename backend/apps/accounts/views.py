@@ -37,16 +37,26 @@ class LoginView(APIView):
     throttle_classes = [LoginRateThrottle]
 
     def post(self, request):
-        username = request.data.get('username', '').strip()
+        identifier = (request.data.get('email') or request.data.get('username', '')).strip()
         password = request.data.get('password', '')
 
-        if not username or not password:
+        if not identifier or not password:
             return Response(
-                {'detail': 'Username and password are required.'},
+                {'detail': 'Email and password are required.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user = authenticate(request, username=username, password=password)
+        # Try direct authenticate (works if identifier is username)
+        user = authenticate(request, username=identifier, password=password)
+
+        # Fallback: look up by email, then authenticate with username
+        if user is None:
+            try:
+                found = User.objects.get(email__iexact=identifier)
+                user = authenticate(request, username=found.username, password=password)
+            except User.DoesNotExist:
+                pass
+
         if user is None:
             return Response(
                 {'detail': 'Invalid credentials.'},
@@ -102,7 +112,6 @@ class MeView(generics.RetrieveUpdateAPIView):
         return UserSerializer
 
     def update(self, request, *args, **kwargs):
-        kwargs['partial'] = True
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

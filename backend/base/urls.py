@@ -6,4 +6,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/auth/', include('apps.accounts.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('api/v1/gamification/', include('apps.gamification.urls')),
+    path('api/v1/courses/', include('apps.courses.urls')),
+    path('api/v1/progress/', include('apps.progress.urls')),
+    path('api/v1/market/', include('apps.market.urls')),
+    path('api/v1/chat/', include('apps.chat.urls')),
+] + static(settings.MEDIA_URL, document_root=getattr(settings, 'MEDIA_ROOT', ''))

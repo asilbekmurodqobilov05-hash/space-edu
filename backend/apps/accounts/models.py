@@ -7,6 +7,7 @@ class User(AbstractUser):
     astronaut_name = models.CharField(max_length=50, blank=True)
     bio = models.TextField(max_length=300, blank=True)
     selected_spaceship = models.CharField(max_length=50, default='rocket_basic')
+    date_of_birth = models.DateField(null=True, blank=True)
     language = models.CharField(
         max_length=2,
         choices=[('en', 'ENG'), ('uz', 'UZB'), ('ru', 'RUS')],
