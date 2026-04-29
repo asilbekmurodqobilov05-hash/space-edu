@@ -5,7 +5,7 @@ import Navigation from "@/components/layout/Navigation";
 import ParticleBackground from "@/components/layout/ParticleBackground";
 import PageTransition from "@/components/layout/PageTransition";
 import AskCosmos from "@/features/ai/AskCosmos";
-import GlobalLanguageBar from "@/components/layout/GlobalLanguageBar";
+
 
 import HomeView from "@/views/home/HomeView";
 import LearnView from "@/views/learn/LearnView";
@@ -33,6 +33,9 @@ import HistoryView from "@/views/misc/HistoryView";
 import MarketView from "@/views/misc/MarketView";
 import UzSpaceView from "@/views/misc/UzSpaceView";
 import SpaceRunView from "@/views/game/SpaceRunView";
+import QuizHubView from "@/views/quiz/QuizHubView";
+import QuizSessionView from "@/views/quiz/QuizSessionView";
+import Footer from "@/components/layout/Footer";
 
 const GAME_PATH = "/space-game";
 
@@ -74,12 +77,14 @@ export default function App() {
             <Route path="/market"              element={<PageTransition><MarketView /></PageTransition>} />
             <Route path="/uzb"                 element={<PageTransition><UzSpaceView /></PageTransition>} />
             <Route path="/space-game"          element={<SpaceRunView />} />
+            <Route path="/quiz"                element={<PageTransition><QuizHubView /></PageTransition>} />
+            <Route path="/quiz/:category"      element={<PageTransition><QuizSessionView /></PageTransition>} />
           </Routes>
         </AnimatePresence>
       </main>
 
       {!isGame && <AskCosmos />}
-      <GlobalLanguageBar />
+      {!isGame && <Footer />}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "motion/react";
-import { Rocket, ArrowRight, BookOpen, Target, Award, Zap, Globe, Star, ChevronDown } from "lucide-react";
+import { Rocket, ArrowRight, BookOpen, Target, Award, Zap, Globe, Star, ChevronDown, Telescope, FlaskConical, Play, Gamepad2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
+
 
 // ── MILKY WAY STARFIELD ───────────────────────────────────────────────────────
 const Starfield = () => {
@@ -76,11 +77,11 @@ const Starfield = () => {
 
       // Milky Way soft purple glow band
       const grd = ctx.createLinearGradient(0, h * 0.85, w * 0.85, 0);
-      grd.addColorStop(0,    'rgba(55, 15, 95, 0)');
-      grd.addColorStop(0.2,  'rgba(75, 25, 120, 0.016)');
+      grd.addColorStop(0, 'rgba(55, 15, 95, 0)');
+      grd.addColorStop(0.2, 'rgba(75, 25, 120, 0.016)');
       grd.addColorStop(0.45, 'rgba(95, 45, 145, 0.028)');
-      grd.addColorStop(0.6,  'rgba(75, 25, 120, 0.016)');
-      grd.addColorStop(1,    'rgba(55, 15, 95, 0)');
+      grd.addColorStop(0.6, 'rgba(75, 25, 120, 0.016)');
+      grd.addColorStop(1, 'rgba(55, 15, 95, 0)');
       ctx.fillStyle = grd;
       ctx.fillRect(0, 0, w, h);
 
@@ -119,121 +120,7 @@ const Starfield = () => {
   return <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />;
 };
 
-// ── NEBULA VISUAL ─────────────────────────────────────────────────────────────
-// Fixed star positions inside the nebula (avoids Math.random in render)
-const NEBULA_STARS = [
-  { x: 42, y: 38, r: 3, col: '#e9d5ff', sz: 10, dur: '2.4s', del: '0s' },
-  { x: 55, y: 50, r: 2, col: '#ffffff', sz: 7,  dur: '3.6s', del: '1.2s' },
-  { x: 35, y: 55, r: 2, col: '#c4b5fd', sz: 8,  dur: '4.1s', del: '0.5s' },
-  { x: 62, y: 40, r: 2, col: '#ffffff', sz: 6,  dur: '2.8s', del: '1.8s' },
-  { x: 48, y: 65, r: 3, col: '#ffe4b5', sz: 9,  dur: '3.2s', del: '0.3s' },
-  { x: 38, y: 44, r: 2, col: '#c4b5fd', sz: 7,  dur: '5.0s', del: '2.1s' },
-  { x: 58, y: 62, r: 2, col: '#ffffff', sz: 6,  dur: '3.8s', del: '0.9s' },
-  { x: 44, y: 30, r: 2, col: '#e9d5ff', sz: 8,  dur: '4.5s', del: '1.5s' },
-  { x: 52, y: 48, r: 4, col: '#ffffff', sz: 12, dur: '2.0s', del: '0s' },
-  { x: 67, y: 52, r: 2, col: '#c4b5fd', sz: 7,  dur: '3.4s', del: '0.7s' },
-];
 
-const Nebula = () => (
-  <div className="relative w-[520px] h-[520px] select-none pointer-events-none flex items-center justify-center">
-    <style>{`
-      @keyframes nb-d1 { 0%,100%{transform:translate(0,0) scale(1)}   50%{transform:translate(14px,-10px) scale(1.05)} }
-      @keyframes nb-d2 { 0%,100%{transform:translate(0,0) rotate(0deg)} 50%{transform:translate(-11px,8px) rotate(4deg)} }
-      @keyframes nb-d3 { 0%,100%{transform:translate(0,0)}  33%{transform:translate(8px,11px)} 66%{transform:translate(-6px,-7px)} }
-      @keyframes nb-pulse { 0%,100%{opacity:.78;transform:scale(1)} 50%{opacity:1;transform:scale(1.09)} }
-      @keyframes nb-core  { 0%,100%{opacity:.82} 50%{opacity:1} }
-    `}</style>
-
-    {/* Faint outer halo */}
-    <div className="absolute rounded-full" style={{
-      width: 480, height: 380,
-      background: 'radial-gradient(ellipse, rgba(109,40,217,0.10) 0%, rgba(76,29,149,0.05) 45%, transparent 70%)',
-      filter: 'blur(45px)',
-      animation: 'nb-d1 20s ease-in-out infinite',
-    }} />
-
-    {/* Blue-indigo cloud — right lobe */}
-    <div className="absolute" style={{
-      width: 300, height: 260,
-      left: '52%', top: '28%',
-      background: 'radial-gradient(ellipse at 35% 45%, rgba(79,70,229,0.28) 0%, rgba(99,102,241,0.16) 40%, transparent 65%)',
-      filter: 'blur(26px)',
-      animation: 'nb-d2 26s ease-in-out infinite',
-    }} />
-
-    {/* Deep violet main cloud */}
-    <div className="absolute rounded-full" style={{
-      width: 340, height: 290,
-      background: 'radial-gradient(ellipse at 48% 52%, rgba(139,92,246,0.58) 0%, rgba(109,40,217,0.35) 30%, rgba(76,29,149,0.14) 55%, transparent 70%)',
-      filter: 'blur(20px)',
-      animation: 'nb-d3 22s ease-in-out infinite',
-    }} />
-
-    {/* Pink-violet wisp — upper left */}
-    <div className="absolute" style={{
-      width: 220, height: 170,
-      top: '6%', left: '16%',
-      background: 'radial-gradient(ellipse, rgba(192,72,192,0.28) 0%, rgba(168,85,247,0.16) 45%, transparent 68%)',
-      filter: 'blur(22px)',
-      animation: 'nb-d1 17s ease-in-out infinite reverse',
-    }} />
-
-    {/* Warm violet — lower right wisp */}
-    <div className="absolute" style={{
-      width: 200, height: 160,
-      bottom: '10%', right: '12%',
-      background: 'radial-gradient(ellipse, rgba(124,58,237,0.22) 0%, rgba(91,33,182,0.12) 50%, transparent 70%)',
-      filter: 'blur(28px)',
-      animation: 'nb-d2 30s ease-in-out infinite reverse',
-    }} />
-
-    {/* Filament streaks */}
-    <div className="absolute" style={{
-      width: 220, height: 3,
-      top: '41%', left: '8%',
-      background: 'linear-gradient(90deg, transparent, rgba(167,139,250,0.45), rgba(139,92,246,0.22), transparent)',
-      filter: 'blur(3px)',
-      transform: 'rotate(-18deg)',
-      animation: 'nb-d3 24s ease-in-out infinite',
-    }} />
-    <div className="absolute" style={{
-      width: 160, height: 2,
-      top: '64%', left: '28%',
-      background: 'linear-gradient(90deg, transparent, rgba(192,72,192,0.35), transparent)',
-      filter: 'blur(2px)',
-      transform: 'rotate(10deg)',
-      animation: 'nb-d1 21s ease-in-out infinite reverse',
-    }} />
-
-    {/* Bright core region */}
-    <div className="absolute rounded-full" style={{
-      width: 150, height: 130,
-      background: 'radial-gradient(circle, rgba(220,200,255,0.92) 0%, rgba(167,139,250,0.62) 35%, rgba(139,92,246,0.28) 60%, transparent 80%)',
-      filter: 'blur(9px)',
-      animation: 'nb-pulse 7s ease-in-out infinite',
-    }} />
-
-    {/* Hottest center point */}
-    <div className="absolute rounded-full" style={{
-      width: 44, height: 44,
-      background: 'radial-gradient(circle, rgba(255,255,255,0.96) 0%, rgba(220,200,255,0.78) 45%, transparent 75%)',
-      filter: 'blur(4px)',
-      animation: 'nb-core 4.5s ease-in-out infinite',
-    }} />
-
-    {/* Embedded star cluster */}
-    {NEBULA_STARS.map((s, i) => (
-      <div key={i} className="absolute rounded-full" style={{
-        width: s.r, height: s.r,
-        left: `${s.x}%`, top: `${s.y}%`,
-        background: s.col,
-        boxShadow: `0 0 ${s.sz}px ${s.col}`,
-        animation: `nb-core ${s.dur} ease-in-out infinite`,
-        animationDelay: s.del,
-      }} />
-    ))}
-  </div>
-);
 
 // ── ANIMATED COUNTER ──────────────────────────────────────────────────────────
 const AnimatedCounter = ({ end, label, suffix = "" }) => {
@@ -311,7 +198,7 @@ export default function HomeView() {
 
   // Mouse parallax — direct DOM, no re-renders
   const onMouseMove = useCallback((e) => {
-    const x = (e.clientX / window.innerWidth  - 0.5) * 2;
+    const x = (e.clientX / window.innerWidth - 0.5) * 2;
     const y = (e.clientY / window.innerHeight - 0.5) * 2;
     if (nebulaWrapRef.current) {
       nebulaWrapRef.current.style.transform = `translate(${x * 18}px, ${y * 13}px)`;
@@ -391,22 +278,7 @@ export default function HomeView() {
           {/* Text column */}
           <div className="order-2 lg:order-1 flex flex-col items-center lg:items-start text-center lg:text-left relative z-10">
 
-            {/* Status badge */}
-            <motion.div
-              initial={{ opacity: 0, y: -14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-8 text-[12px] font-[700] tracking-[0.2em] uppercase"
-              style={{
-                border: '1px solid rgba(167,139,250,0.3)',
-                background: 'rgba(139,92,246,0.1)',
-                color: '#c4b5fd',
-              }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-violet-400"
-                style={{ boxShadow: '0 0 6px rgba(167,139,250,1)' }} />
-              {t("home", "platformBadge")}
-            </motion.div>
+
 
             {/* Title — word-by-word reveal with blur */}
             <h1 className="text-[clamp(38px,5.8vw,72px)] font-[900] tracking-[-0.035em] leading-[1.05] mb-7 flex flex-wrap justify-center lg:justify-start gap-x-4 gap-y-1">
@@ -493,26 +365,26 @@ export default function HomeView() {
               </Link>
             </motion.div>
 
-            {/* Micro status row */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.35, duration: 0.7 }}
-              className="mt-12 flex items-center gap-8 text-sm"
-            >
-              <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                <span className="w-2 h-2 rounded-full" style={{ background: '#4ade80', boxShadow: '0 0 8px rgba(74,222,128,0.9)' }} />
-                Platform online
-              </div>
-              <div style={{ color: 'rgba(255,255,255,0.3)' }}>3 languages</div>
-              <div style={{ color: 'rgba(255,255,255,0.3)' }}>UZB · ENG · RUS</div>
-            </motion.div>
+
           </div>
 
-          {/* Nebula column */}
+          {/* Image column */}
           <div className="order-1 lg:order-2 flex items-center justify-center">
             <div ref={nebulaWrapRef} style={{ transition: 'transform 0.8s cubic-bezier(0.23,1,0.32,1)' }}>
-              <Nebula />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                className="relative"
+              >
+                <motion.img
+                  src="/earth_glow.png"
+                  alt="Earth"
+                  className="relative z-10 w-[900px] h-[900px] md:w-[900px] md:h-[900px] object-contain select-none pointer-events-none"
+                  animate={{ y: [0, -15, 0] }}
+                  transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+                />
+              </motion.div>
             </div>
           </div>
         </div>
@@ -553,9 +425,9 @@ export default function HomeView() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <GlassCard delay={0}   accent="#8b5cf6" icon={<BookOpen className="w-7 h-7" style={{ color: '#a78bfa' }} />} title={t("home", "curriculumTitle")} desc={t("home", "curriculumDesc")} />
-          <GlassCard delay={0.1} accent="#6366f1" icon={<Target   className="w-7 h-7" style={{ color: '#818cf8' }} />} title={t("home", "missionsTitle")}   desc={t("home", "missionsDesc")} />
-          <GlassCard delay={0.2} accent="#7c3aed" icon={<Award    className="w-7 h-7" style={{ color: '#c4b5fd' }} />} title={t("home", "certTitle")}       desc={t("home", "certDesc")} />
+          <GlassCard delay={0} accent="#8b5cf6" icon={<BookOpen className="w-7 h-7" style={{ color: '#a78bfa' }} />} title={t("home", "curriculumTitle")} desc={t("home", "curriculumDesc")} />
+          <GlassCard delay={0.1} accent="#6366f1" icon={<Target className="w-7 h-7" style={{ color: '#818cf8' }} />} title={t("home", "missionsTitle")} desc={t("home", "missionsDesc")} />
+          <GlassCard delay={0.2} accent="#7c3aed" icon={<Award className="w-7 h-7" style={{ color: '#c4b5fd' }} />} title={t("home", "certTitle")} desc={t("home", "certDesc")} />
         </div>
 
         <motion.div
@@ -586,9 +458,12 @@ export default function HomeView() {
       <section className="relative z-10 max-w-7xl mx-auto px-4 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[
-            { to: '/3d-solar-system', Icon: Globe,  color: '#818cf8', label: '3D Solar System',  desc: 'Explore planets in realtime 3D' },
-            { to: '/daily',           Icon: Zap,    color: '#a78bfa', label: 'Daily Challenge',   desc: 'Quiz every day, earn XP & streak' },
-            { to: '/leaderboard',     Icon: Star,   color: '#c4b5fd', label: 'Leaderboard',       desc: 'Compete with explorers worldwide' },
+            { to: '/3d-solar-system', Icon: Globe, color: '#818cf8', label: '3D Solar System', desc: 'Explore planets in realtime 3D' },
+            { to: '/leaderboard', Icon: Star, color: '#c4b5fd', label: 'Leaderboard', desc: 'Compete with explorers worldwide' },
+            { to: '/star-finder', Icon: Telescope, color: '#a78bfa', label: 'Star Finder', desc: 'Locate stars and constellations' },
+            { to: '/lab', Icon: FlaskConical, color: '#6366f1', label: 'Lab', desc: 'Experiment with physics and space' },
+            { to: '/live', Icon: Play, color: '#8b5cf6', label: 'Live', desc: 'Watch live NASA and SpaceX events' },
+            { to: '/space-game', Icon: Gamepad2, color: '#7c3aed', label: 'Space Run', desc: 'High-speed mission through debris' },
           ].map(({ to, Icon, color, label, desc }, i) => (
             <motion.div
               key={to}
@@ -625,37 +500,6 @@ export default function HomeView() {
             </motion.div>
           ))}
         </div>
-      </section>
-
-      {/* ── STATS ─────────────────────────────────────────────────────────── */}
-      <section className="relative z-10 max-w-6xl mx-auto px-4 pb-28">
-        <motion.div
-          initial={{ opacity: 0, y: 22 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="relative rounded-3xl p-12 overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, rgba(109,40,217,0.05) 0%, rgba(76,29,149,0.03) 100%)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(139,92,246,0.15)',
-          }}
-        >
-          <div className="absolute inset-0 rounded-3xl pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.1) 0%, transparent 60%)' }} />
-          <div className="absolute top-0 left-16 right-16 h-px"
-            style={{ background: 'linear-gradient(90deg, transparent, rgba(167,139,250,0.6), rgba(139,92,246,0.4), transparent)' }} />
-
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-12 md:gap-4">
-            <AnimatedCounter end={12000} suffix="+" label={t("home", "statsStudents")} />
-            <div className="hidden md:block w-px h-14" style={{ background: 'linear-gradient(to bottom, transparent, rgba(139,92,246,0.3), transparent)' }} />
-            <AnimatedCounter end={340}   suffix="+" label={t("home", "statsLessons")} />
-            <div className="hidden md:block w-px h-14" style={{ background: 'linear-gradient(to bottom, transparent, rgba(139,92,246,0.3), transparent)' }} />
-            <AnimatedCounter end={48}    label={t("home", "statsMissions")} />
-            <div className="hidden md:block w-px h-14" style={{ background: 'linear-gradient(to bottom, transparent, rgba(139,92,246,0.3), transparent)' }} />
-            <AnimatedCounter end={19}    label={t("home", "statsCountries")} />
-          </div>
-        </motion.div>
       </section>
     </div>
   );
