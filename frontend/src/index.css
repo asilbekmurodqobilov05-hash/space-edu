@@ -42,14 +42,14 @@
   }
 
   ::selection {
-    background: rgba(0, 229, 255, 0.25);
+    background: rgba(139, 92, 246, 0.25);
     color: #fff;
   }
 
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: #04080f; }
-  ::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.2); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(0,229,255,0.4); }
+  ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.4); }
 }
 
 @layer utilities {

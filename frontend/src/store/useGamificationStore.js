@@ -113,6 +113,19 @@ export const useGamificationStore = create()(
         get().checkBadges();
       },
 
+      // Sync state from backend API response
+      syncFromAPI: ({ xp, level, fuel, streak, last_play_date, skills }) =>
+        set({ xp, level, fuel, streak, lastPlayDate: last_play_date ?? null, skills: skills ?? {} }),
+
+      // Apply lesson complete response from API
+      applyLessonResult: ({ xp_earned, fuel_earned, new_level, new_badges }) => {
+        set((s) => ({
+          xp: s.xp + xp_earned,
+          level: new_level,
+          fuel: Math.min(1000, s.fuel + fuel_earned),
+        }));
+      },
+
       checkBadges: () => {
         const { level, streak, badges, dailyChallengeCompleted, xp } = get();
         const cur = [...badges];

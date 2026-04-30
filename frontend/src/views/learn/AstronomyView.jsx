@@ -101,7 +101,7 @@ export default function AstronomyView() {
   const colorBorder = 'rgba(251,191,36,0.25)';
 
   return (
-    <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: '#030208' }}>
+    <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
       <SectionPageHeader title="Astronomiya — Astronomy" color={color} />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>

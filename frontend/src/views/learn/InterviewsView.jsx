@@ -99,7 +99,7 @@ export default function InterviewsView() {
   const colorBorder = 'rgba(167,139,250,0.25)';
 
   return (
-    <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: '#030208' }}>
+    <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
       <SectionPageHeader title="Intervyular — Interviews" color={color} />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>

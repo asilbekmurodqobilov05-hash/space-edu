@@ -102,12 +102,12 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
 }
 
 export default function PhysicsView() {
-  const color = '#00e5ff';
-  const colorLight = 'rgba(0,229,255,0.10)';
-  const colorBorder = 'rgba(0,229,255,0.20)';
+  const color = '#a78bfa';
+  const colorLight = 'rgba(167,139,250,0.10)';
+  const colorBorder = 'rgba(167,139,250,0.20)';
 
   return (
-    <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: '#030208' }}>
+    <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
       <SectionPageHeader title="Fizika — Physics" color={color} />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>
