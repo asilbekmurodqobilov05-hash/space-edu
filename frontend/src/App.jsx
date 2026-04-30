@@ -67,6 +67,8 @@ export default function App() {
   const location = useLocation();
   const isGame = location.pathname === GAME_PATH;
   const isAuth = ['/login', '/register'].includes(location.pathname);
+  const hideFooterRoutes = ['/history'];
+  const shouldHideFooter = hideFooterRoutes.includes(location.pathname);
 
   return (
     <div className="relative min-h-screen text-white font-sans">
@@ -141,7 +143,7 @@ export default function App() {
       </main>
 
       {!isGame && !isAuth && <ChatSystem />}
-      {!isGame && !isAuth && <Footer />}
+      {!isGame && !isAuth && !shouldHideFooter && <Footer />}
     </div>
   );
 }
