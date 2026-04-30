@@ -1,13 +1,10 @@
 import { lazy, Suspense } from 'react';
-import { AnimatePresence } from 'motion/react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 
 import Navigation from '@/components/layout/Navigation';
 import ParticleBackground from '@/components/layout/ParticleBackground';
 import PageTransition from '@/components/layout/PageTransition';
-import ChatSystem from '@/features/chat/ChatSystem';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import LevelGate from '@/components/LevelGate';
 import Footer from "@/components/layout/Footer";
 
 // Auth pages — small, load eagerly
@@ -74,8 +71,7 @@ export default function App() {
       {!isGame && !isAuth && <Navigation />}
 
       <main className="relative z-10">
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
+          <Routes>
             {/* Public */}
             <Route path="/"              element={<PT><HomeView /></PT>} />
             <Route path="/login"         element={<LoginView />} />
@@ -84,6 +80,12 @@ export default function App() {
             <Route path="/history"       element={<PT><HistoryView /></PT>} />
             <Route path="/uzb"           element={<PT><UzSpaceView /></PT>} />
             <Route path="/explore"       element={<PT><ExploreView /></PT>} />
+            <Route path="/market"        element={<PT><MarketView /></PT>} />
+            <Route path="/careers"       element={<PT><CareersView /></PT>} />
+            <Route path="/portfolio"     element={<PT><PortfolioView /></PT>} />
+            <Route path="/daily"         element={<PT><DailyChallengeView /></PT>} />
+            <Route path="/space-game"    element={<Lazy><PT><SpaceRunView /></PT></Lazy>} />
+            <Route path="/lab"           element={<PT><SpaceLabView /></PT>} />
             <Route path="/3d-solar-system" element={<Lazy><PT><SolarSystemView /></PT></Lazy>} />
             <Route path="/star-finder"   element={<Lazy><PT><StarFinderView /></PT></Lazy>} />
             <Route path="/calendar"      element={<PT><CalendarView /></PT>} />
@@ -107,40 +109,14 @@ export default function App() {
             {/* Protected — require login */}
             <Route element={<ProtectedRoute />}>
               <Route path="/profile"   element={<PT><ProfileView /></PT>} />
-              <Route path="/careers"   element={<PT><CareersView /></PT>} />
-              <Route path="/portfolio" element={<PT><PortfolioView /></PT>} />
-              <Route path="/market"    element={<PT><MarketView /></PT>} />
               <Route path="/chat"      element={<PT><ChatView /></PT>} />
-
-              {/* Level-gated */}
-              <Route path="/daily" element={
-                <PT>
-                  <LevelGate requiredLevel={1} label="Daily Challenge">
-                    <DailyChallengeView />
-                  </LevelGate>
-                </PT>
-              } />
-              <Route path="/space-game" element={
-                <LevelGate requiredLevel={1} label="Space Run">
-                  <Lazy><SpaceRunView /></Lazy>
-                </LevelGate>
-              } />
-              <Route path="/lab" element={
-                <PT>
-                  <LevelGate requiredLevel={1} label="Space Lab">
-                    <SpaceLabView />
-                  </LevelGate>
-                </PT>
-              } />
             </Route>
 
             {/* 404 */}
             <Route path="*" element={<NotFoundView />} />
           </Routes>
-        </AnimatePresence>
       </main>
 
-      {!isGame && !isAuth && <ChatSystem />}
       {!isGame && !isAuth && <Footer />}
     </div>
   );

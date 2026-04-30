@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Eye, EyeOff, Rocket, ShieldCheck } from 'lucide-react';
 import api from '@/lib/api';
@@ -10,8 +10,10 @@ import GlassCard from '@/components/ui/GlassCard';
 
 export default function LoginView() {
   const navigate = useNavigate();
+  const location = useLocation();
   const login = useAuthStore((s) => s.login);
   const syncFromAPI = useGamificationStore((s) => s.syncFromAPI);
+  const from = location.state?.from?.pathname || '/';
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
@@ -39,7 +41,7 @@ export default function LoginView() {
         syncFromAPI(gam);
       } catch { /* non-critical */ }
 
-      navigate('/');
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.response?.data?.detail || 'Invalid email or password.');
     } finally {

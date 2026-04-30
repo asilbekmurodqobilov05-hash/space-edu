@@ -87,7 +87,6 @@ function ItemCard({ item, owned, onBuy, fuel, buying }) {
 
 export default function MarketView() {
   const { isAuthenticated } = useAuthStore();
-  const { fuel } = useGamificationStore();
 
   const [items, setItems] = useState([]);
   const [inventory, setInventory] = useState(new Set());
@@ -110,7 +109,7 @@ export default function MarketView() {
         
         setInventory(new Set(inventoryRes.data.map((i) => i.item.slug)));
       } catch (err) {
-        console.error("Market data fetch error:", err);
+        setError('Unable to load market data right now.');
       } finally {
         setLoading(false);
       }

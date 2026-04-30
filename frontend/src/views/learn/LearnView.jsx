@@ -5,8 +5,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
 import GlassCard from '@/components/ui/GlassCard';
+import { getFieldByLang } from '@/lib/utils';
 
-function LevelCard({ level, index }) {
+function LevelCard({ level, index, language }) {
   const navigate = useNavigate();
 
   return (
@@ -31,12 +32,12 @@ function LevelCard({ level, index }) {
           <span className="text-[12px] font-[800] uppercase tracking-[0.1em]" style={{ color: level.color || '#a78bfa' }}>
             Level {level.order}
           </span>
-          <h3 className="text-2xl font-[900] text-white leading-tight">{level.title_en}</h3>
+          <h3 className="text-2xl font-[900] text-white leading-tight">{getFieldByLang(level, 'title', language)}</h3>
         </div>
       </div>
 
       <p className="text-white/40 text-[15px] leading-relaxed mb-6">
-        {level.description_en}
+        {getFieldByLang(level, 'description', language)}
       </p>
 
       <div className="space-y-3 mt-auto flex-grow">
@@ -48,7 +49,7 @@ function LevelCard({ level, index }) {
             className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-violet/30 hover:bg-white/[0.05] transition-colors group"
           >
             <div>
-              <p className="text-[14px] font-[700] text-white/80 group-hover:text-white transition-colors">{unit.title_en}</p>
+              <p className="text-[14px] font-[700] text-white/80 group-hover:text-white transition-colors">{getFieldByLang(unit, 'title', language)}</p>
               <span className="text-[10px] font-[800] uppercase tracking-widest text-violet-light">{unit.lesson_count} Lessons</span>
             </div>
             <ArrowRight className="w-4 h-4 text-white/20 group-hover:text-violet-light transition-colors" />
@@ -60,7 +61,7 @@ function LevelCard({ level, index }) {
 }
 
 export default function LearnView() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -116,7 +117,7 @@ export default function LearnView() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {levels.map((level, i) => (
-              <LevelCard key={level.id} level={level} index={i} />
+              <LevelCard key={level.id} level={level} index={i} language={language} />
             ))}
           </div>
         )}

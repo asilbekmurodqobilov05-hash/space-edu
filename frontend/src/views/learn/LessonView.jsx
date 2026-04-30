@@ -7,6 +7,8 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
 import { useAIStore } from '@/store/useAIStore';
+import { getFieldByLang } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -21,13 +23,13 @@ function buildSteps(sections, questions) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function ContentStep({ sections }) {
+function ContentStep({ sections, language }) {
   return (
     <div className="flex flex-col gap-8">
       {sections.map((s) => (
         <div key={s.id}>
           <p className="text-[17px] text-white/70 leading-[1.85] whitespace-pre-wrap">
-            {s.content_en?.text || s.content_en || ''}
+            {getFieldByLang(s, 'content', language)?.text || getFieldByLang(s, 'content', language) || ''}
           </p>
         </div>
       ))}
@@ -35,7 +37,7 @@ function ContentStep({ sections }) {
   );
 }
 
-function QuestionStep({ question, onAnswer }) {
+function QuestionStep({ question, onAnswer, language }) {
   const [selected, setSelected] = useState(null);
   const [checked, setChecked] = useState(false);
   const { setContext } = useAIStore();
@@ -50,7 +52,7 @@ function QuestionStep({ question, onAnswer }) {
 
   return (
     <div className="flex flex-col gap-8">
-      <p className="text-[20px] font-[700] text-white leading-snug">{question.text_en}</p>
+      <p className="text-[20px] font-[700] text-white leading-snug">{getFieldByLang(question, 'text', language)}</p>
 
       <div className="flex flex-col gap-3">
         {question.options.map((opt) => {
@@ -79,7 +81,7 @@ function QuestionStep({ question, onAnswer }) {
                 <span className="w-8 h-8 rounded-xl border border-current/30 flex items-center justify-center text-xs font-[900] shrink-0 opacity-60">
                   {opt.id}
                 </span>
-                <span>{opt.en}</span>
+                <span>{getFieldByLang(opt, '', language)}</span>
               </div>
               {checked && isRight && <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />}
               {checked && isSelected && !isRight && <XCircle className="w-5 h-5 text-red-400 shrink-0" />}
@@ -104,12 +106,12 @@ function QuestionStep({ question, onAnswer }) {
             </p>
             <p className="text-white/60 text-[13px] leading-relaxed">
               {isCorrect
-                ? question.explanation_en
-                : `The correct answer is "${question.options.find((o) => o.id === question.correct_answer)?.en}". ${question.explanation_en || ''}`}
+                ? getFieldByLang(question, 'explanation', language)
+                : `The correct answer is "${getFieldByLang(question.options.find((o) => o.id === question.correct_answer), '', language)}". ${getFieldByLang(question, 'explanation', language) || ''}`}
             </p>
             {!isCorrect && (
               <button
-                onClick={() => setContext(`the question: "${question.text_en}" in this lesson`)}
+                onClick={() => setContext(`the question: "${getFieldByLang(question, 'text', language)}" in this lesson`)}
                 className="mt-3 flex items-center gap-2 px-3 py-2 bg-neon-blue/10 border border-neon-blue/20 rounded-xl text-neon-blue text-[11px] font-[800] hover:bg-neon-blue/20 transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5" /> Ask COSMOS AI for help
@@ -205,6 +207,7 @@ export default function LessonView() {
   const { isAuthenticated } = useAuthStore();
   const { applyLessonResult } = useGamificationStore();
   const { setContext } = useAIStore();
+  const { language } = useTranslation();
 
   const [lesson, setLesson] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -221,7 +224,7 @@ export default function LessonView() {
       .then(({ data }) => {
         setLesson(data);
         setSteps(buildSteps(data.sections || [], data.questions || []));
-        setContext(data.title_en);
+        setContext(getFieldByLang(data, 'title', language));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -287,7 +290,7 @@ export default function LessonView() {
   }
 
   if (completed) {
-    return <CompletionScreen result={result} lessonTitle={lesson.title_en} unitId={unitId} />;
+    return <CompletionScreen result={result} lessonTitle={getFieldByLang(lesson, 'title', language)} unitId={unitId} />;
   }
 
   return (
@@ -313,7 +316,7 @@ export default function LessonView() {
 
         {/* Lesson title */}
         <h1 className="text-[clamp(24px,3vw,32px)] font-[900] tracking-tight text-white mb-10 text-center">
-          {lesson.title_en}
+          {getFieldByLang(lesson, 'title', language)}
         </h1>
 
         {/* Step content */}
@@ -329,13 +332,14 @@ export default function LessonView() {
             <div className="absolute top-0 right-0 w-48 h-48 bg-violet/5 rounded-full blur-3xl pointer-events-none" />
 
             {currentStep?.type === 'content' && (
-              <ContentStep sections={currentStep.sections} />
+              <ContentStep sections={currentStep.sections} language={language} />
             )}
             {currentStep?.type === 'question' && (
               <QuestionStep
                 key={currentStep.question.id}
                 question={currentStep.question}
                 onAnswer={handleAnswer}
+                language={language}
               />
             )}
           </motion.div>

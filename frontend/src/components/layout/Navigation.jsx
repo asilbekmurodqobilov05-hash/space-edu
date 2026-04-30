@@ -5,13 +5,12 @@ import {
   ChevronDown, Menu, X, Globe,
   Zap, Trophy, Briefcase, Compass,
   FlaskConical, Activity, Calendar, History,
-  Gamepad2, FolderGit2, User, Star, LayoutGrid, Brain,
+  Gamepad2, User, Star, LayoutGrid, Brain,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useUserStore } from "@/store/useUserStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getCosmicSilkRoadUrl } from "@/lib/externalAuthUrl";
 
 const LANG_META = {
   ENG: { flag: '🇬🇧', label: 'English' },
@@ -40,11 +39,6 @@ const FEATURES = (t) => [
   { path: "/uzb",             label: "UZ Space",             icon: Globe },
   { path: "/space-game",      label: t('nav','spaceGame'),   icon: Gamepad2 },
   { path: "/quiz",            label: "Quiz & TEST",          icon: Brain },
-];
-
-const PROFILE_ITEMS = [
-  { path: "/portfolio", label: "Portfolio",  icon: FolderGit2 },
-  { path: "/profile",   label: "My Profile", icon: User },
 ];
 
 // ── shared button styles ──────────────────────────────────────────────────────
@@ -143,10 +137,10 @@ function DropLink({ path, label, icon: Icon, close }) {
 // ── Language dropdown ─────────────────────────────────────────────────────────
 function LangDropdown() {
   const { language, setLanguage } = useUserStore();
-  const cur = LANG_META[language];
+  const cur = LANG_META[language] || LANG_META.ENG;
 
   return (
-    <Dropdown label={`${cur.flag} ${language}`} icon={Globe}>
+    <Dropdown label={`${cur.flag} ${language || 'ENG'}`} icon={Globe}>
       {(close) => Object.entries(LANG_META).map(([code, { flag, label }]) => (
         <button
           key={code}
@@ -176,7 +170,11 @@ export default function Navigation() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState(null);
   const location = useLocation();
-  const { isAuthenticated } = useAuthStore();
+  const { language, setLanguage } = useUserStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const showProfile = Boolean(isAuthenticated && user && (user.email || user.username));
   const { t } = useTranslation();
 
   const mainNav  = MAIN_NAV(t);
@@ -187,8 +185,6 @@ export default function Navigation() {
     [location.pathname]);
 
   const featuresHasActive = features.some(f => isActive(f.path));
-  const profileHasActive  = PROFILE_ITEMS.some(p => isActive(p.path));
-
   useEffect(() => { setIsMobileOpen(false); setMobileSection(null); }, [location.pathname]);
 
   useEffect(() => {
@@ -219,7 +215,17 @@ export default function Navigation() {
         style={{ gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: '12px' }}>
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
+        <div className="flex items-center gap-2.5 group flex-shrink-0">
+          {!isAuthenticated && (
+            <Link
+              to="/login"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet/20 border border-violet/30 text-violet-pale hover:bg-violet/30"
+            >
+              <User className="w-3.5 h-3.5" strokeWidth={2.5} />
+              Log in
+            </Link>
+          )}
+          <Link to="/" className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden transition-all duration-200"
             style={{ background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(167,139,250,0.32)' }}>
             <img
@@ -235,7 +241,8 @@ export default function Navigation() {
             }}>
             Astra.x
           </span>
-        </Link>
+          </Link>
+        </div>
 
         {/* Center — all nav items */}
         <div className="flex items-center justify-center gap-0.5">
@@ -256,7 +263,7 @@ export default function Navigation() {
             {(close) => features.map((f) => <DropLink key={f.path} {...f} close={() => close(false)} />)}
           </Dropdown>
 
-          {isAuthenticated && (
+          {showProfile ? (
             <Link
               to="/profile"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-200 whitespace-nowrap"
@@ -265,22 +272,23 @@ export default function Navigation() {
               <User className="w-3.5 h-3.5" strokeWidth={2} />
               My Profile
             </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-200 whitespace-nowrap"
+              {...btnProps(isActive('/login'))}
+            >
+              <User className="w-3.5 h-3.5" strokeWidth={2} />
+              Log in
+            </Link>
           )}
 
           <LangDropdown />
         </div>
 
-        {/* Right — login only for guests */}
+        {/* Right placeholder */}
         <div className="flex items-center flex-shrink-0">
-          {!isAuthenticated && (
-            <a
-              href={getCosmicSilkRoadUrl()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-bold transition-all duration-200 whitespace-nowrap bg-violet/20 border border-violet/30 text-violet-pale hover:bg-violet/30 hover:scale-105"
-            >
-              <User className="w-3.5 h-3.5" strokeWidth={2.5} />
-              Log in
-            </a>
-          )}
+          <span className="w-[8px]" />
         </div>
       </div>
 
@@ -306,13 +314,21 @@ export default function Navigation() {
         </Link>
 
         <div className="flex items-center gap-2">
-          {!isAuthenticated && (
-            <a
-              href={getCosmicSilkRoadUrl()}
+          {!isAuthenticated ? (
+            <Link
+              to="/login"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet/20 border border-violet/30 text-violet-pale"
             >
               Log in
-            </a>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={logout}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-white/5 border border-white/15 text-white/80 hover:bg-white/10"
+            >
+              Log out
+            </button>
           )}
           <button
             type="button"
@@ -384,7 +400,6 @@ export default function Navigation() {
                           {key === 'lang' ? (
                             <div className="flex flex-col gap-1">
                               {Object.entries(LANG_META).map(([code, { flag, label: lbl }]) => {
-                                const { language, setLanguage } = useUserStore();
                                 return (
                                   <button
                                     key={code}
