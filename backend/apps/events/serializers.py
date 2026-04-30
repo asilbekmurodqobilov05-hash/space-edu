@@ -13,6 +13,7 @@ class SpaceEventSerializer(serializers.ModelSerializer):
             'description_en', 'description_uz', 'description_ru',
             'event_date', 'event_type', 'image_url',
             'source_url', 'is_featured', 'is_historical',
+            'event_time', 'visibility', 'facts',
         )
 
     def get_image_url(self, obj):
@@ -30,4 +31,5 @@ class SpaceEventWriteSerializer(serializers.ModelSerializer):
             'description_en', 'description_uz', 'description_ru',
             'event_date', 'event_type', 'image',
             'source_url', 'is_featured', 'is_historical',
+            'event_time', 'visibility', 'facts',
         )

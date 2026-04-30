@@ -81,9 +81,10 @@ class UnitDetailSerializer(serializers.ModelSerializer):
 
 class LevelSerializer(serializers.ModelSerializer):
     unit_count = serializers.IntegerField(source='units.count', read_only=True)
+    units = UnitListSerializer(many=True, read_only=True)
 
     class Meta:
         model = Level
         fields = ('id', 'slug', 'order', 'title_en', 'title_uz', 'title_ru',
                   'description_en', 'description_uz', 'description_ru',
-                  'icon', 'color', 'unit_count')
+                  'icon', 'color', 'unit_count', 'units')

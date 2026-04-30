@@ -115,19 +115,19 @@ export default function App() {
               {/* Level-gated */}
               <Route path="/daily" element={
                 <PT>
-                  <LevelGate requiredLevel={2} label="Daily Challenge">
+                  <LevelGate requiredLevel={1} label="Daily Challenge">
                     <DailyChallengeView />
                   </LevelGate>
                 </PT>
               } />
               <Route path="/space-game" element={
-                <LevelGate requiredLevel={3} label="Space Run">
+                <LevelGate requiredLevel={1} label="Space Run">
                   <Lazy><SpaceRunView /></Lazy>
                 </LevelGate>
               } />
               <Route path="/lab" element={
                 <PT>
-                  <LevelGate requiredLevel={2} label="Space Lab">
+                  <LevelGate requiredLevel={1} label="Space Lab">
                     <SpaceLabView />
                   </LevelGate>
                 </PT>
