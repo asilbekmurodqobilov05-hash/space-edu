@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api, { setupApiAuth } from '@/lib/api';
+import { getCosmicSilkRoadUrl } from '@/lib/externalAuthUrl';
 
 export const useAuthStore = create()(
   persist(
@@ -25,7 +26,7 @@ export const useAuthStore = create()(
 
       logout: () => {
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
-        setupApiAuth(() => null, () => null, () => { window.location.href = '/login'; });
+        setupApiAuth(() => null, () => null, () => { window.location.href = getCosmicSilkRoadUrl(); });
       },
 
       // Called on app mount to verify token is still valid
@@ -48,18 +49,21 @@ function _setupAuth(get) {
   setupApiAuth(
     () => get().accessToken,
     () => get().refreshToken,
-    () => { useAuthStore.getState().logout(); window.location.href = '/login'; }
+    () => { useAuthStore.getState().logout(); window.location.href = getCosmicSilkRoadUrl(); }
   );
 }
 
 // Wire up interceptors on store creation (handles page reload with persisted tokens)
 setTimeout(() => {
-  const { accessToken, refreshToken, logout } = useAuthStore.getState();
+  const { accessToken, refreshToken, isAuthenticated, logout } = useAuthStore.getState();
   if (accessToken) {
+    if (!isAuthenticated) {
+      useAuthStore.setState({ isAuthenticated: true });
+    }
     setupApiAuth(
       () => useAuthStore.getState().accessToken,
       () => useAuthStore.getState().refreshToken,
-      () => { logout(); window.location.href = '/login'; }
+      () => { logout(); window.location.href = getCosmicSilkRoadUrl(); }
     );
   }
 }, 0);

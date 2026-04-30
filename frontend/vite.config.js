@@ -19,6 +19,23 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
+      // cosmic-silk-road.html va boshqa statik sahifalar shu origin orqali /api/v1 chaqiradi (CORSsiz)
+      proxy: {
+        '/api/v1': {
+          target: env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
+    preview: {
+      proxy: {
+        '/api/v1': {
+          target: env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
     },
     build: {
       target: 'es2020',
