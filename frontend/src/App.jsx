@@ -45,12 +45,10 @@ import LeaderboardView    from '@/views/community/LeaderboardView';
 import CalendarView       from '@/views/community/CalendarView';
 import NewsView           from '@/views/community/NewsView';
 import LiveSpaceView      from '@/views/community/LiveSpaceView';
-import CareersView        from '@/views/profile/CareersView';
 import PortfolioView      from '@/views/profile/PortfolioView';
 import ProfileView        from '@/views/profile/ProfileView';
 import HistoryView        from '@/views/misc/HistoryView';
 import MarketView         from '@/views/misc/MarketView';
-import UzSpaceView        from '@/views/misc/UzSpaceView';
 import ChatView           from '@/views/chat/ChatView';
 import QuizHubView        from "@/views/quiz/QuizHubView";
 import QuizSessionView    from "@/views/quiz/QuizSessionView";
@@ -88,7 +86,6 @@ export default function App() {
             <Route path="/register"      element={<RegisterView />} />
             <Route path="/leaderboard"   element={<PT><LeaderboardView /></PT>} />
             <Route path="/history"       element={<PT><HistoryView /></PT>} />
-            <Route path="/uzb"           element={<PT><UzSpaceView /></PT>} />
             <Route path="/explore"       element={<PT><ExploreView /></PT>} />
             <Route path="/3d-solar-system" element={<Lazy><PT><SolarSystemView /></PT></Lazy>} />
             <Route path="/star-finder"   element={<Lazy><PT><StarFinderView /></PT></Lazy>} />
@@ -97,6 +94,9 @@ export default function App() {
             <Route path="/live"          element={<PT><LiveSpaceView /></PT>} />
             <Route path="/quiz"          element={<PT><QuizHubView /></PT>} />
             <Route path="/quiz/:category" element={<PT><QuizSessionView /></PT>} />
+            <Route path="/market"    element={<PT><MarketView /></PT>} />
+            <Route path="/space-game" element={<Lazy><PT><SpaceRunView /></PT></Lazy>} />
+            <Route path="/lab" element={<PT><SpaceLabView /></PT>} />
 
             {/* Learn — public content, progress needs auth */}
             <Route path="/learn"                                  element={<PT><LearnView /></PT>} />
@@ -124,9 +124,7 @@ export default function App() {
             {/* Protected — require login */}
             <Route element={<ProtectedRoute />}>
               <Route path="/profile"   element={<PT><ProfileView /></PT>} />
-              <Route path="/careers"   element={<PT><CareersView /></PT>} />
               <Route path="/portfolio" element={<PT><PortfolioView /></PT>} />
-              <Route path="/market"    element={<PT><MarketView /></PT>} />
               <Route path="/chat"      element={<PT><ChatView /></PT>} />
 
               {/* Level-gated */}
@@ -134,18 +132,6 @@ export default function App() {
                 <PT>
                   <LevelGate requiredLevel={1} label="Daily Challenge">
                     <DailyChallengeView />
-                  </LevelGate>
-                </PT>
-              } />
-              <Route path="/space-game" element={
-                <LevelGate requiredLevel={1} label="Space Run">
-                  <Lazy><SpaceRunView /></Lazy>
-                </LevelGate>
-              } />
-              <Route path="/lab" element={
-                <PT>
-                  <LevelGate requiredLevel={1} label="Space Lab">
-                    <SpaceLabView />
                   </LevelGate>
                 </PT>
               } />
