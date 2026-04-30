@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Eye, EyeOff, Rocket, Star, ShieldCheck } from 'lucide-react';
 import api from '@/lib/api';
-import { getCosmicSilkRoadUrl } from '@/lib/externalAuthUrl';
+
 import { useAuthStore } from '@/store/useAuthStore';
 import GlassCard from '@/components/ui/GlassCard';
 
@@ -71,7 +71,7 @@ export default function RegisterView() {
             className="inline-flex items-center gap-3 mb-6 p-2 px-4 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-xl"
           >
             <Star className="w-5 h-5 text-violet-light" />
-            <span className="text-xl font-[900] tracking-tighter text-white">UZ COSMOS</span>
+            <span className="text-xl font-[900] tracking-tighter text-white">Space edu</span>
           </motion.div>
           <h1 className="text-4xl font-[900] text-white tracking-tight mb-3">Join the <span className="text-glow-purple text-violet">Academy</span></h1>
           <p className="text-white/30 text-sm font-[500]">Initialize your profile to begin the cosmic journey</p>
@@ -105,7 +105,9 @@ export default function RegisterView() {
                     )}
                   </div>
                   {errors[name] && (
-                    <p className="text-red-400 text-[10px] font-[700] ml-1">{errors[name][0] || errors[name]}</p>
+                    <p className="text-red-400 text-[10px] font-[700] ml-1">
+                      {Array.isArray(errors[name]) ? errors[name][0] : errors[name]}
+                    </p>
                   )}
                 </div>
               ))}
@@ -142,9 +144,9 @@ export default function RegisterView() {
             <div className="mt-4 pt-6 border-t border-white/5 text-center">
               <p className="text-white/30 text-xs font-[600]">
                 Already have an account?{' '}
-                <a href={getCosmicSilkRoadUrl()} className="text-violet-light hover:text-white font-[800] transition-colors">
+                <Link to="/login" className="text-violet-light hover:text-white font-[800] transition-colors">
                   Sign In
-                </a>
+                </Link>
               </p>
             </div>
           </form>

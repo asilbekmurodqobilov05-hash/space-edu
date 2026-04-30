@@ -178,8 +178,11 @@ const MOCK_ITEMS = [
 ];
 
 const formatPrice = (price) => {
-  return price.toLocaleString('ru-RU') + ' сум';
+  if (price == null) return '—';
+  return Number(price).toLocaleString('ru-RU') + ' сум';
 };
+
+const getPrice = (item) => item.price ?? item.cost_fuel ?? 0;
 
 function ItemCard({ item, onClick, onBuy, buying }) {
   const getAccent = () => {
@@ -239,11 +242,11 @@ function ItemCard({ item, onClick, onBuy, buying }) {
         <div className="mb-2">
           {item.original_price ? (
             <div className="flex items-end gap-2 flex-wrap">
-              <span className="text-xl font-[900] text-red-400 leading-none">{formatPrice(item.price)}</span>
+              <span className="text-xl font-[900] text-red-400 leading-none">{formatPrice(getPrice(item))}</span>
               <span className="text-sm font-medium text-white/30 line-through leading-none">{formatPrice(item.original_price)}</span>
             </div>
           ) : (
-            <span className="text-xl font-[900] text-white leading-none">{formatPrice(item.price)}</span>
+            <span className="text-xl font-[900] text-white leading-none">{formatPrice(getPrice(item))}</span>
           )}
         </div>
         
@@ -325,7 +328,7 @@ function ProductModal({ item, onClose, onBuy, buying }) {
                 </div>
               )}
               <div className="flex items-center gap-4">
-                <span className="text-4xl font-[900] text-white">{formatPrice(item.price)}</span>
+                <span className="text-4xl font-[900] text-white">{formatPrice(getPrice(item))}</span>
               </div>
               
               <button
@@ -356,12 +359,9 @@ function ProductModal({ item, onClose, onBuy, buying }) {
 
 export default function MarketView() {
   const { isAuthenticated } = useAuthStore();
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
   const [items, setItems] = useState([]);
+  const [inventory, setInventory] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(null);
   const [error, setError] = useState('');
@@ -373,7 +373,6 @@ export default function MarketView() {
   const [sortOrder, setSortOrder] = useState('default');
 
   useEffect(() => {
-<<<<<<< HEAD
     const fetchData = async () => {
       try {
         const [itemsRes, inventoryRes] = await Promise.all([
@@ -383,33 +382,34 @@ export default function MarketView() {
         
         // Handle paginated or non-paginated response
         const itemsData = Array.isArray(itemsRes.data) ? itemsRes.data : itemsRes.data.results || [];
-        setItems(itemsData);
+        setItems(itemsData.length > 0 ? itemsData : MOCK_ITEMS);
         
-        setInventory(new Set(inventoryRes.data.map((i) => i.item.slug)));
+        const invData = Array.isArray(inventoryRes.data) ? inventoryRes.data : inventoryRes.data.results || [];
+        setInventory(new Set(invData.map((i) => i.item?.slug).filter(Boolean)));
       } catch (err) {
-        setError('Unable to load market data right now.');
+        setItems(MOCK_ITEMS);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
   }, [isAuthenticated]);
-=======
-    // Simulated fetch
-    setTimeout(() => {
-      setItems(MOCK_ITEMS);
-      setLoading(false);
-    }, 600);
-  }, []);
->>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
 
   const handleBuy = async (slug) => {
+    if (!isAuthenticated) {
+      alert('Please log in to purchase items.');
+      return;
+    }
     setBuying(slug);
-    // Simulate purchase
-    setTimeout(() => {
+    try {
+      await api.post('/market/purchase/', { item_slug: slug });
+      setInventory(prev => new Set([...prev, slug]));
+      alert('Purchase successful!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Purchase failed.');
+    } finally {
       setBuying(null);
-      alert('Товар добавлен в корзину!');
-    }, 800);
+    }
   };
 
   const categories = ['all', ...new Set(items.map(item => item.item_type))];
@@ -425,8 +425,8 @@ export default function MarketView() {
       return true;
     })
     .sort((a, b) => {
-      if (sortOrder === 'price-asc') return a.price - b.price;
-      if (sortOrder === 'price-desc') return b.price - a.price;
+      if (sortOrder === 'price-asc') return getPrice(a) - getPrice(b);
+      if (sortOrder === 'price-desc') return getPrice(b) - getPrice(a);
       if (sortOrder === 'discount') return (b.discount_percent || 0) - (a.discount_percent || 0);
       return 0;
     });

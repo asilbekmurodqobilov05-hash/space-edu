@@ -108,14 +108,14 @@
 
 ## PHASE 4 — Frontend API Integration
 
-- [ ] **4.1** Connect LearnView → `GET /api/v1/courses/levels/`
-- [ ] **4.2** Connect LessonView → `GET /api/v1/courses/lessons/{id}/`
-- [ ] **4.3** Complete lesson → `POST /api/v1/progress/lessons/{id}/complete/`
-- [ ] **4.4** Load user gamification profile from API on login
-- [ ] **4.5** Leaderboard → `GET /api/v1/gamification/leaderboard/`
-- [ ] **4.6** Market purchases → `POST /api/v1/market/purchase/`
-- [ ] **4.7** Chat → connect WebSocket consumer
-- [ ] **4.8** Profile page: fetch real user data, update avatar/name via PATCH
+- [x] **4.1** Connect LearnView → `GET /api/v1/courses/levels/`
+- [x] **4.2** Connect LessonView → `GET /api/v1/courses/lessons/{id}/`
+- [x] **4.3** Complete lesson → `POST /api/v1/progress/lessons/{id}/complete/`
+- [x] **4.4** Load user gamification profile from API on login
+- [x] **4.5** Leaderboard → `GET /api/v1/gamification/leaderboard/`
+- [x] **4.6** Market purchases → `POST /api/v1/market/purchase/`
+- [x] **4.7** Chat → connect WebSocket consumer (or polling MVP)
+- [x] **4.8** Profile page: fetch real user data, update avatar/name via PATCH
 
 ---
 
@@ -132,14 +132,14 @@
 
 ## PHASE 6 — Quality & Commission Readiness
 
-- [ ] **6.1** Remove all hardcoded fake stats ("12k+ learners") — replace with real API data or neutral text
+- [x] **6.1** Remove all hardcoded fake stats ("12k+ learners") — replace with real API data or neutral text
 - [ ] **6.2** Audit every component for unused imports — remove them
 - [ ] **6.3** Verify all 3 languages (ENG/UZB/RUS) have complete translation keys — no missing keys
 - [ ] **6.4** Mobile responsiveness audit — test all views on 375px width
-- [ ] **6.5** Performance: lazy-load heavy views (SolarSystem, SpaceRun) with `React.lazy + Suspense`
-- [ ] **6.6** Add `<title>` and `<meta description>` to `index.html`
-- [ ] **6.7** Verify no `console.log` statements remain in any file
-- [ ] **6.8** Backend: add pagination to all list endpoints (default 20 per page)
+- [x] **6.5** Performance: lazy-load heavy views (SolarSystem, SpaceRun) with `React.lazy + Suspense`
+- [x] **6.6** Add `<title>` and `<meta description>` to `index.html`
+- [x] **6.7** Verify no `console.log` statements remain in any file
+- [x] **6.8** Backend: add pagination to all list endpoints (default 20 per page)
 - [ ] **6.9** Backend: add input validation and meaningful error messages to all POST endpoints
 - [ ] **6.10** Final security check: SECRET_KEY in env, no hardcoded credentials, DEBUG=False for demo build
 

@@ -1,11 +1,12 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Home, BookOpen, Newspaper, ShoppingCart,
   ChevronDown, Menu, X, Globe,
-  Zap, Trophy, Briefcase, Compass,
+  Zap, Trophy,
   FlaskConical, Activity, Calendar, History,
-  Gamepad2, User, Star, LayoutGrid, Brain,
+  Gamepad2, FolderGit2, User, Star, LayoutGrid, Brain,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useUserStore } from "@/store/useUserStore";
@@ -19,30 +20,34 @@ const LANG_META = {
 };
 
 const MAIN_NAV = (t) => [
-  { path: "/",       label: t('nav', 'home'),              icon: Home },
-  { path: "/learn",  label: t('nav', 'learn'),             icon: BookOpen },
-  { path: "/news",   label: t('nav', 'news')   || 'News',  icon: Newspaper },
-  { path: "/market", label: t('nav', 'market') || 'Market',icon: ShoppingCart },
+  { path: "/", label: t('nav', 'home'), icon: Home },
+  { path: "/learn", label: t('nav', 'learn'), icon: BookOpen },
+  { path: "/news", label: t('nav', 'news') || 'News', icon: Newspaper },
+  { path: "/market", label: t('nav', 'market') || 'Market', icon: ShoppingCart },
 ];
 
 const FEATURES = (t) => [
-  { path: "/3d-solar-system", label: "3D Solar System",      icon: Globe },
-  { path: "/daily",           label: "Daily Challenge",      icon: Zap },
-  { path: "/leaderboard",     label: "Leaderboard",          icon: Trophy },
-  { path: "/explore",         label: "Explore",              icon: Compass },
-  { path: "/star-finder",     label: t('nav','starFinder'),  icon: Star },
-  { path: "/lab",             label: t('nav','lab'),         icon: FlaskConical },
-  { path: "/live",            label: t('nav','live'),        icon: Activity },
-  { path: "/calendar",        label: t('nav','calendar'),    icon: Calendar },
-  { path: "/history",         label: t('nav','history'),     icon: History },
-  { path: "/space-game",      label: t('nav','spaceGame'),   icon: Gamepad2 },
-  { path: "/quiz",            label: "Quiz & TEST",          icon: Brain },
+  { path: "/3d-solar-system", label: "3D Solar System", icon: Globe },
+  { path: "/daily", label: "Daily Challenge", icon: Zap },
+  { path: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { path: "/star-finder", label: t('nav', 'starFinder'), icon: Star },
+  { path: "/lab", label: t('nav', 'lab'), icon: FlaskConical },
+  { path: "/live", label: t('nav', 'live'), icon: Activity },
+  { path: "/calendar", label: t('nav', 'calendar'), icon: Calendar },
+  { path: "/history", label: t('nav', 'history'), icon: History },
+  { path: "/space-game", label: t('nav', 'spaceGame'), icon: Gamepad2 },
+  { path: "/quiz", label: "Quiz & TEST", icon: Brain },
+];
+
+const PROFILE_ITEMS = [
+  { path: "/portfolio", label: "Portfolio", icon: FolderGit2 },
+  { path: "/profile", label: "My Profile", icon: User },
 ];
 
 // ── shared button styles ──────────────────────────────────────────────────────
 const btnBase = {
-  idle:   { color: 'rgba(255,255,255,0.52)' },
-  hover:  { color: 'rgba(255,255,255,0.88)', background: 'rgba(139,92,246,0.10)' },
+  idle: { color: 'rgba(255,255,255,0.52)' },
+  hover: { color: 'rgba(255,255,255,0.88)', background: 'rgba(139,92,246,0.10)' },
   active: { color: '#c4b5fd', background: 'rgba(139,92,246,0.20)', boxShadow: 'inset 0 0 0 1px rgba(167,139,250,0.30)' },
 };
 
@@ -122,8 +127,8 @@ function DropLink({ path, label, icon: Icon, close }) {
       className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150"
       style={active ? { color: '#c4b5fd', background: 'rgba(139,92,246,0.20)' }
         : { color: 'rgba(255,255,255,0.60)' }}
-      onMouseEnter={e => { if (!active) { e.currentTarget.style.color='#fff'; e.currentTarget.style.background='rgba(139,92,246,0.12)'; } }}
-      onMouseLeave={e => { if (!active) { e.currentTarget.style.color='rgba(255,255,255,0.60)'; e.currentTarget.style.background='transparent'; } }}
+      onMouseEnter={e => { if (!active) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)'; } }}
+      onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'rgba(255,255,255,0.60)'; e.currentTarget.style.background = 'transparent'; } }}
     >
       <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.8}
         style={{ color: active ? '#a78bfa' : 'rgba(167,139,250,0.55)' }} />
@@ -135,10 +140,10 @@ function DropLink({ path, label, icon: Icon, close }) {
 // ── Language dropdown ─────────────────────────────────────────────────────────
 function LangDropdown() {
   const { language, setLanguage } = useUserStore();
-  const cur = LANG_META[language] || LANG_META.ENG;
+  const cur = LANG_META[language];
 
   return (
-    <Dropdown label={`${cur.flag} ${language || 'ENG'}`} icon={Globe}>
+    <Dropdown label={`${cur.flag} ${language}`} icon={Globe}>
       {(close) => Object.entries(LANG_META).map(([code, { flag, label }]) => (
         <button
           key={code}
@@ -148,8 +153,8 @@ function LangDropdown() {
           style={language === code
             ? { color: '#c4b5fd', background: 'rgba(139,92,246,0.20)' }
             : { color: 'rgba(255,255,255,0.60)' }}
-          onMouseEnter={e => { if (language !== code) { e.currentTarget.style.color='#fff'; e.currentTarget.style.background='rgba(139,92,246,0.12)'; } }}
-          onMouseLeave={e => { if (language !== code) { e.currentTarget.style.color='rgba(255,255,255,0.60)'; e.currentTarget.style.background='transparent'; } }}
+          onMouseEnter={e => { if (language !== code) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)'; } }}
+          onMouseLeave={e => { if (language !== code) { e.currentTarget.style.color = 'rgba(255,255,255,0.60)'; e.currentTarget.style.background = 'transparent'; } }}
         >
           <span className="text-base leading-none">{flag}</span>
           <span>{label}</span>
@@ -168,14 +173,10 @@ export default function Navigation() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState(null);
   const location = useLocation();
-  const { language, setLanguage } = useUserStore();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const showProfile = Boolean(isAuthenticated && user && (user.email || user.username));
+  const { isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
 
-  const mainNav  = MAIN_NAV(t);
+  const mainNav = MAIN_NAV(t);
   const features = FEATURES(t);
 
   const isActive = useCallback((path) =>
@@ -183,6 +184,8 @@ export default function Navigation() {
     [location.pathname]);
 
   const featuresHasActive = features.some(f => isActive(f.path));
+  const profileHasActive = PROFILE_ITEMS.some(p => isActive(p.path));
+
   useEffect(() => { setIsMobileOpen(false); setMobileSection(null); }, [location.pathname]);
 
   useEffect(() => {
@@ -213,34 +216,15 @@ export default function Navigation() {
         style={{ gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: '12px' }}>
 
         {/* Logo */}
-        <div className="flex items-center gap-2.5 group flex-shrink-0">
-          {!isAuthenticated && (
-            <Link
-              to="/login"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet/20 border border-violet/30 text-violet-pale hover:bg-violet/30"
-            >
-              <User className="w-3.5 h-3.5" strokeWidth={2.5} />
-              Log in
-            </Link>
-          )}
-          <Link to="/" className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden transition-all duration-200"
-            style={{ background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(167,139,250,0.32)' }}>
-            <img
-              src="/astra-logo.png"
-              alt="Astra.x logo"
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
-            />
-          </span>
-          <span className="font-bold text-lg tracking-tight"
+        <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
+          <span className="font-bold text-xl tracking-tight"
             style={{
               background: 'linear-gradient(135deg,#ddd6fe 0%,#a78bfa 55%,#8b5cf6 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
             }}>
-            Astra.x
+            Space edu
           </span>
-          </Link>
-        </div>
+        </Link>
 
         {/* Center — all nav items */}
         <div className="flex items-center justify-center gap-0.5">
@@ -261,7 +245,7 @@ export default function Navigation() {
             {(close) => features.map((f) => <DropLink key={f.path} {...f} close={() => close(false)} />)}
           </Dropdown>
 
-          {showProfile ? (
+          {isAuthenticated && (
             <Link
               to="/profile"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-200 whitespace-nowrap"
@@ -270,23 +254,22 @@ export default function Navigation() {
               <User className="w-3.5 h-3.5" strokeWidth={2} />
               My Profile
             </Link>
-          ) : (
-            <Link
-              to="/login"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-200 whitespace-nowrap"
-              {...btnProps(isActive('/login'))}
-            >
-              <User className="w-3.5 h-3.5" strokeWidth={2} />
-              Log in
-            </Link>
           )}
 
           <LangDropdown />
         </div>
 
-        {/* Right placeholder */}
+        {/* Right — login only for guests */}
         <div className="flex items-center flex-shrink-0">
-          <span className="w-[8px]" />
+          {!isAuthenticated && (
+            <Link
+              to="/login"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-bold transition-all duration-200 whitespace-nowrap bg-violet/20 border border-violet/30 text-violet-pale hover:bg-violet/30 hover:scale-105"
+            >
+              <User className="w-3.5 h-3.5" strokeWidth={2.5} />
+              Log in
+            </Link>
+          )}
         </div>
       </div>
 
@@ -294,39 +277,23 @@ export default function Navigation() {
       <div className="xl:hidden flex items-center justify-between px-4 h-[62px]">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group" onClick={() => setIsMobileOpen(false)}>
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl overflow-hidden"
-            style={{ background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(167,139,250,0.32)' }}>
-            <img
-              src="/astra-logo.png"
-              alt="Astra.x logo"
-              className="w-full h-full object-cover"
-            />
-          </span>
-          <span className="font-bold text-base"
+          <span className="font-bold text-lg"
             style={{
               background: 'linear-gradient(135deg,#ddd6fe,#a78bfa)', WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent', backgroundClip: 'text',
             }}>
-            Astra.x
+            Space edu
           </span>
         </Link>
 
         <div className="flex items-center gap-2">
-          {!isAuthenticated ? (
+          {!isAuthenticated && (
             <Link
               to="/login"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet/20 border border-violet/30 text-violet-pale"
             >
               Log in
             </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={logout}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-white/5 border border-white/15 text-white/80 hover:bg-white/10"
-            >
-              Log out
-            </button>
           )}
           <button
             type="button"
@@ -334,13 +301,13 @@ export default function Navigation() {
             style={{ color: 'rgba(255,255,255,0.55)', border: '1px solid rgba(255,255,255,0.08)' }}
             onClick={() => setIsMobileOpen((v) => !v)}
             aria-expanded={isMobileOpen}
-            onMouseEnter={e => { e.currentTarget.style.borderColor='rgba(167,139,250,0.3)'; e.currentTarget.style.color='#c4b5fd'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(255,255,255,0.08)'; e.currentTarget.style.color='rgba(255,255,255,0.55)'; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.3)'; e.currentTarget.style.color = '#c4b5fd'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
           >
             <AnimatePresence mode="wait" initial={false}>
               {isMobileOpen
-                ? <motion.span key="x" initial={{rotate:-90,opacity:0}} animate={{rotate:0,opacity:1}} exit={{rotate:90,opacity:0}} transition={{duration:0.16}} className="flex"><X className="w-5 h-5" /></motion.span>
-                : <motion.span key="m" initial={{rotate:90,opacity:0}} animate={{rotate:0,opacity:1}} exit={{rotate:-90,opacity:0}} transition={{duration:0.16}} className="flex"><Menu className="w-5 h-5" /></motion.span>
+                ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.16 }} className="flex"><X className="w-5 h-5" /></motion.span>
+                : <motion.span key="m" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.16 }} className="flex"><Menu className="w-5 h-5" /></motion.span>
               }
             </AnimatePresence>
           </button>
@@ -352,7 +319,7 @@ export default function Navigation() {
         {isMobileOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.24, ease: [0.25,0.1,0.25,1] }}
+            exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.24, ease: [0.25, 0.1, 0.25, 1] }}
             className="xl:hidden overflow-hidden"
             style={{ borderTop: '1px solid rgba(139,92,246,0.18)' }}
           >
@@ -364,8 +331,8 @@ export default function Navigation() {
                   <Link key={path} to={path} onClick={() => setIsMobileOpen(false)}
                     className="flex items-center gap-2 px-3 py-3 rounded-xl text-[13px] font-medium transition-all"
                     style={isActive(path)
-                      ? { color:'#c4b5fd', background:'rgba(139,92,246,0.18)', border:'1px solid rgba(167,139,250,0.2)' }
-                      : { color:'rgba(255,255,255,0.55)', border:'1px solid transparent' }}
+                      ? { color: '#c4b5fd', background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(167,139,250,0.2)' }
+                      : { color: 'rgba(255,255,255,0.55)', border: '1px solid transparent' }}
                   >
                     <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={2} />
                     <span className="truncate">{label}</span>
@@ -376,14 +343,14 @@ export default function Navigation() {
               {/* Features accordion */}
               {[
                 { key: 'features', label: 'Features', icon: LayoutGrid, items: features },
-                { key: 'lang',     label: 'Language', icon: Globe,      items: [] },
+                { key: 'lang', label: 'Language', icon: Globe, items: [] },
               ].map(({ key, label, icon: Icon, items }) => (
                 <div key={key} className="rounded-xl overflow-hidden"
                   style={{ border: '1px solid rgba(139,92,246,0.15)' }}>
                   <button type="button"
                     onClick={() => setMobileSection(mobileSection === key ? null : key)}
                     className="w-full flex items-center justify-between px-4 py-3 text-[13px] font-medium"
-                    style={{ color: mobileSection === key ? '#c4b5fd' : 'rgba(255,255,255,0.65)', background:'rgba(139,92,246,0.06)' }}
+                    style={{ color: mobileSection === key ? '#c4b5fd' : 'rgba(255,255,255,0.65)', background: 'rgba(139,92,246,0.06)' }}
                   >
                     <span className="flex items-center gap-2"><Icon className="w-4 h-4" /> {label}</span>
                     <motion.span animate={{ rotate: mobileSection === key ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -398,14 +365,15 @@ export default function Navigation() {
                           {key === 'lang' ? (
                             <div className="flex flex-col gap-1">
                               {Object.entries(LANG_META).map(([code, { flag, label: lbl }]) => {
+                                const { language, setLanguage } = useUserStore();
                                 return (
                                   <button
                                     key={code}
                                     onClick={() => { setLanguage(code); setIsMobileOpen(false); }}
                                     className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-medium transition-all"
                                     style={language === code
-                                      ? { color:'#c4b5fd', background:'rgba(139,92,246,0.18)' }
-                                      : { color:'rgba(255,255,255,0.5)' }}
+                                      ? { color: '#c4b5fd', background: 'rgba(139,92,246,0.18)' }
+                                      : { color: 'rgba(255,255,255,0.5)' }}
                                   >
                                     <span className="text-base leading-none">{flag}</span>
                                     <span>{lbl}</span>
@@ -418,8 +386,8 @@ export default function Navigation() {
                               <Link key={path} to={path} onClick={() => setIsMobileOpen(false)}
                                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[12px] font-medium transition-all"
                                 style={isActive(path)
-                                  ? { color:'#c4b5fd', background:'rgba(139,92,246,0.18)' }
-                                  : { color:'rgba(255,255,255,0.5)' }}
+                                  ? { color: '#c4b5fd', background: 'rgba(139,92,246,0.18)' }
+                                  : { color: 'rgba(255,255,255,0.5)' }}
                               >
                                 <ItemIcon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />
                                 <span className="truncate">{lbl}</span>

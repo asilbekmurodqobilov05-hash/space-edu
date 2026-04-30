@@ -39,7 +39,6 @@ const Footer = () => {
         { label: "3D Solar System", path: "/3d-solar-system" },
         { label: "Daily Challenge", path: "/daily" },
         { label: "Leaderboard", path: "/leaderboard" },
-        { label: "Explore", path: "/explore" },
         { label: "Star Finder", path: "/star-finder" },
         { label: "Lab", path: "/lab" },
         { label: "Live", path: "/live" },

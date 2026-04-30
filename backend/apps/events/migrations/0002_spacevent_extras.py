@@ -9,22 +9,22 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='spacevent',
+            model_name='spaceevent',
             name='event_time',
             field=models.CharField(blank=True, max_length=50),
         ),
         migrations.AddField(
-            model_name='spacevent',
+            model_name='spaceevent',
             name='visibility',
             field=models.TextField(blank=True),
         ),
         migrations.AddField(
-            model_name='spacevent',
+            model_name='spaceevent',
             name='facts',
             field=models.JSONField(blank=True, default=list),
         ),
         migrations.AlterField(
-            model_name='spacevent',
+            model_name='spaceevent',
             name='event_type',
             field=models.CharField(
                 choices=[

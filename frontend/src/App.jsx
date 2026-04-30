@@ -1,10 +1,6 @@
 import { lazy, Suspense } from 'react';
-<<<<<<< HEAD
-import { Routes, Route, useLocation } from 'react-router-dom';
-=======
 import { AnimatePresence } from 'motion/react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
->>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
 
 import Navigation from '@/components/layout/Navigation';
 import ParticleBackground from '@/components/layout/ParticleBackground';
@@ -21,6 +17,8 @@ import NotFoundView from '@/views/misc/NotFoundView';
 const SolarSystemView = lazy(() => import('@/views/explore/SolarSystemView'));
 const StarFinderView   = lazy(() => import('@/views/explore/StarFinderView'));
 const SpaceRunView     = lazy(() => import('@/views/game/SpaceRunView'));
+
+import ChatSystem from '@/features/chat/ChatSystem';
 
 // Regular views
 import HomeView           from '@/views/home/HomeView';
@@ -40,7 +38,6 @@ import ProblemDetailView  from '@/views/learn/ProblemDetailView';
 import UnitView           from '@/views/learn/UnitView';
 import LessonView         from '@/views/learn/LessonView';
 import UniversalLessonView from '@/views/learn/UniversalLessonView';
-import ExploreView        from '@/views/explore/ExploreView';
 import SpaceLabView       from '@/views/explore/SpaceLabView';
 import DailyChallengeView from '@/views/community/DailyChallengeView';
 import LeaderboardView    from '@/views/community/LeaderboardView';
@@ -89,9 +86,7 @@ export default function App() {
             <Route path="/register"      element={<RegisterView />} />
             <Route path="/leaderboard"   element={<PT><LeaderboardView /></PT>} />
             <Route path="/history"       element={<PT><HistoryView /></PT>} />
-            <Route path="/explore"       element={<PT><ExploreView /></PT>} />
             <Route path="/market"        element={<PT><MarketView /></PT>} />
-            <Route path="/careers"       element={<PT><CareersView /></PT>} />
             <Route path="/portfolio"     element={<PT><PortfolioView /></PT>} />
             <Route path="/daily"         element={<PT><DailyChallengeView /></PT>} />
             <Route path="/space-game"    element={<Lazy><PT><SpaceRunView /></PT></Lazy>} />
@@ -103,9 +98,6 @@ export default function App() {
             <Route path="/live"          element={<PT><LiveSpaceView /></PT>} />
             <Route path="/quiz"          element={<PT><QuizHubView /></PT>} />
             <Route path="/quiz/:category" element={<PT><QuizSessionView /></PT>} />
-            <Route path="/market"    element={<PT><MarketView /></PT>} />
-            <Route path="/space-game" element={<Lazy><PT><SpaceRunView /></PT></Lazy>} />
-            <Route path="/lab" element={<PT><SpaceLabView /></PT>} />
 
             {/* Learn — public content, progress needs auth */}
             <Route path="/learn"                                  element={<PT><LearnView /></PT>} />
@@ -133,21 +125,9 @@ export default function App() {
             {/* Protected — require login */}
             <Route element={<ProtectedRoute />}>
               <Route path="/profile"   element={<PT><ProfileView /></PT>} />
-<<<<<<< HEAD
-              <Route path="/chat"      element={<PT><ChatView /></PT>} />
-=======
               <Route path="/portfolio" element={<PT><PortfolioView /></PT>} />
               <Route path="/chat"      element={<PT><ChatView /></PT>} />
-
-              {/* Level-gated */}
-              <Route path="/daily" element={
-                <PT>
-                  <LevelGate requiredLevel={1} label="Daily Challenge">
-                    <DailyChallengeView />
-                  </LevelGate>
-                </PT>
-              } />
->>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
+              <Route path="/daily"     element={<PT><DailyChallengeView /></PT>} />
             </Route>
 
             {/* 404 */}
@@ -155,12 +135,8 @@ export default function App() {
           </Routes>
       </main>
 
-<<<<<<< HEAD
-      {!isGame && !isAuth && <Footer />}
-=======
       {!isGame && !isAuth && <ChatSystem />}
       {!isGame && !isAuth && !shouldHideFooter && <Footer />}
->>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
     </div>
   );
 }

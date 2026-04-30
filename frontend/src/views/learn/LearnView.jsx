@@ -1,47 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Atom, Mic, Lightbulb, Telescope, Target, ArrowRight } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
-<<<<<<< HEAD
 import GlassCard from '@/components/ui/GlassCard';
 import { getFieldByLang } from '@/lib/utils';
+import api from '@/lib/api';
 
 function LevelCard({ level, index, language }) {
-  const navigate = useNavigate();
-=======
-
-function SectionCard({ title, titleEn, icon: Icon, desc, color, to, delay, isTall }) {
-  const [hovered, setHovered] = useState(false);
->>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
-
   return (
-    <Link to={to} className="block w-full h-full">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        className="group relative rounded-3xl overflow-hidden h-full flex flex-col"
-        style={{
-          background: hovered 
-            ? `linear-gradient(145deg, rgba(255,255,255,0.04), ${color}10)`
-            : 'rgba(255,255,255,0.02)',
-          backdropFilter: 'blur(20px)',
-          border: `1px solid ${hovered ? `${color}40` : 'rgba(255,255,255,0.05)'}`,
-          boxShadow: hovered 
-            ? `0 10px 40px rgba(0,0,0,0.4), 0 0 20px ${color}15` 
-            : '0 4px 20px rgba(0,0,0,0.2)',
-          transition: 'all 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
-          transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-          minHeight: isTall ? '320px' : '220px',
-          padding: isTall ? '40px' : '32px'
-        }}
-      >
-        {/* Glow Effects */}
+    <GlassCard className="flex flex-col h-full relative overflow-hidden group">
+      <div className="flex items-center gap-4 mb-6">
         <div 
-<<<<<<< HEAD
           className="w-14 h-14 rounded-2xl flex items-center justify-center"
           style={{ 
             background: `${level.color || '#a78bfa'}18`, 
@@ -49,7 +19,7 @@ function SectionCard({ title, titleEn, icon: Icon, desc, color, to, delay, isTal
             boxShadow: `0 0 20px ${level.color || '#a78bfa'}20`
           }}
         >
-          <Rocket className="w-7 h-7" style={{ color: level.color || '#a78bfa' }} />
+          <span className="text-2xl">🚀</span>
         </div>
         <div>
           <span className="text-[12px] font-[800] uppercase tracking-[0.1em]" style={{ color: level.color || '#a78bfa' }}>
@@ -69,74 +39,21 @@ function SectionCard({ title, titleEn, icon: Icon, desc, color, to, delay, isTal
           <Link
             key={unit.id}
             to={`/unit/${unit.slug}`}
-            className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-violet/30 hover:bg-white/[0.05] transition-colors group"
+            className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-violet-500/30 hover:bg-white/[0.05] transition-colors group/link"
           >
             <div>
-              <p className="text-[14px] font-[700] text-white/80 group-hover:text-white transition-colors">{getFieldByLang(unit, 'title', language)}</p>
-              <span className="text-[10px] font-[800] uppercase tracking-widest text-violet-light">{unit.lesson_count} Lessons</span>
+              <p className="text-[14px] font-[700] text-white/80 group-hover/link:text-white transition-colors">{getFieldByLang(unit, 'title', language)}</p>
+              <span className="text-[10px] font-[800] uppercase tracking-widest text-violet-400">{unit.lesson_count} Lessons</span>
             </div>
-            <ArrowRight className="w-4 h-4 text-white/20 group-hover:text-violet-light transition-colors" />
+            <ArrowRight className="w-4 h-4 text-white/20 group-hover/link:text-violet-400 transition-colors" />
           </Link>
         ))}
       </div>
     </GlassCard>
-=======
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-          style={{ background: `radial-gradient(circle at 80% 20%, ${color}20 0%, transparent 60%)` }} 
-        />
-
-        <div className="flex justify-between items-start mb-6 relative z-10">
-          <div 
-            className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500"
-            style={{ 
-              background: `${color}15`, 
-              border: `1px solid ${color}30`,
-              boxShadow: hovered ? `0 0 20px ${color}30` : 'none',
-              transform: hovered ? 'scale(1.05)' : 'scale(1)'
-            }}
-          >
-            <Icon className="w-8 h-8" style={{ color }} />
-          </div>
-          
-          <div 
-            className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500"
-            style={{
-              background: hovered ? color : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${hovered ? color : 'rgba(255,255,255,0.1)'}`,
-            }}
-          >
-            <ArrowRight 
-              className="w-5 h-5 transition-all duration-500" 
-              style={{ 
-                color: hovered ? '#fff' : 'rgba(255,255,255,0.4)',
-                transform: hovered ? 'translateX(2px) rotate(-45deg)' : 'translateX(0) rotate(0)'
-              }} 
-            />
-          </div>
-        </div>
-
-        <div className="mt-auto relative z-10">
-          <h2 className="text-3xl font-[800] text-white tracking-tight mb-2 flex items-center gap-3">
-            {title}
-            <span 
-              className="text-sm font-[600] px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0"
-              style={{ background: `${color}20`, color: color }}
-            >
-              {titleEn}
-            </span>
-          </h2>
-          <p className="text-white/40 text-[16px] leading-relaxed max-w-[90%] transition-colors duration-300 group-hover:text-white/60">
-            {desc}
-          </p>
-        </div>
-      </motion.div>
-    </Link>
->>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
   );
 }
 
 export default function LearnView() {
-<<<<<<< HEAD
   const { t, language } = useTranslation();
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -144,14 +61,12 @@ export default function LearnView() {
   useEffect(() => {
     api.get('/courses/levels/')
       .then(res => {
-        setLevels(res.data);
+        const data = res.data;
+        setLevels(Array.isArray(data) ? data : data.results || []);
       })
-      .catch(err => console.error(err))
+      .catch(() => setLevels([]))
       .finally(() => setLoading(false));
   }, []);
-=======
-  const { t } = useTranslation();
->>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
 
   return (
     <div className="relative min-h-screen pt-32 pb-24 px-4 overflow-hidden">
@@ -187,73 +102,18 @@ export default function LearnView() {
           />
         </div>
 
-        {/* Layout Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-          
-          {/* Left Column (3 cards) */}
-          <div className="flex flex-col gap-6 lg:gap-8">
-            <SectionCard 
-              title="Fizika" 
-              titleEn="Physics"
-              desc="Tabiat qonunlari va mexanikadan tortib kvant olamigacha kashf eting."
-              icon={Atom} 
-              color="#8b5cf6" // Violet
-              to="/learn/physics"
-              delay={0.1}
-            />
-            <SectionCard 
-              title="Interviews" 
-              titleEn="Interviews"
-              desc="Olimlar, muhandislar va fazogirlar bilan ilhomlantiruvchi suhbatlar."
-              icon={Mic} 
-              color="#3b82f6" // Blue
-              to="/learn/interviews"
-              delay={0.2}
-            />
-            <SectionCard 
-              title="Yaratuvchilik" 
-              titleEn="Creativity"
-              desc="O'z g'oyalaringizni ro'yobga chiqaring va ijodiy yondashuvni rivojlantiring."
-              icon={Lightbulb} 
-              color="#ec4899" // Pink
-              to="/learn/creativity"
-              delay={0.3}
-            />
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
-<<<<<<< HEAD
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {levels.map((level, i) => (
               <LevelCard key={level.id} level={level} index={i} language={language} />
             ))}
-=======
-
-          {/* Right Column (2 taller cards) */}
-          <div className="flex flex-col gap-6 lg:gap-8">
-            <SectionCard 
-              title="Astranomiya" 
-              titleEn="Astronomy"
-              desc="Yulduzlar, sayyoralar va galaktikalar olamiga chuqur sayohat qiling."
-              icon={Telescope} 
-              color="#06b6d4" // Cyan
-              to="/learn/astronomy"
-              delay={0.15}
-              isTall={true}
-            />
-            <SectionCard 
-              title="Masalalar" 
-              titleEn="Problems"
-              desc="Fizika va astronomiyaga oid qiziqarli masalalarni yeching va bilimingizni sinang."
-              icon={Target} 
-              color="#f59e0b" // Amber
-              to="/learn/problems"
-              delay={0.25}
-              isTall={true}
-            />
->>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
           </div>
+        )}
 
-        </div>
       </div>
     </div>
   );

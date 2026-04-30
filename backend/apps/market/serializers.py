@@ -11,7 +11,8 @@ class MarketItemSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'slug', 'title_en', 'title_uz', 'title_ru',
             'description_en', 'description_uz', 'description_ru',
-            'item_type', 'cost_fuel', 'image_url', 'is_active',
+            'item_type', 'price', 'original_price', 'discount_percent',
+            'cost_fuel', 'is_bestseller', 'is_new', 'image_url', 'is_active',
         )
 
     def get_image_url(self, obj):

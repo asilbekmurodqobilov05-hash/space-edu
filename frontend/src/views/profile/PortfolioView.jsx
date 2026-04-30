@@ -74,7 +74,7 @@ export default function PortfolioView() {
           <p className="text-gray-400 mb-8">
             {t('portfolio', 'emptyDesc')}
           </p>
-          <Link to="/explore" className="px-8 py-3 bg-neon-blue text-space-900 font-bold rounded-full hover:bg-white transition-colors box-glow-blue inline-flex items-center gap-2">
+          <Link to="/learn" className="px-8 py-3 bg-neon-blue text-space-900 font-bold rounded-full hover:bg-white transition-colors box-glow-blue inline-flex items-center gap-2">
             <Target className="w-5 h-5" /> {t('portfolio', 'startMission')}
           </Link>
         </div>
