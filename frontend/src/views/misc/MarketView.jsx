@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { ShoppingCart, Fuel, Check, Lock, Loader, Sparkles, Rocket, Zap, Award } from 'lucide-react';
+import { ShoppingCart, Fuel, Check, Lock, Loader, Sparkles, Rocket, Zap, Award, Filter, Tags, ArrowDownUp } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
@@ -94,6 +94,11 @@ export default function MarketView() {
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(null);
   const [error, setError] = useState('');
+  
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('default');
+
   const currentFuel = useGamificationStore((s) => s.fuel);
 
   useEffect(() => {
@@ -133,6 +138,22 @@ export default function MarketView() {
       setBuying(null);
     }
   };
+
+  const categories = ['all', ...new Set(items.map(item => item.item_type))];
+
+  const filteredItems = items
+    .filter(item => {
+      if (activeCategory !== 'all' && item.item_type !== activeCategory) return false;
+      if (activeFilter === 'affordable' && currentFuel < item.cost_fuel && !inventory.has(item.slug)) return false;
+      if (activeFilter === 'owned' && !inventory.has(item.slug)) return false;
+      if (activeFilter === 'unowned' && inventory.has(item.slug)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'price-asc') return a.cost_fuel - b.cost_fuel;
+      if (sortOrder === 'price-desc') return b.cost_fuel - a.cost_fuel;
+      return 0;
+    });
 
   return (
     <div className="relative min-h-screen pt-32 pb-24 px-4 overflow-hidden">
@@ -187,23 +208,116 @@ export default function MarketView() {
             <p className="text-white/20 font-bold italic">The black market is currently empty.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {items.map((item, i) => (
-              <motion.div
-                key={item.slug}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <ItemCard
-                  item={item}
-                  owned={inventory.has(item.slug)}
-                  onBuy={handleBuy}
-                  fuel={currentFuel}
-                  buying={buying === item.slug}
-                />
-              </motion.div>
-            ))}
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Left Sidebar: Categories */}
+            <div className="lg:w-56 flex-shrink-0">
+              <div className="sticky top-32 p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
+                <div className="flex items-center gap-2 mb-6 text-white/80 font-[800] uppercase tracking-widest text-xs">
+                  <Tags className="w-4 h-4" /> Categories
+                </div>
+                <div className="flex flex-col gap-2">
+                  {categories.map(category => (
+                    <button
+                      key={category}
+                      onClick={() => setActiveCategory(category)}
+                      className={`text-left px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all ${
+                        activeCategory === category 
+                          ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' 
+                          : 'bg-white/[0.02] text-white/40 border border-transparent hover:bg-white/5 hover:text-white/80'
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content: Products Grid */}
+            <div className="flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                {filteredItems.length === 0 ? (
+                  <div className="col-span-full text-center py-20 bg-white/[0.01] border border-dashed border-white/5 rounded-3xl">
+                    <p className="text-white/20 font-bold italic">No items match your criteria.</p>
+                  </div>
+                ) : (
+                  filteredItems.map((item, i) => (
+                    <motion.div
+                      key={item.slug}
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <ItemCard
+                        item={item}
+                        owned={inventory.has(item.slug)}
+                        onBuy={handleBuy}
+                        fuel={currentFuel}
+                        buying={buying === item.slug}
+                      />
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Right Sidebar: Filters */}
+            <div className="lg:w-56 flex-shrink-0">
+              <div className="sticky top-32 flex flex-col gap-6">
+                {/* Status Filter */}
+                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
+                  <div className="flex items-center gap-2 mb-6 text-white/80 font-[800] uppercase tracking-widest text-xs">
+                    <Filter className="w-4 h-4" /> Filter
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {[
+                      { id: 'all', label: 'All Items' },
+                      { id: 'affordable', label: 'Affordable' },
+                      { id: 'owned', label: 'Owned' },
+                      { id: 'unowned', label: 'Unowned' }
+                    ].map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => setActiveFilter(f.id)}
+                        className={`text-left px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all ${
+                          activeFilter === f.id 
+                            ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' 
+                            : 'bg-white/[0.02] text-white/40 border border-transparent hover:bg-white/5 hover:text-white/80'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sort */}
+                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
+                  <div className="flex items-center gap-2 mb-6 text-white/80 font-[800] uppercase tracking-widest text-xs">
+                    <ArrowDownUp className="w-4 h-4" /> Sort By
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {[
+                      { id: 'default', label: 'Default' },
+                      { id: 'price-asc', label: 'Price: Low to High' },
+                      { id: 'price-desc', label: 'Price: High to Low' }
+                    ].map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => setSortOrder(s.id)}
+                        className={`text-left px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all ${
+                          sortOrder === s.id 
+                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                            : 'bg-white/[0.02] text-white/40 border border-transparent hover:bg-white/5 hover:text-white/80'
+                        }`}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
