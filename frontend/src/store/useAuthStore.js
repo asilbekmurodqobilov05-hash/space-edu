@@ -55,11 +55,8 @@ function _setupAuth(get) {
 
 // Wire up interceptors on store creation (handles page reload with persisted tokens)
 setTimeout(() => {
-  const { accessToken, refreshToken, isAuthenticated, logout } = useAuthStore.getState();
+  const { accessToken, refreshToken, logout } = useAuthStore.getState();
   if (accessToken) {
-    if (!isAuthenticated) {
-      useAuthStore.setState({ isAuthenticated: true });
-    }
     setupApiAuth(
       () => useAuthStore.getState().accessToken,
       () => useAuthStore.getState().refreshToken,

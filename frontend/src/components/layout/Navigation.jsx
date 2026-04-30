@@ -176,11 +176,7 @@ export default function Navigation() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState(null);
   const location = useLocation();
-  const { isAuthenticated, accessToken } = useAuthStore((s) => ({
-    isAuthenticated: s.isAuthenticated,
-    accessToken: s.accessToken,
-  }));
-  const isLoggedIn = Boolean(isAuthenticated || accessToken);
+  const { isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
 
   const mainNav  = MAIN_NAV(t);
@@ -191,6 +187,7 @@ export default function Navigation() {
     [location.pathname]);
 
   const featuresHasActive = features.some(f => isActive(f.path));
+  const profileHasActive  = PROFILE_ITEMS.some(p => isActive(p.path));
 
   useEffect(() => { setIsMobileOpen(false); setMobileSection(null); }, [location.pathname]);
 
@@ -259,20 +256,23 @@ export default function Navigation() {
             {(close) => features.map((f) => <DropLink key={f.path} {...f} close={() => close(false)} />)}
           </Dropdown>
 
+          {isAuthenticated && (
+            <Link
+              to="/profile"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-200 whitespace-nowrap"
+              {...btnProps(isActive('/profile'))}
+            >
+              <User className="w-3.5 h-3.5" strokeWidth={2} />
+              My Profile
+            </Link>
+          )}
+
           <LangDropdown />
         </div>
 
-        {/* Right — Profile or Login */}
+        {/* Right — login only for guests */}
         <div className="flex items-center flex-shrink-0">
-          {isLoggedIn ? (
-            <Link
-              to="/profile"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-bold transition-all duration-200 whitespace-nowrap bg-violet/20 border border-violet/30 text-violet-pale hover:bg-violet/30 hover:scale-105"
-            >
-              <User className="w-3.5 h-3.5" strokeWidth={2.5} />
-              My Profile
-            </Link>
-          ) : (
+          {!isAuthenticated && (
             <a
               href={getCosmicSilkRoadUrl()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-bold transition-all duration-200 whitespace-nowrap bg-violet/20 border border-violet/30 text-violet-pale hover:bg-violet/30 hover:scale-105"
@@ -306,15 +306,7 @@ export default function Navigation() {
         </Link>
 
         <div className="flex items-center gap-2">
-          {isLoggedIn ? (
-            <Link
-              to="/profile"
-              onClick={() => setIsMobileOpen(false)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet/20 border border-violet/30 text-violet-pale"
-            >
-              My Profile
-            </Link>
-          ) : (
+          {!isAuthenticated && (
             <a
               href={getCosmicSilkRoadUrl()}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet/20 border border-violet/30 text-violet-pale"

@@ -53,10 +53,6 @@ function saveClaimedIds(ids) {
   localStorage.setItem(CLAIMS_KEY, JSON.stringify(ids));
 }
 
-function asArray(v) {
-  return Array.isArray(v) ? v : [];
-}
-
 /** Backend: level = floor(sqrt(xp / 100)) + 1 */
 function xpSegment(level) {
   const minXp = Math.max(0, (level - 1) ** 2 * 100);
@@ -102,7 +98,6 @@ function pickInventoryIcon(item) {
 export default function ProfileView() {
   const { user, updateUser } = useAuthStore();
   const syncFromAPI = useGamificationStore((s) => s.syncFromAPI);
-  const careerTrack = useGamificationStore((s) => s.careerTrack);
 
   const [bio, setBio] = useState('');
   const [savingBio, setSavingBio] = useState(false);
@@ -136,26 +131,19 @@ export default function ProfileView() {
     const [gRes, bRes, iRes, pRes, lRes] = results;
 
     if (gRes.status === 'fulfilled') {
-      const gp = gRes.value.data && typeof gRes.value.data === 'object' ? gRes.value.data : null;
-      setGamProfile(gp);
-      if (gp) syncFromAPI(gp);
+      setGamProfile(gRes.value.data);
+      syncFromAPI(gRes.value.data);
     }
 
-    if (bRes.status === 'fulfilled') setBadges(asArray(bRes.value.data));
-    if (iRes.status === 'fulfilled') setInventory(asArray(iRes.value.data));
-    if (pRes.status === 'fulfilled') {
-      const pdata = pRes.value.data && typeof pRes.value.data === 'object' ? pRes.value.data : {};
-      setProgress({
-        lessons: asArray(pdata.lessons),
-        enrollments: asArray(pdata.enrollments),
-      });
-    }
+    if (bRes.status === 'fulfilled') setBadges(bRes.value.data || []);
+    if (iRes.status === 'fulfilled') setInventory(iRes.value.data || []);
+    if (pRes.status === 'fulfilled') setProgress(pRes.value.data || { lessons: [], enrollments: [] });
 
     if (lRes.status === 'fulfilled') {
-      const list = asArray(lRes.value.data);
+      const list = lRes.value.data || [];
       setLeaderboardTotal(list.length);
       const me = useAuthStore.getState().user?.username;
-      const idx = list.findIndex((e) => e && e.username === me);
+      const idx = list.findIndex((e) => e.username === me);
       setLeaderboardRank(idx >= 0 ? idx + 1 : null);
     }
   }, [syncFromAPI]);
@@ -204,8 +192,8 @@ export default function ProfileView() {
     }
   };
 
-  const lessons = asArray(progress?.lessons);
-  const masteredCount = lessons.filter((l) => l && l.is_mastered).length;
+  const lessons = progress?.lessons ?? [];
+  const masteredCount = lessons.filter((l) => l.is_mastered).length;
   const hasAnyLesson = lessons.length > 0;
 
   const missions = useMemo(() => {
@@ -281,12 +269,7 @@ export default function ProfileView() {
     ? `Top ${Math.max(1, Math.round((leaderboardRank / leaderboardTotal) * 100))}%`
     : '—';
 
-  const completedLessons = asArray(lessons).filter((l) => l && l.score != null);
-  const topInterest = user?.astronaut_name
-    || gamProfile?.skills?.focus
-    || careerTrack
-    || 'Astronomy and Space Tech';
-  const completedNow = completedLessons.slice(0, 5);
+  const completedLessons = lessons.filter((l) => l.score != null);
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
@@ -381,25 +364,6 @@ export default function ProfileView() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                <p className="text-[11px] text-white/50">First name</p>
-                <p className="text-sm text-white font-medium">{user?.first_name || '—'}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                <p className="text-[11px] text-white/50">Last name</p>
-                <p className="text-sm text-white font-medium">{user?.last_name || '—'}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                <p className="text-[11px] text-white/50">Interest</p>
-                <p className="text-sm text-cyan-200 font-medium">{topInterest}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                <p className="text-[11px] text-white/50">Current rank</p>
-                <p className="text-sm text-yellow-200 font-medium">{rankLabel}</p>
-              </div>
-            </div>
-
             <div>
               <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
                 <span>XP Progress</span>
@@ -416,57 +380,6 @@ export default function ProfileView() {
               </div>
               <p className="text-[11px] text-white/40 mt-1">Segment start: {minXp} XP</p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
-        <div className="lg:col-span-2 rounded-3xl border border-white/10 bg-space-900/70 p-5">
-          <h2 className="text-xl font-semibold text-white mb-4">My Profile Details</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-              <p className="text-[11px] text-white/50">Ism</p>
-              <p className="text-sm text-white font-medium">{user?.first_name || '—'}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-              <p className="text-[11px] text-white/50">Familya</p>
-              <p className="text-sm text-white font-medium">{user?.last_name || '—'}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-              <p className="text-[11px] text-white/50">Darajasi (Level)</p>
-              <p className="text-sm text-cyan-200 font-medium">Level {level}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-              <p className="text-[11px] text-white/50">Top rating</p>
-              <p className="text-sm text-yellow-200 font-medium">{rankLabel} · {percentile}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 sm:col-span-2">
-              <p className="text-[11px] text-white/50">Nimaga qiziqadi</p>
-              <p className="text-sm text-fuchsia-200 font-medium">{topInterest}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 sm:col-span-2">
-              <p className="text-[11px] text-white/50">Description</p>
-              <p className="text-sm text-white/90 whitespace-pre-wrap">{bio?.trim() || 'Description kiritilmagan'}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-space-900/70 p-5">
-          <h2 className="text-xl font-semibold text-white mb-4">Hozirda tugatganlari</h2>
-          {completedNow.length === 0 ? (
-            <p className="text-sm text-white/40">Hali yakunlangan lesson yo‘q.</p>
-          ) : (
-            <div className="space-y-2.5">
-              {completedNow.filter(Boolean).map((row) => (
-                <div key={row.lesson_slug} className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-3 py-2">
-                  <p className="text-xs text-emerald-100 font-medium">{row.lesson_slug}</p>
-                  <p className="text-[11px] text-emerald-200/80">Score: {row.score}% {row.is_mastered ? '· Mastered' : ''}</p>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="mt-4 text-xs text-white/60">
-            Coins/Fuel: <span className="text-yellow-200 font-semibold">{Number(fuel).toLocaleString()}</span>
           </div>
         </div>
       </section>
@@ -493,25 +406,6 @@ export default function ProfileView() {
           <p className="mt-1 text-3xl font-bold text-orange-300 flex items-center gap-2">
             <Flame className="w-7 h-7" /> {streak} days
           </p>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-6">
-        <div className="rounded-2xl border border-white/10 bg-space-900/70 p-4">
-          <p className="text-xs text-white/60">Completed lessons</p>
-          <p className="mt-1 text-2xl font-bold text-emerald-200">{completedLessons.length}</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-space-900/70 p-4">
-          <p className="text-xs text-white/60">Mastered lessons</p>
-          <p className="mt-1 text-2xl font-bold text-cyan-200">{masteredCount}</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-space-900/70 p-4">
-          <p className="text-xs text-white/60">Coins / Fuel</p>
-          <p className="mt-1 text-2xl font-bold text-yellow-200">{Number(fuel).toLocaleString()}</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-space-900/70 p-4">
-          <p className="text-xs text-white/60">Top rating</p>
-          <p className="mt-1 text-2xl font-bold text-fuchsia-200">{percentile}</p>
         </div>
       </section>
 
@@ -561,9 +455,8 @@ export default function ProfileView() {
             <p className="text-sm text-white/40 mb-4">No items yet — visit the market.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {inventory.filter(Boolean).map((row) => {
+              {inventory.map((row) => {
                 const item = row.item;
-                if (!item) return null;
                 const Icon = pickInventoryIcon(item);
                 const rarity = itemRarity(item?.cost_fuel ?? 0);
                 const titleEn = item?.title_en || item?.slug || 'Item';
@@ -600,7 +493,7 @@ export default function ProfileView() {
             <p className="text-sm text-white/40">No lesson progress yet — start learning.</p>
           ) : (
             <div className="space-y-3">
-              {completedLessons.filter(Boolean).map((row) => (
+              {completedLessons.map((row) => (
                 <div
                   key={row.lesson_slug}
                   className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 flex items-center justify-between gap-3"
@@ -631,9 +524,8 @@ export default function ProfileView() {
             <p className="text-sm text-white/40">No badges yet — complete missions and lessons.</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {badges.filter(Boolean).map((ub, i) => {
+              {badges.map((ub, i) => {
                 const b = ub.badge || ub;
-                if (!b) return null;
                 const hint = b.description_en || b.slug || '';
                 return (
                   <div

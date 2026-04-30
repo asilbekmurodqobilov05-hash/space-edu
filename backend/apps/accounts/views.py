@@ -5,7 +5,7 @@ from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .email_code import store_code, verify_and_consume
 from .models import User
@@ -14,13 +14,8 @@ from .throttles import LoginRateThrottle
 
 
 def _get_tokens(user):
-    try:
-        refresh = RefreshToken.for_user(user)
-        return {'access': str(refresh.access_token), 'refresh': str(refresh)}
-    except Exception:
-        # Fallback for environments where blacklist/outstanding token tables are broken.
-        access = AccessToken.for_user(user)
-        return {'access': str(access), 'refresh': None}
+    refresh = RefreshToken.for_user(user)
+    return {'access': str(refresh.access_token), 'refresh': str(refresh)}
 
 
 class RegisterView(generics.CreateAPIView):
