@@ -54,11 +54,11 @@ const ERA_DATA = [
   {
     id: 'era-4',
     title: "Sayyoralarni zabt etish",
-    period: "XX asr oxiri",
+    period: "1970-1990 yillar",
     summary:
-      "\"Voyager\" va zondlar quyosh tizimining chekkalariga yetib bordi, Xabbl teleskopi chuqur koinotni ko'rsatdi.",
+      "Venera va Marsga qo'nishlardan tortib Voyager, Shuttle, Mir va Hubblegacha bo'lgan yirik sakrashlar shu davrda amalga oshdi.",
     details:
-      "Insoniyat koinotga shaxsan borish o'rniga aqlli robotlarni yubora boshladi. \"Venera\" va \"Mars\" seriyasidagi apparatlar qo'shni sayyoralar yuzasiga qadam qo'ydi. 1977-yilda uchirilgan \"Voyager\" apparatlari insoniyat salomi yozilgan \"Oltin plastinka\" bilan quyosh tizimidan chiqib ketdi. 1990-yilda uchirilgan Xabbl (Hubble) teleskopi esa milliardlab yorug'lik yili uzoqlikdagi galaktikalarning betakror suratlarini olib, astronomiyada yangi sahifa ochdi.",
+      "1970-1971 yillar | Qizil va Qaynoq sayyoralar: \"Venera-7\" apparati Veneraning o'ta issiq va bosimli muhitiga dosh berib, yuzaga qo'ngan ilk apparat bo'ldi. Bir yil o'tib esa \"Mars-3\" qizil sayyora yuzasiga muvaffaqiyatli qo'ndi.\n\n1973-1976 yillar | Ilk aniq tasvirlar: \"Pioneer-10\" apparati Yupiter sayyorasini yaqindan suratga olgan ilk missiya bo'ldi. \"Viking-1\" esa Mars yuzasidan ilk bor aniq va rangli manzaralarni Yerga yubordi.\n\n1977-yil | \"Voyager\" missiyasi: Koinot sarhadlarini o'rganish uchun \"Voyager-1\" va \"Voyager-2\" uchirildi. Ular hozirda Quyosh tizimidan tashqariga chiqqan insoniyatning eng uzoqdagi obyektlari hisoblanadi.\n\n1981-1986 yillar | Yangi texnologiyalar va \"Mir\": Ko'p marta ishlatiladigan \"Space Shuttle\" kemasi ilk bor parvoz qildi. Koinotda uzoq muddatli tadqiqotlar o'tkazish uchun birinchi doimiy modulli stansiya - \"Mir\" ishga tushirildi.\n\n1990-1997 yillar | Chuqur koinot va Saturn: \"Xabbl\" (Hubble) teleskopi orbitaga chiqarilib, insoniyatning koinot haqidagi tasavvurini tubdan o'zgartirdi. 1997-yilda esa Saturn va uning yo'ldoshlarini (ayniqsa Titanni) o'rganish uchun murakkab \"Cassini-Huygens\" missiyasi yuborildi.",
     media: [
       { type: 'image', src: '/history-step1/apollo11-moonwalk.png', alt: 'Apollo missiyasidan Oy yuzasida astronavt' },
       { type: 'image', src: '/history-step1/venus-lander-model.png', alt: 'Venera apparatining tarixiy moduli' },
@@ -74,12 +74,13 @@ const ERA_DATA = [
   {
     id: 'era-5',
     title: "Xalqaro hamkorlik va Tijorat koinoti",
-    period: "XXI asr",
+    period: "2000-2020 yillar",
     summary:
-      "Xalqaro koinot stansiyasi (XKS) ishga tushdi, SpaceX raketalarni qayta ishlatish inqilobini qildi.",
+      "XKS, xususiy raketalar, Mars va Pluton missiyalari hamda qora tuynuk surati bu davrni yangi bosqichga olib chiqdi.",
     details:
-      "Davlatlar o'rtasidagi raqobat o'rnini hamkorlik egalladi. Yerdan 400 km balandlikda Xalqaro Koinot Stansiyasi yig'ilib, unda doimiy ravishda olimlar yashay boshladi. Ilk bor kometaga apparat qo'ndirildi va Qora tuynukning surati olindi. Eng muhimi, Elon Muskning \"SpaceX\" kompaniyasi raketalarni Yerga qaytarib qo'ndirish texnologiyasini yaratib, koinotga parvozlar narxini o'n barobarga arzonlashtirdi.",
+      "2000-yil | Xalqaro koinot stansiyasi (XKS): Koinotda insonlarning doimiy yashashi va ishlashi boshlandi. XKS o'zining ilk ekipajini qabul qilib, davlatlararo tinchlik va ilmiy hamkorlikning eng yirik ramziga aylandi.\n\n2008-yil | Xususiy koinot davri: Elon Muskning \"SpaceX\" kompaniyasi tarixda ilk bor to'liq xususiy mablag'lar hisobiga yaratilgan \"Falcon 1\" raketasini orbitaga muvaffaqiyatli olib chiqdi va tijorat parvozlari erasini boshlab berdi.\n\n2012-2015 yillar | Marsdan Plutongacha: \"Curiosity\" roveri Mars yuzasiga qo'nib, qadimiy hayot asoratlarini qidirishni boshladi. 2014-yilda insoniyat tarixida ilk bor kometaga (67P) apparat qo'ndirildi. 2015-yilda esa \"New Horizons\" apparati mitti sayyora - Plutonning ilk aniq suratlarini Yerga yubordi.\n\n2019-yil | Koinotning eng katta siri: Butun dunyo olimlarining hamkorligi natijasida tarixda ilk marotaba Qora tuynukning (M87 galaktikasi markazidagi) haqiqiy fotosurati olindi. Bu Eynshteynning nisbiylik nazariyasini yana bir bor isbotladi.",
     media: [
+      { type: 'image', src: '/history-step1/spacex-falcon1-rocket.png', alt: 'Falcon 1 raketasi' },
       { type: 'image', title: 'XKS stansiyasi' },
       { type: 'video', title: 'SpaceX Falcon landing' },
     ],
@@ -87,11 +88,11 @@ const ERA_DATA = [
   {
     id: 'era-6',
     title: "Yangi ufqlar va Kelajak",
-    period: "2020-yillar va undan keyin",
+    period: "2021-2026 yillar",
     summary:
-      "Jeyms Uebb teleskopi koinot yaralishini o'rganmoqda, insoniyat Oyga qaytishga va Marsni egallashga tayyorlanmoqda.",
+      "James Webb, DART, Chandrayaan-3 va Starship sinovlari bilan insoniyat Oy va Mars davriga faol kirib bormoqda.",
     details:
-      "Tarixdagi eng kuchli \"James Webb\" teleskopi koinotning ilk yulduzlarini suratga olmoqda. Hozirda insoniyat yana Oyga qaytish uchun \"Artemis\" dasturini amalga oshirmoqda: maqsad u yerda doimiy baza qurish. Shuningdek, tarixdagi eng ulkan raketa \"Starship\" sinovdan o'tkazilmoqda. Uning asosiy vazifasi - insonlarni Marsga olib borish va u yerda mustaqil insoniyat koloniyasini barpo etishdir.",
+      "2021-2022 yillar | Jeyms Uebb va DART missiyasi: Koinotning eng qadimiy galaktikalarini o'rganuvchi tarixdagi eng kuchli \"James Webb\" infraqizil teleskopi ishga tushdi. \"DART\" missiyasi orqali esa insoniyat ilk bor asteroidga zarba berib, uning harakat yo'nalishini o'zgartira oldi (Yerni himoya qilish sinovi).\n\n2023-2024 yillar | Oy janubi va \"Starship\" raketasi: Hindistonning \"Chandrayaan-3\" apparati tarixda birinchi bo'lib Oyning janubiy qutbiga muvaffaqiyatli qo'ndi. Shu bilan birga, SpaceX kompaniyasi insonlarni Marsga olib borishga mo'ljallangan, dunyodagi eng ulkan va quvvatli \"Starship\" raketasining faol sinovlarini boshlab yubordi.\n\n2025-yil | \"Artemis\" va Toza orbitaga qadam: \"Artemis II\" missiyasi doirasida astronavtlar yarim asrlik tanaffusdan so'ng yana Oy atrofida aylanib o'tishdi. Shuningdek, orbitadagi xavfli kosmik chiqindilarni tozalash bo'yicha ilk amaliy loyihalar sinovdan o'tkazildi.\n\n2026-yil (Hozirgi vaqt) | Oy bazasi va Mars namunalari: Insoniyat yana Oy yuzasiga qadam qo'yishga (\"Artemis III\") va u yerda doimiy baza qurishga tayyorgarlik ko'rmoqda. Marsdan tuproq namunalarini Yerga olib kelish (Mars Sample Return) va uzoq ekzosayyoralarni qidirish (\"Nancy Grace Roman\" teleskopi) ishlari jadal sur'atlarda olib borilmoqda.",
     media: [
       { type: 'image', title: 'James Webb oynalari' },
       { type: 'image', title: 'Starship raketasi' },
