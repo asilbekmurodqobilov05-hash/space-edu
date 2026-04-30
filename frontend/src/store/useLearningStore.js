@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useGamificationStore } from './useGamificationStore';
-import { getUnitById, getNextLesson } from '@/data/learningData';
+import api from '@/lib/api';
 
 export const useLearningStore = create()(
   persist(
@@ -19,7 +19,7 @@ export const useLearningStore = create()(
           set({ enrolledUnits: [...s.enrolledUnits, unitId] });
       },
 
-      completeLesson: (lessonId, unitId, score, xpReward) => {
+      completeLesson: async (lessonId, unitId, score, xpReward) => {
         const s = get();
         const mastered = score >= 80;
         set({
@@ -31,29 +31,31 @@ export const useLearningStore = create()(
             : s.masteredLessons,
           lessonScores: { ...s.lessonScores, [lessonId]: Math.max(score, s.lessonScores[lessonId] || 0) },
         });
-        if (!s.completedLessons.includes(lessonId))
-          useGamificationStore.getState().addXp(xpReward);
-        const next = getNextLesson(unitId, lessonId);
-        set(next ? { currentLessonId: next.id, currentUnitId: unitId } : { currentLessonId: null });
+        
+        try {
+            // Find next lesson via backend call, since we don't have hardcoded data
+            const { data } = await api.get(`/courses/units/${unitId}/`);
+            const lessons = data.lessons || [];
+            const idx = lessons.findIndex(l => l.slug === lessonId);
+            if (idx !== -1 && idx < lessons.length - 1) {
+                set({ currentLessonId: lessons[idx + 1].slug, currentUnitId: unitId });
+            } else {
+                set({ currentLessonId: null });
+            }
+        } catch (e) {
+            set({ currentLessonId: null });
+        }
       },
 
       resumeLesson: (lessonId, unitId) =>
         set({ currentLessonId: lessonId, currentUnitId: unitId }),
-
-      isLessonUnlocked: (unitId, lessonId) => {
-        const unit = getUnitById(unitId);
-        if (!unit) return false;
-        const idx = unit.lessons.findIndex((l) => l.id === lessonId);
-        if (idx === 0) return true;
-        return get().completedLessons.includes(unit.lessons[idx - 1].id);
-      },
-
-      getUnitProgress: (unitId) => {
-        const unit = getUnitById(unitId);
-        if (!unit || unit.lessons.length === 0) return 0;
-        const done = unit.lessons.filter((l) => get().completedLessons.includes(l.id)).length;
-        return Math.round((done / unit.lessons.length) * 100);
-      },
+        
+      // API integration for progress tracking
+      syncProgressFromAPI: (progressData) => {
+          if (!progressData) return;
+          const completed = progressData.lessons ? progressData.lessons.map(l => l.lesson_slug) : [];
+          set({ completedLessons: completed });
+      }
     }),
     { name: 'uz-cosmos-learning-storage' },
   ),

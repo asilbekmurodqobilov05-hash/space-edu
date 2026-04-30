@@ -1,130 +1,164 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, PlayCircle, CheckCircle2, Lock, Star } from 'lucide-react';
-import { getUnitById } from '@/data/learningData';
-import { useLearningStore } from '@/store/useLearningStore';
+import { ArrowLeft, PlayCircle, CheckCircle2, Star, Loader, Clock } from 'lucide-react';
+import api from '@/lib/api';
+import { useAuthStore } from '@/store/useAuthStore';
+import GlassCard from '@/components/ui/GlassCard';
+
+function LessonRow({ lesson, unitSlug, completed, index }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.07 }}
+    >
+      <Link
+        to={`/lesson/${unitSlug}/${lesson.slug}`}
+        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl border transition-all group ${
+          completed
+            ? 'bg-green-500/5 border-green-500/20 hover:border-green-500/40 hover:bg-green-500/10'
+            : 'bg-white/[0.02] border-white/5 hover:border-violet/30 hover:bg-white/[0.05]'
+        }`}
+      >
+        <div className="flex items-center gap-5">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all ${
+            completed
+              ? 'bg-green-500/15 text-green-400 border border-green-500/25'
+              : 'bg-white/5 text-white/40 border border-white/10 group-hover:border-violet/30 group-hover:text-violet-light'
+          }`}>
+            {completed ? <CheckCircle2 className="w-6 h-6" /> : <PlayCircle className="w-6 h-6" />}
+          </div>
+          <div>
+            <p className="text-[11px] font-[800] text-white/20 uppercase tracking-widest mb-1">
+              Lesson {index + 1}
+            </p>
+            <h3 className={`text-lg font-[800] transition-colors ${
+              completed ? 'text-white' : 'text-white/80 group-hover:text-white'
+            }`}>
+              {lesson.title_en}
+            </h3>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+          {lesson.estimated_minutes && (
+            <div className="flex items-center gap-1.5 text-white/20 text-[11px] font-[700]">
+              <Clock className="w-3.5 h-3.5" />
+              {lesson.estimated_minutes}m
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet/10 border border-violet/20 text-[11px] font-[800] text-violet-light">
+            <Star className="w-3 h-3" /> {lesson.xp_reward} XP
+          </div>
+          <span className={`px-5 py-2.5 rounded-xl font-[800] text-xs uppercase tracking-widest transition-all ${
+            completed
+              ? 'bg-white/5 text-white/50 group-hover:bg-white/10'
+              : 'bg-violet text-white shadow-lg shadow-violet/20 group-hover:bg-violet-dark'
+          }`}>
+            {completed ? 'Review' : 'Start'}
+          </span>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
 
 export default function UnitView() {
   const { unitId } = useParams();
   const navigate = useNavigate();
-  const { completedLessons, isLessonUnlocked, getUnitProgress } = useLearningStore();
+  const { isAuthenticated } = useAuthStore();
 
-  const unit = unitId ? getUnitById(unitId) : undefined;
+  const [unit, setUnit] = useState(null);
+  const [completedSlugs, setCompletedSlugs] = useState(new Set());
+  const [loading, setLoading] = useState(true);
 
-  if (!unit) {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { data } = await api.get(`/courses/units/${unitId}/`);
+        setUnit(data);
+
+        if (isAuthenticated) {
+          try {
+            const { data: progress } = await api.get(`/progress/units/${unitId}/`);
+            setCompletedSlugs(new Set(progress.lessons.map((l) => l.lesson_slug)));
+          } catch { /* not enrolled yet — fine */ }
+        }
+      } catch {
+        navigate('/learn');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [unitId, isAuthenticated]);
+
+  if (loading) {
     return (
-      <div className="min-h-screen pt-24 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Mission not found</h2>
-          <button onClick={() => navigate('/learn')} className="text-neon-blue hover:underline">
-            Return to Missions
-          </button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader className="w-8 h-8 text-violet-light animate-spin" />
       </div>
     );
   }
 
-  const progress = getUnitProgress(unit.id);
+  if (!unit) return null;
+
+  const completedCount = unit.lessons?.filter((l) => completedSlugs.has(l.slug)).length || 0;
+  const total = unit.lessons?.length || 0;
+  const progressPct = total ? Math.round((completedCount / total) * 100) : 0;
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-      <Link to="/learn" className="inline-flex items-center gap-2 text-white/50 hover:text-white mb-8 transition-colors font-display tracking-wide text-sm uppercase">
-        <ArrowLeft className="w-4 h-4" /> Back to Missions
-      </Link>
+    <div className="relative min-h-screen pt-32 pb-24 px-4 overflow-hidden">
+      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[140px] pointer-events-none z-0"
+        style={{ background: 'radial-gradient(circle, rgba(0,229,255,0.03) 0%, transparent 70%)' }} />
 
-      <div className="bg-white/5 border border-white/10 p-8 md:p-12 rounded-[32px] mb-16 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-neon-blue/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-        
-        <div className="relative z-10">
-          <h1 className="text-[clamp(32px,4vw,48px)] font-[800] tracking-[-0.02em] text-white mb-4">{unit.title}</h1>
-          <p className="text-white/60 text-lg mb-10 max-w-2xl leading-relaxed">{unit.description}</p>
+      <div className="max-w-3xl mx-auto relative z-10">
+        <Link to="/learn" className="inline-flex items-center gap-2 text-white/30 hover:text-white transition-colors text-[11px] font-[800] uppercase tracking-widest mb-10">
+          <ArrowLeft className="w-4 h-4" /> Back to Academy
+        </Link>
 
-          <div className="flex items-center gap-6">
-            <div className="flex-grow max-w-md">
-              <div className="flex justify-between text-sm font-bold font-display tracking-wide mb-3">
-                <span className="text-white/40 uppercase">Mission Progress</span>
-                <span className="text-neon-blue">{progress}%</span>
-              </div>
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  className="h-full bg-neon-blue shadow-[0_0_10px_rgba(0,229,255,0.5)] rounded-full"
-                />
-              </div>
+        {/* Unit header */}
+        <GlassCard accent="#00e5ff" delay={0} className="mb-10">
+          <h1 className="text-[clamp(28px,4vw,40px)] font-[900] tracking-tight text-white mb-4">
+            {unit.title_en}
+          </h1>
+          <p className="text-white/40 text-[15px] leading-relaxed mb-8">
+            Complete all lessons to earn <span className="text-violet-light font-[800]">{unit.xp_reward} XP</span>
+            {unit.fuel_reward > 0 && <> and <span className="text-orange-400 font-[800]">{unit.fuel_reward} Fuel</span></>}.
+          </p>
+
+          {/* Progress */}
+          <div className="flex flex-col gap-3">
+            <div className="flex justify-between text-[11px] font-[800] uppercase tracking-wider">
+              <span className="text-white/30">Progress</span>
+              <span className="text-neon-blue">{completedCount} / {total} lessons</span>
+            </div>
+            <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                className="h-full rounded-full bg-gradient-to-r from-neon-blue to-violet"
+                style={{ boxShadow: '0 0 10px rgba(0,229,255,0.4)' }}
+              />
             </div>
           </div>
-        </div>
-      </div>
+        </GlassCard>
 
-      <div className="space-y-6">
-        <h2 className="text-3xl font-[800] tracking-tight mb-8">Mission Objectives</h2>
-        
-        {unit.lessons.map((lesson, index) => {
-          const isCompleted = completedLessons.includes(lesson.id);
-          const isUnlocked = isLessonUnlocked(unit.id, lesson.id);
-
-          return (
-            <motion.div
+        {/* Lessons */}
+        <div className="space-y-4">
+          <h2 className="text-[12px] font-[800] uppercase tracking-[0.2em] text-white/20 mb-6">Mission Objectives</h2>
+          {unit.lessons?.map((lesson, i) => (
+            <LessonRow
               key={lesson.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              {isUnlocked ? (
-                <Link
-                  to={`/lesson/${unit.id}/${lesson.id}`}
-                  className={`bg-white/5 border p-6 rounded-[24px] flex flex-col sm:flex-row sm:items-center justify-between group transition-all hover:-translate-y-1 ${
-                    isCompleted ? 'border-green-500/30 hover:border-green-500/50 hover:bg-green-500/5' : 'border-white/10 hover:border-neon-blue/40 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-start sm:items-center gap-6 mb-4 sm:mb-0">
-                    <div className={`p-4 rounded-2xl shrink-0 ${
-                      isCompleted ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-[#04080f] text-neon-blue border border-white/10 shadow-inner group-hover:border-neon-blue/30'
-                    }`}>
-                      {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <PlayCircle className="w-6 h-6" />}
-                    </div>
-                    <div>
-                      <h3 className={`text-xl font-[700] mb-2 transition-colors ${isCompleted ? 'text-white' : 'text-white group-hover:text-neon-blue'}`}>
-                        {index + 1}. {lesson.title}
-                      </h3>
-                      <p className="text-white/50 text-sm leading-relaxed">
-                        {lesson.description}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 self-end sm:self-auto">
-                    <div className="hidden sm:flex items-center gap-1.5 text-neon-purple text-sm font-bold bg-neon-purple/10 border border-neon-purple/20 px-4 py-1.5 rounded-full">
-                      <Star className="w-4 h-4" /> {lesson.xpReward} XP
-                    </div>
-                    <button className={`px-8 py-3 rounded-full font-[700] transition-all ${
-                      isCompleted ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-neon-blue text-[#04080f] hover:scale-105 box-glow-blue'
-                    }`}>
-                      {isCompleted ? 'Review' : 'Start'}
-                    </button>
-                  </div>
-                </Link>
-              ) : (
-                <div className="bg-white/5 border border-white/5 p-6 rounded-[24px] flex items-center justify-between opacity-50 grayscale">
-                  <div className="flex items-center gap-6">
-                    <div className="p-4 rounded-2xl bg-[#04080f] text-white/30 border border-white/5">
-                      <Lock className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-[700] text-white/50 mb-2">
-                        {index + 1}. {lesson.title}
-                      </h3>
-                      <p className="text-white/30 text-sm">
-                        Complete previous objectives to unlock
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          );
-        })}
+              lesson={lesson}
+              unitSlug={unit.slug}
+              completed={completedSlugs.has(lesson.slug)}
+              index={i}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
