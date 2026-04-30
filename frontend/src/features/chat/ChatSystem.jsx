@@ -153,7 +153,7 @@ export default function ChatSystem() {
     setSupportQuery("");
     setIsTypingSupport(true);
 
-    const apiKey = process.env.GEMINI_API_KEY || "";
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
     if (!apiKey) {
       setSupportMessages((prev) => [
         ...prev,
