@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { Palette, ArrowRight } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-
-const topics = [
-  { id: 1, title: 'Sayyora modullari',          titleEn: 'Planetary Modules',       emoji: '🪐', lessonsCount: 8 },
-  { id: 2, title: 'Raketalar va sun\'iy yo\'ldoshlar', titleEn: 'Rockets and Satellites', emoji: '🚀', lessonsCount: 10 },
-];
+import { creativityTopicsData } from '@/data/creativityTopicsData';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 30, scale: 0.96 },
@@ -18,6 +15,8 @@ const cardVariants = {
 
 function TopicCard({ topic, index, color, colorLight, colorBorder }) {
   const [hovered, setHovered] = useState(false);
+  const navigate = useNavigate();
+
   return (
     <motion.div
       custom={index}
@@ -26,6 +25,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
       animate="visible"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => navigate(`/learn/creativity/${topic.id}`)}
       style={{
         padding: '32px',
         borderRadius: '22px',
@@ -60,7 +60,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
               fontSize: '32px', flexShrink: 0,
             }}
           >
-            {topic.emoji}
+            {topic.id === 1 ? '🪐' : '🚀'}
           </div>
           <div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: 700, color: '#fff' }}>{topic.title}</h3>
@@ -69,7 +69,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)' }}>
-            <span style={{ color, fontWeight: 700 }}>{topic.lessonsCount}</span> dars
+            <span style={{ color, fontWeight: 700 }}>{topic.lessons.length}</span> dars
           </span>
           <div
             style={{
@@ -96,6 +96,7 @@ export default function CreativityView() {
   const color = '#f472b6';
   const colorLight = 'rgba(244,114,182,0.10)';
   const colorBorder = 'rgba(244,114,182,0.25)';
+  const topics = Object.values(creativityTopicsData);
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>

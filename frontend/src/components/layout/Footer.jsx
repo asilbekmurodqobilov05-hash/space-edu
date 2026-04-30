@@ -51,7 +51,6 @@ const Footer = () => {
     {
       title: "Special Programs",
       links: [
-        { label: "UZ Space", path: "/uzb" },
         { label: "Space Run", path: "/space-game" },
         { label: "Quiz & TEST", path: "/quiz" },
       ]

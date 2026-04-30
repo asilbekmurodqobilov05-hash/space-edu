@@ -218,7 +218,7 @@ export const quizData = {
     },
     ...Array.from({ length: 10 }).map((_, i) => ({
       id: 21 + i,
-      text: `Mexanikaning asosiy qonuniyatlariga oid test savoli ${i + 1}. Jism tezlanishi formulasini toping.`,
+      text: `Mexanikaning asosiy qonuniyatlariga oid test savoli ${i+1}. Jism tezlanishi formulasini toping.`,
       options: ["a = F/m", "a = v/t", "a = m/F", "a = F·m"],
       correctAnswer: 0,
       difficulty: 1,
@@ -267,7 +267,7 @@ export const quizData = {
     },
     ...Array.from({ length: 25 }).map((_, i) => ({
       id: 6 + i,
-      text: `Astronomiya va Koinot bo'yicha savol ${i + 1}. Qora tuynuk nima?`,
+      text: `Astronomiya va Koinot bo'yicha savol ${i+1}. Qora tuynuk nima?`,
       options: [
         "Gravitatsiyasi shunchalik kuchliki, undan hatto yorug'lik ham qochib qutula olmaydigan obyekt",
         "Yulduzlarning paydo bo'lish joyi",
@@ -309,7 +309,7 @@ export const quizData = {
     },
     ...Array.from({ length: 26 }).map((_, i) => ({
       id: 5 + i,
-      text: `Fizika masalalari to'plamidan murakkab masala ${i + 1}. Ideal gaz holat tenglamasini ko'rsating.`,
+      text: `Fizika masalalari to'plamidan murakkab masala ${i+1}. Ideal gaz holat tenglamasini ko'rsating.`,
       options: ["pV = nRT", "p = nkT", "V/T = const", "pV = const"],
       correctAnswer: 0,
       difficulty: 2,
@@ -344,7 +344,7 @@ export const quizData = {
     },
     ...Array.from({ length: 27 }).map((_, i) => ({
       id: 4 + i,
-      text: `Ta'lim va onlayn kurslar bo'yicha savol ${i + 1}. Masofaviy ta'limning afzalligi nimada?`,
+      text: `Ta'lim va onlayn kurslar bo'yicha savol ${i+1}. Masofaviy ta'limning afzalligi nimada?`,
       options: [
         "Vaqt va joyga bog'liq emasligi",
         "Faqat kompyuterda o'qish mumkinligi",
