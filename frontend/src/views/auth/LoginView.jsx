@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Eye, EyeOff, Rocket, ShieldCheck } from 'lucide-react';
 import api from '@/lib/api';
+import { getCosmicSilkRoadUrl } from '@/lib/externalAuthUrl';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
 import GlassCard from '@/components/ui/GlassCard';
@@ -145,9 +146,9 @@ export default function LoginView() {
             <div className="mt-4 pt-6 border-t border-white/5 text-center">
               <p className="text-white/30 text-xs font-[600]">
                 New to the academy?{' '}
-                <Link to="/register" className="text-violet-light hover:text-white font-[800] transition-colors">
+                <a href={`${getCosmicSilkRoadUrl()}#register`} className="text-violet-light hover:text-white font-[800] transition-colors">
                   Initialize Profile
-                </Link>
+                </a>
               </p>
             </div>
           </form>

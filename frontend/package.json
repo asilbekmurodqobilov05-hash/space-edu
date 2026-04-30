@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "cosmic:sync": "node ./scripts/sync-cosmic.mjs",
+    "predev": "node ./scripts/sync-cosmic.mjs",
+    "prebuild": "node ./scripts/sync-cosmic.mjs",
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",

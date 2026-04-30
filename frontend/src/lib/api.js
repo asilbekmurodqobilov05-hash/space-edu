@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getCosmicSilkRoadUrl } from '@/lib/externalAuthUrl';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -8,7 +9,7 @@ const api = axios.create({
 // Set lazily from useAuthStore to avoid circular dep
 let _getAccess = () => null;
 let _getRefresh = () => null;
-let _onLogout = () => { window.location.href = '/login'; };
+let _onLogout = () => { window.location.href = getCosmicSilkRoadUrl(); };
 
 export const setupApiAuth = (getAccess, getRefresh, onLogout) => {
   _getAccess = getAccess;

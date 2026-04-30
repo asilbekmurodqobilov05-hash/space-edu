@@ -11,6 +11,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useUserStore } from "@/store/useUserStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTranslation } from "@/hooks/useTranslation";
+import { getCosmicSilkRoadUrl } from "@/lib/externalAuthUrl";
 
 const LANG_META = {
   ENG: { flag: '🇬🇧', label: 'English' },
@@ -53,10 +54,12 @@ const btnBase = {
   active: { color: '#c4b5fd', background: 'rgba(139,92,246,0.20)', boxShadow: 'inset 0 0 0 1px rgba(167,139,250,0.30)' },
 };
 
-function useBtn(active) {
-  const on  = useCallback((e) => { if (!active) Object.assign(e.currentTarget.style, btnBase.hover);  }, [active]);
-  const off = useCallback((e) => { if (!active) Object.assign(e.currentTarget.style, { color: btnBase.idle.color, background: 'transparent' }); }, [active]);
-  return { onMouseEnter: on, onMouseLeave: off, style: active ? btnBase.active : btnBase.idle };
+function btnProps(active) {
+  return {
+    onMouseEnter: (e) => { if (!active) Object.assign(e.currentTarget.style, btnBase.hover); },
+    onMouseLeave: (e) => { if (!active) Object.assign(e.currentTarget.style, { color: btnBase.idle.color, background: 'transparent' }); },
+    style: active ? btnBase.active : btnBase.idle,
+  };
 }
 
 // ── Dropdown ──────────────────────────────────────────────────────────────────
@@ -64,7 +67,7 @@ function Dropdown({ label, icon: Icon, children, isActive: forceActive }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const location = useLocation();
-  const btn = useBtn(open || forceActive);
+  const btn = btnProps(open || forceActive);
 
   useEffect(() => {
     if (!open) return;
@@ -217,17 +220,20 @@ export default function Navigation() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200"
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden transition-all duration-200"
             style={{ background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(167,139,250,0.32)' }}>
-            <Home className="w-4 h-4 group-hover:scale-110 transition-transform duration-200"
-              style={{ color: '#a78bfa' }} strokeWidth={2.2} />
+            <img
+              src="/astra-logo.png"
+              alt="Astra.x logo"
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+            />
           </span>
           <span className="font-bold text-lg tracking-tight"
             style={{
               background: 'linear-gradient(135deg,#ddd6fe 0%,#a78bfa 55%,#8b5cf6 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
             }}>
-            {t('nav','brand')}
+            Astra.x
           </span>
         </Link>
 
@@ -235,7 +241,7 @@ export default function Navigation() {
         <div className="flex items-center justify-center gap-0.5">
           {mainNav.map(({ path, label, icon: Icon }) => {
             const active = isActive(path);
-            const b = useBtn(active);
+            const b = btnProps(active);
             return (
               <Link key={path} to={path}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-200 whitespace-nowrap"
@@ -250,23 +256,30 @@ export default function Navigation() {
             {(close) => features.map((f) => <DropLink key={f.path} {...f} close={() => close(false)} />)}
           </Dropdown>
 
+          {isAuthenticated && (
+            <Link
+              to="/profile"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-200 whitespace-nowrap"
+              {...btnProps(isActive('/profile'))}
+            >
+              <User className="w-3.5 h-3.5" strokeWidth={2} />
+              My Profile
+            </Link>
+          )}
+
           <LangDropdown />
         </div>
 
-        {/* Right — Profile or Login */}
+        {/* Right — login only for guests */}
         <div className="flex items-center flex-shrink-0">
-          {isAuthenticated ? (
-            <Dropdown label="Profile" icon={User} isActive={profileHasActive}>
-              {(close) => PROFILE_ITEMS.map((p) => <DropLink key={p.path} {...p} close={() => close(false)} />)}
-            </Dropdown>
-          ) : (
-            <Link 
-              to="/register"
+          {!isAuthenticated && (
+            <a
+              href={getCosmicSilkRoadUrl()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-bold transition-all duration-200 whitespace-nowrap bg-violet/20 border border-violet/30 text-violet-pale hover:bg-violet/30 hover:scale-105"
             >
               <User className="w-3.5 h-3.5" strokeWidth={2.5} />
               Log in
-            </Link>
+            </a>
           )}
         </div>
       </div>
@@ -275,31 +288,31 @@ export default function Navigation() {
       <div className="xl:hidden flex items-center justify-between px-4 h-[62px]">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group" onClick={() => setIsMobileOpen(false)}>
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl"
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl overflow-hidden"
             style={{ background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(167,139,250,0.32)' }}>
-            <Home className="w-4 h-4" style={{ color: '#a78bfa' }} strokeWidth={2.2} />
+            <img
+              src="/astra-logo.png"
+              alt="Astra.x logo"
+              className="w-full h-full object-cover"
+            />
           </span>
           <span className="font-bold text-base"
             style={{
               background: 'linear-gradient(135deg,#ddd6fe,#a78bfa)', WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent', backgroundClip: 'text',
             }}>
-            {t('nav','brand')}
+            Astra.x
           </span>
         </Link>
 
         <div className="flex items-center gap-2">
-          {isAuthenticated ? (
-            <Dropdown label="Profile" icon={User} isActive={profileHasActive}>
-              {(close) => PROFILE_ITEMS.map((p) => <DropLink key={p.path} {...p} close={() => close(false)} />)}
-            </Dropdown>
-          ) : (
-            <Link 
-              to="/register"
+          {!isAuthenticated && (
+            <a
+              href={getCosmicSilkRoadUrl()}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet/20 border border-violet/30 text-violet-pale"
             >
               Log in
-            </Link>
+            </a>
           )}
           <button
             type="button"

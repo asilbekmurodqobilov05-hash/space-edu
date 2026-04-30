@@ -59,15 +59,24 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id', 'username', 'first_name', 'last_name', 'email',
-            'date_of_birth', 'avatar_url', 'astronaut_name', 'language', 'date_joined',
+            'date_of_birth', 'avatar_url', 'astronaut_name', 'bio', 'language', 'date_joined',
         )
         read_only_fields = fields
 
     def get_avatar_url(self, obj):
         if not obj.avatar:
             return None
+        try:
+            url = obj.avatar.url
+        except (ValueError, OSError, AttributeError):
+            return None
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.avatar.url) if request else obj.avatar.url
+        if request:
+            try:
+                return request.build_absolute_uri(url)
+            except Exception:
+                return url
+        return url
 
 
 class ProfileSerializer(serializers.ModelSerializer):

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 
 import Navigation from '@/components/layout/Navigation';
 import ParticleBackground from '@/components/layout/ParticleBackground';

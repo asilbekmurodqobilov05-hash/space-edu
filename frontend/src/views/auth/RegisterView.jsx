@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Eye, EyeOff, Rocket, Star, ShieldCheck } from 'lucide-react';
 import api from '@/lib/api';
+import { getCosmicSilkRoadUrl } from '@/lib/externalAuthUrl';
 import { useAuthStore } from '@/store/useAuthStore';
 import GlassCard from '@/components/ui/GlassCard';
 
@@ -141,9 +142,9 @@ export default function RegisterView() {
             <div className="mt-4 pt-6 border-t border-white/5 text-center">
               <p className="text-white/30 text-xs font-[600]">
                 Already have an account?{' '}
-                <Link to="/login" className="text-violet-light hover:text-white font-[800] transition-colors">
+                <a href={getCosmicSilkRoadUrl()} className="text-violet-light hover:text-white font-[800] transition-colors">
                   Sign In
-                </Link>
+                </a>
               </p>
             </div>
           </form>

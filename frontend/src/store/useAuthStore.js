@@ -1,8 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api, { setupApiAuth } from '@/lib/api';
+<<<<<<< HEAD
 import { useGamificationStore } from './useGamificationStore';
 import { useLearningStore } from './useLearningStore';
+=======
+import { getCosmicSilkRoadUrl } from '@/lib/externalAuthUrl';
+>>>>>>> fb9f43a07d448d711ba845727e301907af6031e6
 
 export const useAuthStore = create()(
   persist(
@@ -27,7 +31,7 @@ export const useAuthStore = create()(
 
       logout: () => {
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
-        setupApiAuth(() => null, () => null, () => { window.location.href = '/login'; });
+        setupApiAuth(() => null, () => null, () => { window.location.href = getCosmicSilkRoadUrl(); });
       },
 
       // Called on app mount to verify token is still valid
@@ -61,7 +65,7 @@ function _setupAuth(get) {
   setupApiAuth(
     () => get().accessToken,
     () => get().refreshToken,
-    () => { useAuthStore.getState().logout(); window.location.href = '/login'; }
+    () => { useAuthStore.getState().logout(); window.location.href = getCosmicSilkRoadUrl(); }
   );
 }
 
@@ -72,7 +76,7 @@ setTimeout(() => {
     setupApiAuth(
       () => useAuthStore.getState().accessToken,
       () => useAuthStore.getState().refreshToken,
-      () => { logout(); window.location.href = '/login'; }
+      () => { logout(); window.location.href = getCosmicSilkRoadUrl(); }
     );
   }
 }, 0);
