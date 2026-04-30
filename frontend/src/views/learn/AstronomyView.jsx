@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { Telescope, ArrowRight } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-
-const topics = [
-  { id: 1, title: 'Quyosh tizimi',          titleEn: 'Solar System',          emoji: '☀️', lessonsCount: 16 },
-  { id: 2, title: 'Yulduzlar',              titleEn: 'Stars',                 emoji: '⭐', lessonsCount: 12 },
-  { id: 3, title: 'Sun\'iy yo\'ldoshlar va raketalar', titleEn: 'Satellites and Rockets', emoji: '🛰️', lessonsCount: 10 },
-  { id: 4, title: 'Osmon jismlari',         titleEn: 'Celestial Bodies',      emoji: '🌌', lessonsCount: 14 },
-];
+import { astronomyTopicsData } from '@/data/astronomyTopicsData';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 24, scale: 0.97 },
@@ -20,6 +15,8 @@ const cardVariants = {
 
 function TopicCard({ topic, index, color, colorLight, colorBorder }) {
   const [hovered, setHovered] = useState(false);
+  const navigate = useNavigate();
+
   return (
     <motion.div
       custom={index}
@@ -28,6 +25,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
       animate="visible"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => navigate(`/learn/astronomy/${topic.id}`)}
       style={{
         padding: '28px',
         borderRadius: '20px',
@@ -63,7 +61,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
               fontSize: '28px', flexShrink: 0,
             }}
           >
-            {topic.emoji}
+            {topic.id === 1 ? '☀️' : topic.id === 2 ? '⭐' : topic.id === 3 ? '🛰️' : '🌌'}
           </div>
           <div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: 700, color: '#fff' }}>{topic.title}</h3>
@@ -72,7 +70,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
-            <span style={{ color, fontWeight: 700 }}>{topic.lessonsCount}</span> dars
+            <span style={{ color, fontWeight: 700 }}>{topic.lessons.length}</span> dars
           </span>
           <div
             style={{
@@ -99,6 +97,7 @@ export default function AstronomyView() {
   const color = '#fbbf24';
   const colorLight = 'rgba(251,191,36,0.10)';
   const colorBorder = 'rgba(251,191,36,0.25)';
+  const topics = Object.values(astronomyTopicsData);
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>

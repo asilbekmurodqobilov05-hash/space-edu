@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { HelpCircle } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
+import { useProblemsStore } from '@/store/useProblemsStore';
 
 const TOTAL_PROBLEMS = 145;
 const PER_ROW = 10;
 
 export default function ProblemsView() {
+  const solvedProblems = useProblemsStore((state) => state.solvedProblems);
   const color = '#4ade80';
   const colorLight = 'rgba(74,222,128,0.10)';
   const colorBorder = 'rgba(74,222,128,0.25)';
@@ -58,7 +61,14 @@ export default function ProblemsView() {
           {rows.map((row, rowIdx) => (
             <div key={rowIdx} style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap' }}>
               {row.map((num) => (
-                <ProblemSquare key={num} num={num} color={color} colorLight={colorLight} colorBorder={colorBorder} />
+                <ProblemSquare 
+                  key={num} 
+                  num={num} 
+                  color={color} 
+                  colorLight={colorLight} 
+                  colorBorder={colorBorder} 
+                  status={solvedProblems[num]}
+                />
               ))}
             </div>
           ))}
@@ -68,8 +78,27 @@ export default function ProblemsView() {
   );
 }
 
-function ProblemSquare({ num, color, colorLight, colorBorder }) {
+function ProblemSquare({ num, color, colorLight, colorBorder, status }) {
   const [hovered, setHovered] = useState(false);
+  const navigate = useNavigate();
+
+  // Determine dynamic colors based on status
+  let bgColor = 'rgba(255,255,255,0.035)';
+  let borderColor = 'rgba(255,255,255,0.07)';
+  let textColor = 'rgba(255,255,255,0.55)';
+  let glowColor = color;
+
+  if (status === 'correct') {
+    bgColor = 'rgba(74,222,128,0.15)';
+    borderColor = 'rgba(74,222,128,0.4)';
+    textColor = '#4ade80';
+    glowColor = '#4ade80';
+  } else if (status === 'wrong') {
+    bgColor = 'rgba(239,68,68,0.15)';
+    borderColor = 'rgba(239,68,68,0.4)';
+    textColor = '#ef4444';
+    glowColor = '#ef4444';
+  }
 
   return (
     <motion.div
@@ -78,6 +107,7 @@ function ProblemSquare({ num, color, colorLight, colorBorder }) {
       transition={{ delay: num * 0.004, duration: 0.3 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => navigate(`/learn/problems/${num}`)}
       style={{
         width: '62px',
         height: '62px',
@@ -89,13 +119,13 @@ function ProblemSquare({ num, color, colorLight, colorBorder }) {
         fontWeight: 700,
         cursor: 'pointer',
         transition: 'all 0.25s cubic-bezier(0.22,1,0.36,1)',
-        border: `1px solid ${hovered ? colorBorder : 'rgba(255,255,255,0.07)'}`,
+        border: `1px solid ${hovered ? (status === 'wrong' ? '#ef4444' : colorBorder) : borderColor}`,
         background: hovered
-          ? `linear-gradient(145deg, ${colorLight}, rgba(255,255,255,0.06))`
-          : 'rgba(255,255,255,0.035)',
-        color: hovered ? color : 'rgba(255,255,255,0.55)',
+          ? `linear-gradient(145deg, ${status === 'wrong' ? 'rgba(239,68,68,0.2)' : colorLight}, rgba(255,255,255,0.06))`
+          : bgColor,
+        color: hovered ? (status === 'wrong' ? '#ef4444' : color) : textColor,
         transform: hovered ? 'scale(1.12)' : 'scale(1)',
-        boxShadow: hovered ? `0 0 20px ${color}30, 0 8px 24px rgba(0,0,0,0.3)` : 'none',
+        boxShadow: hovered ? `0 0 20px ${glowColor}30, 0 8px 24px rgba(0,0,0,0.3)` : 'none',
         zIndex: hovered ? 10 : 1,
         position: 'relative',
       }}

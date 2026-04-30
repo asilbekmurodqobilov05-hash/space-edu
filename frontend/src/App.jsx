@@ -27,11 +27,17 @@ import PhysicsView        from '@/views/learn/PhysicsView';
 import PhysicsTopicView   from '@/views/learn/PhysicsTopicView';
 import PhysicsLessonView  from '@/views/learn/PhysicsLessonView';
 import AstronomyView      from '@/views/learn/AstronomyView';
+import AstronomyTopicView  from '@/views/learn/AstronomyTopicView';
 import CreativityView     from '@/views/learn/CreativityView';
+import CreativityTopicView from '@/views/learn/CreativityTopicView';
+import SubTopicView        from '@/views/learn/SubTopicView';
 import InterviewsView     from '@/views/learn/InterviewsView';
+import InterviewsTopicView from '@/views/learn/InterviewsTopicView';
 import ProblemsView       from '@/views/learn/ProblemsView';
+import ProblemDetailView  from '@/views/learn/ProblemDetailView';
 import UnitView           from '@/views/learn/UnitView';
 import LessonView         from '@/views/learn/LessonView';
+import UniversalLessonView from '@/views/learn/UniversalLessonView';
 import ExploreView        from '@/views/explore/ExploreView';
 import SpaceLabView       from '@/views/explore/SpaceLabView';
 import DailyChallengeView from '@/views/community/DailyChallengeView';
@@ -98,9 +104,20 @@ export default function App() {
             <Route path="/learn/physics/:topicId"                 element={<PT><PhysicsTopicView /></PT>} />
             <Route path="/learn/physics/:topicId/lesson/:lessonIdx" element={<PT><PhysicsLessonView /></PT>} />
             <Route path="/learn/astronomy"                        element={<PT><AstronomyView /></PT>} />
+            <Route path="/learn/astronomy/:topicId"              element={<PT><AstronomyTopicView /></PT>} />
+
             <Route path="/learn/creativity"                       element={<PT><CreativityView /></PT>} />
+            <Route path="/learn/creativity/:topicId"             element={<PT><CreativityTopicView /></PT>} />
+
             <Route path="/learn/interviews"                       element={<PT><InterviewsView /></PT>} />
+            <Route path="/learn/interviews/:topicId"             element={<PT><InterviewsTopicView /></PT>} />
+
+            {/* Unified Sub-Topic and Lesson routes for Astronomy, Creativity, and Interviews */}
+            <Route path="/learn/:subject/:topicId/sub/:subIdx" element={<PT><SubTopicView /></PT>} />
+            <Route path="/learn/:subject/:topicId/sub/:subIdx/lesson/:lessonIdx" element={<PT><UniversalLessonView /></PT>} />
+
             <Route path="/learn/problems"                         element={<PT><ProblemsView /></PT>} />
+            <Route path="/learn/problems/:id"                     element={<PT><ProblemDetailView /></PT>} />
             <Route path="/unit/:unitId"                           element={<PT><UnitView /></PT>} />
             <Route path="/lesson/:unitId/:lessonId"               element={<PT><LessonView /></PT>} />
 
