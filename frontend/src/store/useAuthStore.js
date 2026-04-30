@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api, { setupApiAuth } from '@/lib/api';
+import { useGamificationStore } from './useGamificationStore';
+import { useLearningStore } from './useLearningStore';
 
 export const useAuthStore = create()(
   persist(
@@ -33,6 +35,17 @@ export const useAuthStore = create()(
         try {
           const { data } = await api.get('/auth/me/');
           set((s) => ({ user: { ...s.user, ...data } }));
+          
+          try {
+              const { data: gamificationData } = await api.get('/gamification/profile/');
+              useGamificationStore.getState().syncFromAPI(gamificationData);
+          } catch(e) {}
+          
+          try {
+              const { data: progressData } = await api.get('/progress/');
+              useLearningStore.getState().syncProgressFromAPI(progressData);
+          } catch(e) {}
+
           return true;
         } catch {
           get().logout();
