@@ -74,15 +74,9 @@ export default function PortfolioView() {
           <p className="text-gray-400 mb-8">
             {t('portfolio', 'emptyDesc')}
           </p>
-          {careerTrack ? (
-            <Link to="/explore" className="px-8 py-3 bg-neon-blue text-space-900 font-bold rounded-full hover:bg-white transition-colors box-glow-blue inline-flex items-center gap-2">
-              <Target className="w-5 h-5" /> {t('portfolio', 'startMission')}
-            </Link>
-          ) : (
-            <Link to="/careers" className="px-8 py-3 bg-neon-purple text-white font-bold rounded-full hover:bg-neon-purple/80 transition-colors box-glow-purple inline-flex items-center gap-2">
-              <Plus className="w-5 h-5" /> {t('portfolio', 'enlist')}
-            </Link>
-          )}
+          <Link to="/explore" className="px-8 py-3 bg-neon-blue text-space-900 font-bold rounded-full hover:bg-white transition-colors box-glow-blue inline-flex items-center gap-2">
+            <Target className="w-5 h-5" /> {t('portfolio', 'startMission')}
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

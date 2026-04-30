@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api, { setupApiAuth } from '@/lib/api';
+<<<<<<< HEAD
+=======
+import { useGamificationStore } from './useGamificationStore';
+import { useLearningStore } from './useLearningStore';
+>>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
 import { getCosmicSilkRoadUrl } from '@/lib/externalAuthUrl';
 
 export const useAuthStore = create()(
@@ -10,14 +15,21 @@ export const useAuthStore = create()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+<<<<<<< HEAD
 
+=======
+>>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
       login: (user, accessToken, refreshToken) => {
         set({ user, accessToken, refreshToken, isAuthenticated: true });
         _setupAuth(get);
       },
 
       setTokens: (accessToken, refreshToken) => {
+<<<<<<< HEAD
         set({ accessToken, refreshToken, isAuthenticated: Boolean(accessToken) });
+=======
+        set({ accessToken, refreshToken });
+>>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
         _setupAuth(get);
       },
 
@@ -29,10 +41,29 @@ export const useAuthStore = create()(
         setupApiAuth(() => null, () => null, () => { window.location.href = getCosmicSilkRoadUrl(); });
       },
 
+<<<<<<< HEAD
       fetchMe: async () => {
         try {
           const { data } = await api.get('/auth/me/');
           set((s) => ({ user: { ...s.user, ...data }, isAuthenticated: true }));
+=======
+      // Called on app mount to verify token is still valid
+      fetchMe: async () => {
+        try {
+          const { data } = await api.get('/auth/me/');
+          set((s) => ({ user: { ...s.user, ...data } }));
+
+          try {
+            const { data: gamificationData } = await api.get('/gamification/profile/');
+            useGamificationStore.getState().syncFromAPI(gamificationData);
+          } catch (e) { }
+
+          try {
+            const { data: progressData } = await api.get('/progress/');
+            useLearningStore.getState().syncProgressFromAPI(progressData);
+          } catch (e) { }
+
+>>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
           return true;
         } catch {
           get().logout();
@@ -40,7 +71,11 @@ export const useAuthStore = create()(
         }
       },
     }),
+<<<<<<< HEAD
     { name: 'auth-storage' }
+=======
+    { name: 'uz-cosmos-auth' }
+>>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
   )
 );
 
@@ -52,8 +87,22 @@ function _setupAuth(get) {
   );
 }
 
+<<<<<<< HEAD
 setupApiAuth(
   () => useAuthStore.getState().accessToken,
   () => useAuthStore.getState().refreshToken,
   () => { useAuthStore.getState().logout(); window.location.href = getCosmicSilkRoadUrl(); }
 );
+=======
+// Wire up interceptors on store creation (handles page reload with persisted tokens)
+setTimeout(() => {
+  const { accessToken, refreshToken, logout } = useAuthStore.getState();
+  if (accessToken) {
+    setupApiAuth(
+      () => useAuthStore.getState().accessToken,
+      () => useAuthStore.getState().refreshToken,
+      () => { logout(); window.location.href = getCosmicSilkRoadUrl(); }
+    );
+  }
+}, 0);
+>>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
