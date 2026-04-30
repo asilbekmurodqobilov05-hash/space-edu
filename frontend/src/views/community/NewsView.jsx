@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ExternalLink, Calendar, RefreshCw, Loader, Newspaper } from 'lucide-react';
 import api from '@/lib/api';
 import GlassCard from '@/components/ui/GlassCard';
+import { useUserStore } from '@/store/useUserStore';
+import { newsData } from '@/data/mockData';
 
 const SPACE_FACTS = [
   'A day on Venus is longer than its year.',
@@ -27,10 +29,16 @@ const CATEGORY_COLORS = {
 };
 
 function NewsCard({ article, index }) {
+  const { language } = useUserStore();
+  const langSuffix = language === 'UZB' ? 'uz' : language === 'RUS' ? 'ru' : 'en';
+
   const color = CATEGORY_COLORS[article.category] || CATEGORY_COLORS.science;
-  const date = new Date(article.published_at).toLocaleDateString('en-US', {
+  const date = new Date(article.published_at || article.date).toLocaleDateString(language === 'UZB' ? 'uz-UZ' : language === 'RUS' ? 'ru-RU' : 'en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   });
+
+  const title = article[`title_${langSuffix}`] || article.title || article.title_en;
+  const summary = article[`summary_${langSuffix}`] || article.summary || article.summary_en;
 
   return (
     <motion.div
@@ -71,10 +79,10 @@ function NewsCard({ article, index }) {
           </div>
 
           <h3 className="text-lg font-[800] text-white leading-snug mb-3 group-hover:text-violet-light transition-colors line-clamp-2">
-            {article.title_en}
+            {title}
           </h3>
           <p className="text-white/40 text-[13px] leading-relaxed flex-1 line-clamp-3">
-            {article.summary_en}
+            {summary}
           </p>
 
           {article.source_url && (
@@ -103,9 +111,11 @@ export default function NewsView() {
     api.get('/news/')
       .then(({ data }) => {
         const list = Array.isArray(data) ? data : data.results || [];
-        setArticles(list);
+        setArticles(list.length > 0 ? list : newsData);
       })
-      .catch(() => {})
+      .catch(() => {
+        setArticles(newsData);
+      })
       .finally(() => setLoading(false));
   }, []);
 

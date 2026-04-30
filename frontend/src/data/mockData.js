@@ -1,4 +1,4 @@
-﻿export const lessonsData = [
+export const lessonsData = [
   {
     id: "solar-system",
     level: "beginner",
@@ -114,13 +114,37 @@ export const videoData = [
 
 export const newsData = [
   {
+    id: 6,
+    title_en: 'James Webb Space Telescope Reveals New Exoplanet Atmosphere Data',
+    title_uz: 'James Webb (JWST) teleskopidan yangi ekzosayyora atmosferasi tasvirlari',
+    title_ru: 'Телескоп Джеймс Уэбб (JWST) представил новые данные об атмосфере экзопланет',
+    summary_en: 'NASA released new images from JWST showing methane and carbon dioxide ratios on K2-18b type planets, supporting theories of potential oceans.',
+    summary_uz: 'NASA JWST dan "K2-18b" tipidagi sayyoralarda metan va karbonat angidridning yangi nisbatlari aniqlangan tasvirlarni e’lon qildi, bu esa okeanlar ehtimolini oshiradi.',
+    summary_ru: 'НАСА опубликовало снимки JWST, на которых обнаружены новые соотношения метана и углекислого газа на планетах типа K2-18b, что подтверждает теорию об океанах.',
+    date: "2026-04-30",
+    image: "https://picsum.photos/seed/jwst/600/400",
+    category: "discovery",
+  },
+  {
+    id: 7,
+    title_en: 'Perseverance Rover Completes Delta Sample Analysis in Jezero Crater',
+    title_uz: 'Perseverance roveri "Ezero" kraterida namuna tahlilini yakunladi',
+    title_ru: 'Марсоход Perseverance завершил анализ образцов дельты в кратере Езеро',
+    summary_en: 'The rover finished analyzing samples from an ancient river delta, providing new data on organic molecule traces on Mars.',
+    summary_uz: 'Rover qadimgi daryo deltasidan olingan namunalar tahlilini yakunladi va organik molekulalar izlari haqida yangi ma’lumotlar berdi.',
+    summary_ru: 'Марсоход завершил анализ образцов из дельты древней реки, предоставив новые данные о следах органических молекул на Марсе.',
+    date: "2026-04-30",
+    image: "https://picsum.photos/seed/perseverance/600/400",
+    category: "exploration",
+  },
+  {
     id: 1,
-    title: "James Webb Space Telescope Discovers New Exoplanet",
+    title_en: "James Webb Space Telescope Discovers New Exoplanet",
     date: "April 4, 2026",
-    summary:
+    summary_en:
       "NASA's flagship telescope has identified a potentially habitable world just 40 light-years away, featuring signs of water vapor in its atmosphere.",
     image: "https://picsum.photos/seed/space1/600/400",
-    category: "Discovery",
+    category: "discovery",
   },
   {
     id: 2,
