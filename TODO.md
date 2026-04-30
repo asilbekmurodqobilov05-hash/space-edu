@@ -6,77 +6,77 @@
 
 ## PHASE 0 — Critical Fixes (Before Any Demo)
 
-- [ ] **0.1** Move Django `SECRET_KEY` to `.env` file, load via `python-decouple` or `os.environ`
-- [ ] **0.2** Add `.gitignore` entries: `.env`, `db.sqlite3`, `__pycache__`, `venv/`, `node_modules/`, `dist/`
-- [ ] **0.3** Create `frontend/.env.example` and `backend/.env.example` with placeholder keys
-- [ ] **0.4** Set `ALLOWED_HOSTS` from env var in Django settings
-- [ ] **0.5** Create `backend/requirements.txt` with all dependencies pinned
+- [x] **0.1** Move Django `SECRET_KEY` to `.env` file, load via `python-decouple` or `os.environ`
+- [x] **0.2** Add `.gitignore` entries: `.env`, `db.sqlite3`, `__pycache__`, `venv/`, `node_modules/`, `dist/`
+- [x] **0.3** Create `frontend/.env.example` and `backend/.env.example` with placeholder keys
+- [x] **0.4** Set `ALLOWED_HOSTS` from env var in Django settings
+- [x] **0.5** Create `backend/requirements.txt` with all dependencies pinned
 
 ---
 
 ## PHASE 1 — Backend Foundation
 
 ### 1.1 Django Project Setup
-- [ ] Install: `djangorestframework`, `djangorestframework-simplejwt`, `django-cors-headers`, `Pillow`, `python-decouple`, `channels` (for WebSocket chat)
-- [ ] Split settings into `settings/base.py`, `settings/development.py`, `settings/production.py`
-- [ ] Configure CORS: allow `http://localhost:3000`
-- [ ] Add DRF to `INSTALLED_APPS`, configure default authentication classes (JWT)
-- [ ] Set `TIME_ZONE = 'Asia/Tashkent'`
+- [x] Install: `djangorestframework`, `djangorestframework-simplejwt`, `django-cors-headers`, `Pillow`, `python-decouple`, `channels`
+- [x] Split settings into `settings/base.py`, `settings/development.py`, `settings/production.py`
+- [x] Configure CORS: allow `http://localhost:3000`
+- [x] Add DRF to `INSTALLED_APPS`, configure default authentication classes (JWT)
+- [x] Set `TIME_ZONE = 'Asia/Tashkent'`
 
 ### 1.2 Accounts App (`apps/accounts/`)
-- [ ] Create app: `python manage.py startapp accounts`
-- [ ] Custom `User` model extending `AbstractUser`: fields `avatar`, `spaceship`, `bio`, `astronaut_name`
-- [ ] Serializers: `RegisterSerializer`, `UserSerializer`, `ProfileSerializer`
-- [ ] Views: `RegisterView`, `LoginView` (JWT), `ProfileView` (GET/PATCH)
-- [ ] URLs: `/api/v1/auth/register/`, `/api/v1/auth/login/`, `/api/v1/auth/token/refresh/`, `/api/v1/auth/me/`
-- [ ] Password validation rules wired to DRF
+- [x] Create app: `python manage.py startapp accounts`
+- [x] Custom `User` model extending `AbstractUser`: fields `avatar`, `spaceship`, `bio`, `astronaut_name`
+- [x] Serializers: `RegisterSerializer`, `UserSerializer`, `ProfileSerializer`
+- [x] Views: `RegisterView`, `LoginView` (JWT), `ProfileView` (GET/PATCH)
+- [x] URLs: `/api/v1/auth/register/`, `/api/v1/auth/login/`, `/api/v1/auth/token/refresh/`, `/api/v1/auth/me/`
+- [x] Password validation rules wired to DRF
 
 ### 1.3 Courses App (`apps/courses/`)
-- [ ] Create app: `python manage.py startapp courses`
-- [ ] Models: `Level`, `Unit`, `Lesson`, `LessonSection`, `QuizQuestion`, `PracticeExercise`
-- [ ] Mirror the TypeScript interfaces from `frontend/src/data/learningData.ts` exactly
-- [ ] Django Admin for all models (so content can be managed)
-- [ ] Read-only API (no auth required): `LevelViewSet`, `UnitViewSet`, `LessonViewSet`
-- [ ] Management command: `load_initial_data` — seeds DB from existing frontend data files
+- [x] Create app: `python manage.py startapp courses`
+- [x] Models: `Level`, `Unit`, `Lesson`, `LessonSection`, `QuizQuestion`, `PracticeExercise`
+- [x] Mirror the TypeScript interfaces from `frontend/src/data/learningData.ts` exactly
+- [x] Django Admin for all models (so content can be managed)
+- [x] Read-only API (no auth required): `LevelViewSet`, `UnitViewSet`, `LessonViewSet`
+- [x] Management command: `load_initial_data` — seeds DB from existing frontend data files
 
 ### 1.4 Progress App (`apps/progress/`)
-- [ ] Create app: `python manage.py startapp progress`
-- [ ] Models: `UserLessonProgress` (user, lesson, score, is_mastered, completed_at), `UserUnitEnrollment`
-- [ ] Views: get progress, complete lesson (POST), get unit progress
-- [ ] All endpoints require JWT auth
+- [x] Create app: `python manage.py startapp progress`
+- [x] Models: `UserLessonProgress` (user, lesson, score, is_mastered, completed_at), `UserUnitEnrollment`
+- [x] Views: get progress, complete lesson (POST), get unit progress
+- [x] All endpoints require JWT auth
 
 ### 1.5 Gamification App (`apps/gamification/`)
-- [ ] Create app: `python manage.py startapp gamification`
-- [ ] Models: `UserProfile` (xp, level, fuel, streak, last_play_date), `UserBadge`, `UserInventory`
-- [ ] XP formula: `level = floor(sqrt(xp / 100)) + 1` (match frontend exactly)
-- [ ] Views: get profile, add XP (internal), leaderboard (top 100 by XP), badges list
-- [ ] Signal: on `UserLessonProgress` save → auto-add XP, check badges
+- [x] Create app: `python manage.py startapp gamification`
+- [x] Models: `UserProfile` (xp, level, fuel, streak, last_play_date), `UserBadge`, `UserInventory`
+- [x] XP formula: `level = floor(sqrt(xp / 100)) + 1` (match frontend exactly)
+- [x] Views: get profile, add XP (internal), leaderboard (top 100 by XP), badges list
+- [x] Signal: on `UserLessonProgress` save → auto-add XP, check badges
 
 ### 1.6 Market App (`apps/market/`)
-- [ ] Create app: `python manage.py startapp market`
-- [ ] Models: `Item` (name, description, cost_fuel, item_type, image), `UserItem`
-- [ ] Views: list items, purchase (deduct fuel, add to inventory)
-- [ ] Seed items via fixture
+- [x] Create app: `python manage.py startapp market`
+- [x] Models: `Item` (name, description, cost_fuel, item_type, image), `UserItem`
+- [x] Views: list items, purchase (deduct fuel, add to inventory)
+- [x] Seed items via fixture
 
 ### 1.7 Chat App (`apps/chat/`)
-- [ ] Create app: `python manage.py startapp chat`
-- [ ] Models: `ChatRoom` (name, is_global), `ChatMessage` (room, user, content, created_at)
-- [ ] REST: list rooms, list messages (paginated)
-- [ ] WebSocket consumer via Django Channels for real-time
-- [ ] Use `channels_redis` for channel layer (or in-memory for demo)
+- [x] Create app: `python manage.py startapp chat`
+- [x] Models: `ChatRoom` (name, is_global), `ChatMessage` (room, user, content, created_at)
+- [x] REST: list rooms, list messages (paginated)
+- [x] WebSocket consumer via Django Channels for real-time
+- [x] Use `channels_redis` for channel layer (or in-memory for demo)
 
 ---
 
 ## PHASE 2 — Frontend Auth
 
-- [ ] **2.1** Create `src/views/auth/LoginView.jsx` — email + password form, submit to `/api/v1/auth/login/`
-- [ ] **2.2** Create `src/views/auth/RegisterView.jsx` — username, email, password form, submit to `/api/v1/auth/register/`
-- [ ] **2.3** Create `src/store/useAuthStore.js` — stores `accessToken`, `refreshToken`, `user`; persists in localStorage
-- [ ] **2.4** Create `src/lib/api.js` — axios instance with base URL from `VITE_API_URL`, request interceptor (attach JWT), response interceptor (auto-refresh on 401)
-- [ ] **2.5** Create `src/components/ProtectedRoute.jsx` — redirects to `/login` if no token
-- [ ] **2.6** Wrap private routes in `App.jsx` with `ProtectedRoute`
-- [ ] **2.7** Add `/login` and `/register` routes to `App.jsx`
-- [ ] **2.8** Logout: clear tokens from store and localStorage, redirect to `/`
+- [x] **2.1** Create `src/views/auth/LoginView.jsx`
+- [x] **2.2** Create `src/views/auth/RegisterView.jsx`
+- [x] **2.3** Create `src/store/useAuthStore.js`
+- [x] **2.4** Create `src/lib/api.js`
+- [x] **2.5** Create `src/components/ProtectedRoute.jsx`
+- [x] **2.6** Wrap private routes in `App.jsx` with `ProtectedRoute`
+- [x] **2.7** Add `/login` and `/register` routes to `App.jsx`
+- [x] **2.8** Logout: clear tokens from store and localStorage, redirect to `/`
 
 ---
 
@@ -87,22 +87,22 @@
 
 - [x] **3.1** `vite.config.js` created — .jsx preferred over .tsx in resolve.extensions
 - [x] **3.2** `jsconfig.json` created alongside tsconfig.json
-- [ ] **3.3** Remove `typescript` from devDependencies, remove `tsc --noEmit` lint script in package.json
-- [ ] **3.4** Migrate `src/lib/utils.ts` → `utils.js`
-- [ ] **3.5** Migrate stores: `useUserStore`, `useGamificationStore`, `useLearningStore`, `useAIStore`
-- [ ] **3.6** Migrate `src/hooks/useTranslation.ts` → `.js`
-- [ ] **3.7** Migrate `src/i18n/translations.ts` → `.js`
-- [ ] **3.8** Migrate all data files in `src/data/`
-- [ ] **3.9** Delete `src/types/index.ts` (not needed in JS)
-- [ ] **3.10** Migrate layout components (Navigation, PageTransition, ParticleBackground, GlobalLanguageBar)
-- [ ] **3.11** Migrate all views (learn, explore, community, game, misc, profile)
-- [ ] **3.12** Migrate game files (SpaceRun)
-- [ ] **3.13** Migrate `src/features/ai/AskCosmos`
+- [x] **3.3** Remove `typescript` from devDependencies, remove `tsc --noEmit` lint script in package.json
+- [x] **3.4** Migrate `src/lib/utils.ts` → `utils.js`
+- [x] **3.5** Migrate stores: `useUserStore`, `useGamificationStore`, `useLearningStore`, `useAIStore`
+- [x] **3.6** Migrate `src/hooks/useTranslation.ts` → `.js`
+- [x] **3.7** Migrate `src/i18n/translations.ts` → `.js`
+- [x] **3.8** Migrate all data files in `src/data/`
+- [x] **3.9** Delete `src/types/index.ts` (not needed in JS)
+- [x] **3.10** Migrate layout components
+- [x] **3.11** Migrate all views
+- [x] **3.12** Migrate game files
+- [x] **3.13** Migrate `src/features/ai/AskCosmos`
 - [x] **3.14** `src/main.jsx` created, `index.html` updated to load main.jsx
 - [x] **3.15** `src/App.jsx` created (no TypeScript)
 - [x] **3.16** `HomeView` — rewritten in JS syntax, no type annotations
-- [ ] **3.17** Run `rename-to-js.ps1` to bulk rename remaining .tsx → .jsx and .ts → .js
-- [ ] **3.18** Full browser test after bulk rename
+- [x] **3.17** Run `rename-to-js.ps1` to bulk rename remaining .tsx → .jsx and .ts → .js
+- [x] **3.18** Full browser test after bulk rename
 
 ---
 
@@ -121,12 +121,12 @@
 
 ## PHASE 5 — Missing Pages & Features
 
-- [ ] **5.1** Create `/profile` page — user dashboard (XP bar, level, streak, radar chart of skills, recent badges)
-- [ ] **5.2** Create `/chat` page — global chat room, message list, send message
-- [ ] **5.3** Create `404.jsx` — "Lost in Space" styled not-found page, add to router
+- [x] **5.1** Create `/profile` page
+- [x] **5.2** Create `/chat` page
+- [x] **5.3** Create `404.jsx` — "Lost in Space" styled not-found page, add to router
 - [ ] **5.4** Video lesson player — embed YouTube or self-hosted video in `LessonSection` type `video`
-- [ ] **5.5** Radar chart for skills on profile (use SVG or recharts — lightweight)
-- [ ] **5.6** Error boundary component wrapping the whole app
+- [x] **5.5** Radar chart for skills on profile
+- [x] **5.6** Error boundary component wrapping the whole app
 
 ---
 

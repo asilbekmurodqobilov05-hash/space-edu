@@ -192,35 +192,24 @@ space-edu/
 - [x] useUserStore (language, astronautName, spaceship) — localStorage
 - [x] i18n (ENG/UZB/RUS, JSON локали, useTranslation хук)
 
-#### Что ОТСУТСТВУЕТ (критично для демо):
-- [ ] `frontend/.env` — файл не создан
-- [ ] `src/lib/api.js` — нет HTTP клиента (axios + interceptors)
-- [ ] `src/store/useAuthStore.js` — нет auth store
-- [ ] `src/components/ProtectedRoute.jsx` — нет защиты маршрутов
-- [ ] `src/views/auth/LoginView.jsx` — нет страницы входа
-- [ ] `src/views/auth/RegisterView.jsx` — нет страницы регистрации
-- [ ] `src/views/profile/ProfileView.jsx` — нет профиля пользователя
-- [ ] `src/views/chat/ChatView.jsx` — нет чата
-- [ ] `src/views/misc/NotFoundView.jsx` — нет 404
-- [ ] `src/components/ErrorBoundary.jsx` — нет обработки ошибок
-- [ ] App.jsx: нет routes `/login`, `/register`, `/profile`, `/chat`, нет `<Route path="*" />`
-- [ ] main.jsx: нет ErrorBoundary обёртки
-- [ ] Все views используют MOCK данные, нет обращений к API
+#### Что ДОБАВЛЕНО и РАБОТАЕТ:
+- [x] `frontend/.env` — создан, содержит VITE_API_URL и VITE_GEMINI_API_KEY
+- [x] `src/lib/api.js` — HTTP клиент (axios + interceptors) настроен
+- [x] `src/store/useAuthStore.js` — auth store настроен
+- [x] `src/components/ProtectedRoute.jsx` — защита маршрутов
+- [x] `src/views/auth/LoginView.jsx` — страница входа
+- [x] `src/views/auth/RegisterView.jsx` — страница регистрации
+- [x] `src/views/profile/ProfileView.jsx` — профиль пользователя
+- [x] `src/views/chat/ChatView.jsx` — чат
+- [x] `src/views/misc/NotFoundView.jsx` — страница 404
+- [x] `src/components/ErrorBoundary.jsx` — обработка ошибок
+- [x] App.jsx: маршруты `/login`, `/register`, `/profile`, `/chat`, и `<Route path="*" />` добавлены
+- [x] main.jsx: ErrorBoundary обёртка добавлена
+- [ ] Интеграция API: некоторые views все еще используют MOCK данные
 
-#### Проблемы в package.json (нужно удалить):
-```json
-"express": "^4.21.2"          ← не нужен во frontend
-"dotenv": "^17.2.3"           ← Vite использует import.meta.env
-"react-icons": "^5.6.0"       ← дубль lucide-react (+200KB)
-"typescript": "~5.8.2"        ← миграция на JS завершена
-"@types/express": "^4.17.21"  ← серверный тип
-"@types/canvas-confetti"       ← не нужен после JS миграции
-```
-И удалить из scripts: `"lint": "tsc --noEmit"`
-
-#### Проблема в vite.config.ts:
-- `GEMINI_API_KEY` в `define` — должно быть `VITE_GEMINI_API_KEY` (через `import.meta.env`)
-- Файл должен называться `vite.config.js`
+#### package.json и vite.config.js:
+- [x] Ненужные зависимости (express, dotenv, react-icons, typescript, @types/*) удалены.
+- [x] vite.config.js переименован и исправлен, GEMINI_API_KEY заменен на VITE_GEMINI_API_KEY.
 
 ---
 
