@@ -9,3 +9,14 @@ export function clamp(value, min, max) {
 export function formatNumber(n) {
   return n.toLocaleString();
 }
+
+export function getFieldByLang(obj, fieldBase, language) {
+  if (!obj) return '';
+  const suffixMap = {
+    'ENG': '_en',
+    'RUS': '_ru',
+    'UZB': '_uz'
+  };
+  const suffix = suffixMap[language] || '_en';
+  return obj[`${fieldBase}${suffix}`] || obj[`${fieldBase}_en`] || '';
+}

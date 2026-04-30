@@ -5,8 +5,10 @@ import { ArrowLeft, PlayCircle, CheckCircle2, Star, Loader, Clock } from 'lucide
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import GlassCard from '@/components/ui/GlassCard';
+import { getFieldByLang } from '@/lib/utils';
+import { useTranslation } from '@/hooks/useTranslation';
 
-function LessonRow({ lesson, unitSlug, completed, index }) {
+function LessonRow({ lesson, unitSlug, completed, index, language }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -36,7 +38,7 @@ function LessonRow({ lesson, unitSlug, completed, index }) {
             <h3 className={`text-lg font-[800] transition-colors ${
               completed ? 'text-white' : 'text-white/80 group-hover:text-white'
             }`}>
-              {lesson.title_en}
+              {getFieldByLang(lesson, 'title', language)}
             </h3>
           </div>
         </div>
@@ -68,6 +70,7 @@ export default function UnitView() {
   const { unitId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const { language } = useTranslation();
 
   const [unit, setUnit] = useState(null);
   const [completedSlugs, setCompletedSlugs] = useState(new Set());
@@ -121,7 +124,7 @@ export default function UnitView() {
         {/* Unit header */}
         <GlassCard accent="#00e5ff" delay={0} className="mb-10">
           <h1 className="text-[clamp(28px,4vw,40px)] font-[900] tracking-tight text-white mb-4">
-            {unit.title_en}
+            {getFieldByLang(unit, 'title', language)}
           </h1>
           <p className="text-white/40 text-[15px] leading-relaxed mb-8">
             Complete all lessons to earn <span className="text-violet-light font-[800]">{unit.xp_reward} XP</span>
@@ -156,6 +159,7 @@ export default function UnitView() {
               unitSlug={unit.slug}
               completed={completedSlugs.has(lesson.slug)}
               index={i}
+              language={language}
             />
           ))}
         </div>

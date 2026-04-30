@@ -1,107 +1,379 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
-import { ShoppingCart, Fuel, Check, Lock, Loader, Sparkles, Rocket, Zap, Award, Filter, Tags, ArrowDownUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ShoppingCart, Fuel, Check, Lock, Loader, Search, Menu, X, Star, Percent, Flame, Sparkles, Rocket, Zap, Award, Filter, Tags, ArrowDownUp } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
-import GlassCard from '@/components/ui/GlassCard';
 
-function ItemCard({ item, owned, onBuy, fuel, buying }) {
-  const canAfford = fuel >= item.cost_fuel;
-  const isFree = item.cost_fuel === 0;
+// ── MOCK DATA ───────────────────────────────────────────────────────────────
+const MOCK_ITEMS = [
+  { 
+    slug: 'quantum-book', 
+    title_en: 'Quantum Physics', 
+    title_ru: 'Квантовая физика',
+    description_en: 'A deep dive into the fundamental laws of the universe, covering entanglement and wave-particle duality.', 
+    item_type: 'book', 
+    price: 125000,
+    original_price: 150000,
+    discount_percent: 16,
+    is_bestseller: true,
+    is_new: false,
+    cost_fuel: 150, 
+    image_url: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1000&auto=format&fit=crop',
+    specs: { pages: '450', level: 'Intermediate', format: 'Holographic' }
+  },
+  { 
+    slug: 'mars-book', 
+    title_en: 'The Martian Chronicles', 
+    title_ru: 'Марсианские хроники',
+    description_en: 'Ray Bradbury\'s classic exploration of humanity\'s first steps on the Red Planet.', 
+    item_type: 'book', 
+    price: 85000,
+    is_bestseller: false,
+    is_new: false,
+    cost_fuel: 120, 
+    image_url: 'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?q=80&w=1000&auto=format&fit=crop',
+    specs: { pages: '320', level: 'Beginner', format: 'Digital' }
+  },
+  { 
+    slug: 'raptor-engine', 
+    title_en: 'Raptor Engine V2', 
+    title_ru: 'Двигатель Raptor V2',
+    description_en: 'High-performance methalox engine designed for the next generation of interplanetary transport.', 
+    item_type: 'rocket_module', 
+    price: 12500000,
+    original_price: 15000000,
+    discount_percent: 16,
+    is_bestseller: true,
+    is_new: true,
+    cost_fuel: 1500, 
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/e/e2/Raptor_Engine_2016.jpg',
+    specs: { thrust: '230tf', fuel: 'CH4/LOX', mass: '1600kg' }
+  },
+  { 
+    slug: 'space-helmet', 
+    title_en: 'Astra Helmet', 
+    title_ru: 'Шлем Astra',
+    description_en: 'Next-gen HUD with real-time oxygen monitoring and wide-angle panoramic visor.', 
+    item_type: 'other', 
+    price: 450000,
+    is_bestseller: true,
+    is_new: true,
+    cost_fuel: 750, 
+    image_url: 'https://images.unsplash.com/photo-1541873676947-9ea5d8a31346?q=80&w=1000&auto=format&fit=crop',
+    specs: { air: '12h', visor: 'Titanium-Glass', comm: 'Sub-Space' }
+  },
+  { 
+    slug: 'solar-wing', 
+    title_en: 'Solar Array Wing', 
+    title_ru: 'Солнечная панель',
+    description_en: 'High-efficiency gallium arsenide solar panels for continuous power generation in orbit.', 
+    item_type: 'satellite', 
+    price: 890000,
+    original_price: 1100000,
+    discount_percent: 19,
+    is_bestseller: false,
+    is_new: false,
+    cost_fuel: 950, 
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/0/07/ISS_Solar_Arrays.jpg',
+    specs: { power: '15kW', span: '12m', efficiency: '42%' }
+  },
+  { 
+    slug: 'imaging-sensor', 
+    title_en: 'Multi-Spectral Sensor', 
+    title_ru: 'Мультиспектральный сенсор',
+    description_en: 'Capture high-resolution data across various spectrums for planetary analysis.', 
+    item_type: 'satellite', 
+    price: 1150000,
+    is_bestseller: false,
+    is_new: true,
+    cost_fuel: 1100, 
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/0/05/Hubble_Space_Telescope_CGI_render.jpg',
+    specs: { res: '0.1m', bands: '12', storage: '100TB' }
+  },
+  { 
+    slug: 'gravity-boots', 
+    title_en: 'Mag-Grip Boots', 
+    title_ru: 'Магнитные ботинки Mag-Grip',
+    description_en: 'Magnetic soles designed for zero-G environments and metallic hull walking.', 
+    item_type: 'other', 
+    price: 320000,
+    original_price: 400000,
+    discount_percent: 20,
+    is_bestseller: true,
+    is_new: false,
+    cost_fuel: 550, 
+    image_url: 'https://images.unsplash.com/photo-1582967788606-a171c1080cb0?q=80&w=1000&auto=format&fit=crop',
+    specs: { strength: '500N', weight: '2.5kg', battery: '48h' }
+  },
+  { 
+    slug: 'lunar-wheel', 
+    title_en: 'Regolith Wheel', 
+    title_ru: 'Колесо для реголита',
+    description_en: 'Specially engineered mesh wheel for maximum traction on loose lunar and martian soil.', 
+    item_type: 'other', 
+    price: 250000,
+    is_bestseller: false,
+    is_new: true,
+    cost_fuel: 450, 
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/5/52/Lunar_Rover_wheel.jpg',
+    specs: { material: 'NiTi Mesh', temp: '-150 to 120C', life: '5000km' }
+  },
+  { 
+    slug: 'fuel-tank', 
+    title_en: 'Titanium Fuel Tank', 
+    title_ru: 'Титановый топливный бак',
+    description_en: 'Ultra-lightweight storage for cryogenic propellants with advanced thermal insulation.', 
+    item_type: 'rocket_module', 
+    price: 780000,
+    original_price: 900000,
+    discount_percent: 13,
+    is_bestseller: false,
+    is_new: false,
+    cost_fuel: 800, 
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Starship_fuel_tank.jpg/1200px-Starship_fuel_tank.jpg',
+    specs: { volume: '500m鲁', pressure: '50bar', alloy: 'Ti-6Al-4V' }
+  },
+  { 
+    slug: 'antenna-high', 
+    title_en: 'Ka-Band Antenna', 
+    title_ru: 'Антенна Ka-диапазона',
+    description_en: 'Long-range communication array for high-bandwidth data transfer across the solar system.', 
+    item_type: 'satellite', 
+    price: 550000,
+    is_bestseller: false,
+    is_new: false,
+    cost_fuel: 600, 
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/c/c9/TDRS_satellite_antenna.jpg',
+    specs: { freq: '26-40GHz', gain: '55dBi', reach: 'Deep Space' }
+  },
+  { 
+    slug: 'astrophysics-book', 
+    title_en: 'Astrophysics 101', 
+    title_ru: 'Основы астрофизики',
+    description_en: 'Essential knowledge for every space explorer, from stellar evolution to black holes.', 
+    item_type: 'book', 
+    price: 180000,
+    is_bestseller: true,
+    is_new: true,
+    cost_fuel: 200, 
+    image_url: 'https://images.booksense.com/images/154/788/9780393609394.jpg',
+    specs: { pages: '280', level: 'Advanced', format: 'Physical' }
+  },
+  { 
+    slug: 'guidance-pc', 
+    title_en: 'Nav-Core Mk-III', 
+    title_ru: 'Навигационный компьютер Mk-III',
+    description_en: 'Advanced guidance computer with AI trajectory plotting and redundant safety systems.', 
+    item_type: 'rocket_module', 
+    price: 1450000,
+    original_price: 1600000,
+    discount_percent: 9,
+    is_bestseller: false,
+    is_new: true,
+    cost_fuel: 1200, 
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/e/ef/Apollo_Guidance_Computer_DSKY.jpg',
+    specs: { cpu: 'Quantum-X', ram: '2TB', accuracy: '0.001mm' }
+  },
+];
 
+const formatPrice = (price) => {
+  return price.toLocaleString('ru-RU') + ' сум';
+};
+
+function ItemCard({ item, onClick, onBuy, buying }) {
   const getAccent = () => {
-    if (item.item_type === 'spaceship') return '#6366f1';
-    if (item.item_type === 'boost') return '#fbbf24';
-    return '#a78bfa';
+    switch (item.item_type) {
+      case 'book': return '#3b82f6';
+      case 'rocket_module': return '#ef4444';
+      case 'satellite': return '#10b981';
+      case 'other': return '#f59e0b';
+      default: return '#a78bfa';
+    }
   };
 
   const accent = getAccent();
 
   return (
-    <GlassCard accent={accent} delay={0} className={`h-full flex flex-col ${!owned && !canAfford ? 'opacity-60' : ''}`}>
-      {/* Type badge */}
-      <div className="absolute top-6 right-6">
-        <span 
-          className="text-[9px] font-[800] uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border"
-          style={{ 
-            color: accent, 
-            background: `${accent}15`, 
-            borderColor: `${accent}30` 
-          }}
-        >
-          {item.item_type}
-        </span>
-      </div>
-
-      {/* Image / Icon container */}
-      <div className="relative h-40 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center overflow-hidden mb-6 group-hover:border-white/10 transition-colors shadow-inner">
+    <div 
+      className="bg-white/[0.03] border border-white/10 rounded-[1.5rem] overflow-hidden flex flex-col group hover:border-white/20 transition-all duration-300 cursor-pointer shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+      onClick={() => onClick(item)}
+    >
+      {/* Image Area - Edge to Edge */}
+      <div className="relative h-48 w-full bg-black/40 overflow-hidden">
         {item.image_url ? (
-          <img src={item.image_url} alt={item.title_en} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+          <img 
+            src={item.image_url} 
+            alt={item.title_ru || item.title_en} 
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+          />
         ) : (
-          <div className="text-5xl transition-transform duration-500 group-hover:scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-            {item.item_type === 'spaceship' ? '🚀' : item.item_type === 'boost' ? '⚡' : '🏅'}
+          <div className="flex items-center justify-center w-full h-full text-5xl transition-transform duration-500 group-hover:scale-110">
+            {item.item_type === 'book' ? '📖' : item.item_type === 'rocket_module' ? '🚀' : item.item_type === 'satellite' ? '🛰️' : '📦'}
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+        
+        {/* Badges overlay */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
+          {item.discount_percent > 0 && (
+            <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg w-max">
+              -{item.discount_percent}%
+            </span>
+          )}
+          {item.is_bestseller && (
+            <span className="bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg flex items-center gap-1 w-max">
+              <Flame className="w-3 h-3" /> ХИТ
+            </span>
+          )}
+          {item.is_new && (
+            <span className="bg-cyan-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg flex items-center gap-1 w-max">
+              <Sparkles className="w-3 h-3" /> НОВИНКА
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Info */}
-      <div className="flex-1 mb-8">
-        <h3 className="text-xl font-[900] text-white tracking-tight mb-2">{item.title_en}</h3>
-        <p className="text-white/40 text-[13px] leading-relaxed line-clamp-2">
-          {item.description_en}
-        </p>
-      </div>
+      {/* Content Area */}
+      <div className="p-5 flex-1 flex flex-col">
+        {/* Price section */}
+        <div className="mb-2">
+          {item.original_price ? (
+            <div className="flex items-end gap-2 flex-wrap">
+              <span className="text-xl font-[900] text-red-400 leading-none">{formatPrice(item.price)}</span>
+              <span className="text-sm font-medium text-white/30 line-through leading-none">{formatPrice(item.original_price)}</span>
+            </div>
+          ) : (
+            <span className="text-xl font-[900] text-white leading-none">{formatPrice(item.price)}</span>
+          )}
+        </div>
+        
+        {/* Title */}
+        <h3 className="text-[15px] font-[600] text-white/90 leading-snug line-clamp-2 flex-1 mb-4 group-hover:text-violet-400 transition-colors">
+          {item.title_ru || item.title_en}
+        </h3>
 
-      {/* Action footer */}
-      <div className="pt-6 border-t border-white/5">
-        {owned ? (
-          <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-[800] uppercase tracking-widest">
-            <Check className="w-4 h-4" /> Collected
-          </div>
-        ) : (
-          <button
-            onClick={() => onBuy(item.slug)}
-            disabled={!canAfford || buying}
-            className={`w-full flex items-center justify-center gap-3 py-3.5 rounded-xl font-[800] text-xs uppercase tracking-widest transition-all
-              ${canAfford 
-                ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 active:scale-[0.98]' 
-                : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'}`}
-          >
-            {buying ? (
-              <Loader className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <Fuel className="w-4 h-4" />
-                {isFree ? 'Claim Free' : `${item.cost_fuel} Fuel`}
-                {!canAfford && <Lock className="w-3.5 h-3.5 ml-1 opacity-50" />}
-              </>
-            )}
+        {/* Action Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onBuy(item.slug);
+          }}
+          disabled={buying}
+          className="w-full bg-violet-600 hover:bg-violet-500 text-white py-3 rounded-xl font-[700] text-[13px] flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+        >
+          {buying ? <Loader className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+          В корзину
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Product Modal Component
+function ProductModal({ item, onClose, onBuy, buying }) {
+  if (!item) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-[#0f0e13] border border-white/10 rounded-[2rem] overflow-hidden w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row shadow-2xl relative"
+        >
+          <button onClick={onClose} className="absolute top-4 right-4 z-20 w-10 h-10 bg-black/50 hover:bg-black rounded-full flex items-center justify-center text-white/50 hover:text-white transition-colors backdrop-blur-md">
+            <X className="w-5 h-5" />
           </button>
-        )}
-      </div>
-    </GlassCard>
+
+          {/* Left: Image */}
+          <div className="w-full md:w-1/2 bg-black relative min-h-[300px]">
+            {item.image_url ? (
+              <img src={item.image_url} alt={item.title_ru} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-8xl">📦</div>
+            )}
+            {/* Badges */}
+            <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+              {item.discount_percent > 0 && <span className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg w-max">-{item.discount_percent}%</span>}
+              {item.is_bestseller && <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 w-max"><Flame className="w-4 h-4" /> ХИТ ПРОДАЖ</span>}
+            </div>
+          </div>
+
+          {/* Right: Details */}
+          <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto flex flex-col">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-violet-400 bg-violet-400/10 px-3 py-1 rounded-full">
+                {item.item_type.replace('_', ' ')}
+              </span>
+            </div>
+            
+            <h2 className="text-3xl font-[800] text-white mb-2 leading-tight">{item.title_ru || item.title_en}</h2>
+            <p className="text-white/50 text-sm mb-6">{item.description_en}</p>
+
+            <div className="bg-white/[0.03] rounded-2xl p-6 mb-8 border border-white/5">
+              {item.original_price && (
+                <div className="text-white/40 line-through text-lg font-medium mb-1">
+                  {formatPrice(item.original_price)}
+                </div>
+              )}
+              <div className="flex items-center gap-4">
+                <span className="text-4xl font-[900] text-white">{formatPrice(item.price)}</span>
+              </div>
+              
+              <button
+                onClick={() => onBuy(item.slug)}
+                disabled={buying}
+                className="w-full mt-6 bg-violet-600 hover:bg-violet-500 text-white py-4 rounded-xl font-[800] text-[15px] flex items-center justify-center gap-2 transition-all shadow-[0_10px_30px_rgba(124,58,237,0.3)] active:scale-[0.98]"
+              >
+                {buying ? <Loader className="w-5 h-5 animate-spin" /> : <ShoppingCart className="w-5 h-5" />}
+                Добавить в корзину
+              </button>
+            </div>
+
+            <h4 className="text-sm font-[800] uppercase tracking-wider text-white/40 mb-4">Характеристики</h4>
+            <div className="space-y-3">
+              {Object.entries(item.specs || {}).map(([key, val]) => (
+                <div key={key} className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-sm text-white/50 capitalize">{key}</span>
+                  <span className="text-sm font-medium text-white/90">{val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
 export default function MarketView() {
   const { isAuthenticated } = useAuthStore();
-  const { fuel } = useGamificationStore();
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
   const [items, setItems] = useState([]);
-  const [inventory, setInventory] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(null);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItem, setSelectedItem] = useState(null);
   
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeFilter, setActiveFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('default');
 
-  const currentFuel = useGamificationStore((s) => s.fuel);
-
   useEffect(() => {
+<<<<<<< HEAD
     const fetchData = async () => {
       try {
         const [itemsRes, inventoryRes] = await Promise.all([
@@ -115,212 +387,278 @@ export default function MarketView() {
         
         setInventory(new Set(inventoryRes.data.map((i) => i.item.slug)));
       } catch (err) {
-        console.error("Market data fetch error:", err);
+        setError('Unable to load market data right now.');
       } finally {
         setLoading(false);
       }
     };
     fetchData();
   }, [isAuthenticated]);
+=======
+    // Simulated fetch
+    setTimeout(() => {
+      setItems(MOCK_ITEMS);
+      setLoading(false);
+    }, 600);
+  }, []);
+>>>>>>> e71ee2f2c3aec99938d700f4ffb001ea39684039
 
   const handleBuy = async (slug) => {
-    if (!isAuthenticated) { setError('Sign in to purchase items.'); return; }
     setBuying(slug);
-    setError('');
-    try {
-      await api.post('/market/purchase/', { item_slug: slug });
-      setInventory((prev) => new Set([...prev, slug]));
-      const { data } = await api.get('/gamification/profile/');
-      useGamificationStore.getState().syncFromAPI(data);
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Purchase failed.');
-    } finally {
+    // Simulate purchase
+    setTimeout(() => {
       setBuying(null);
-    }
+      alert('Товар добавлен в корзину!');
+    }, 800);
   };
 
   const categories = ['all', ...new Set(items.map(item => item.item_type))];
 
+  // Filtering Logic
   const filteredItems = items
     .filter(item => {
       if (activeCategory !== 'all' && item.item_type !== activeCategory) return false;
-      if (activeFilter === 'affordable' && currentFuel < item.cost_fuel && !inventory.has(item.slug)) return false;
-      if (activeFilter === 'owned' && !inventory.has(item.slug)) return false;
-      if (activeFilter === 'unowned' && inventory.has(item.slug)) return false;
+      if (searchQuery && !(item.title_en.toLowerCase().includes(searchQuery.toLowerCase()) || (item.title_ru && item.title_ru.toLowerCase().includes(searchQuery.toLowerCase())))) return false;
+      if (activeFilter === 'discount' && !item.discount_percent) return false;
+      if (activeFilter === 'bestseller' && !item.is_bestseller) return false;
+      if (activeFilter === 'new' && !item.is_new) return false;
       return true;
     })
     .sort((a, b) => {
-      if (sortOrder === 'price-asc') return a.cost_fuel - b.cost_fuel;
-      if (sortOrder === 'price-desc') return b.cost_fuel - a.cost_fuel;
+      if (sortOrder === 'price-asc') return a.price - b.price;
+      if (sortOrder === 'price-desc') return b.price - a.price;
+      if (sortOrder === 'discount') return (b.discount_percent || 0) - (a.discount_percent || 0);
       return 0;
     });
 
+  // Derived sections for the Home View
+  const bestSellers = items.filter(i => i.is_bestseller).slice(0, 4);
+  const wowPrices = items.filter(i => i.discount_percent > 0).sort((a,b) => b.discount_percent - a.discount_percent).slice(0, 4);
+  const newModels = items.filter(i => i.is_new).slice(0, 4);
+  const forYou = items.slice().sort(() => 0.5 - Math.random()).slice(0, 4);
+
+  const isHomeView = activeCategory === 'all' && activeFilter === 'all' && !searchQuery && sortOrder === 'default';
+
   return (
-    <div className="relative min-h-screen pt-32 pb-24 px-4 overflow-hidden">
-      {/* Decorative ambient glows */}
-      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[140px] pointer-events-none z-0"
-        style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.03) 0%, transparent 70%)' }} />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[140px] pointer-events-none z-0"
-        style={{ background: 'radial-gradient(circle, rgba(0,229,255,0.03) 0%, transparent 70%)' }} />
+    <div className="relative min-h-screen pb-24 bg-[#020106] text-white font-sans pt-0">
+      
+      {/* Top Header / Nav Area */}
+      <div className="sticky top-0 z-50 bg-[#020106]/90 backdrop-blur-xl border-b border-white/5 pt-[100px] pb-4 px-4 sm:px-8">
+        <div className="max-w-[1600px] mx-auto flex items-center gap-4 md:gap-8">
+          
+          <h1 className="text-2xl md:text-3xl font-[900] tracking-tighter text-white shrink-0 hidden sm:block">Market</h1>
+          
+          <button className="shrink-0 bg-violet-600 hover:bg-violet-500 text-white px-5 py-3 rounded-xl font-[800] text-sm flex items-center gap-2 transition-colors">
+            <Menu className="w-5 h-5" />
+            <span className="hidden sm:inline">Каталог</span>
+          </button>
 
-      <div className="max-w-7xl mx-auto relative z-10">
-        
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16">
-          <div className="text-center md:text-left">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-              <p className="text-[11px] font-[800] tracking-[0.3em] uppercase text-orange-400 mb-3">Galactic Supply</p>
-              <h1 className="text-[clamp(36px,5vw,56px)] font-[900] tracking-tight leading-[1] text-white">Space <span className="text-glow-purple text-violet">Market</span></h1>
-              <p className="text-white/40 text-base mt-4 max-w-md font-[500]">Acquire premium equipment and badges using your mission fuel.</p>
-            </motion.div>
+          <div className="flex-1 relative">
+            <input 
+              type="text" 
+              placeholder="Искать книги, модули, спутники..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white/[0.05] border border-white/10 hover:border-white/20 focus:border-violet-500 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-medium outline-none transition-all placeholder:text-white/30"
+            />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
-          {/* Balance Display */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }} 
-            animate={{ opacity: 1, scale: 1 }} 
-            className="flex items-center gap-6 p-1.5 pr-6 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-xl"
-          >
-            <div className="w-14 h-14 rounded-[1.1rem] bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-              <Fuel className="w-6 h-6 text-orange-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-[900] text-white tracking-tighter">{currentFuel.toLocaleString()}</p>
-              <p className="text-[10px] font-[800] uppercase tracking-widest text-orange-400/60">Available Fuel</p>
-            </div>
-          </motion.div>
+          <button className="shrink-0 relative bg-white/[0.05] hover:bg-white/10 p-3 rounded-xl transition-colors border border-white/5">
+            <ShoppingCart className="w-5 h-5 text-white" />
+            <span className="absolute -top-1.5 -right-1.5 bg-violet-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">0</span>
+          </button>
         </div>
+      </div>
 
-        {error && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-            className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-[700] text-center tracking-wide">
-            {error}
-          </motion.div>
-        )}
-
+      <div className="max-w-[1600px] mx-auto relative z-10 px-4 sm:px-8 pt-8">
+        
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <Loader className="w-10 h-10 text-violet-light animate-spin" />
-            <p className="text-[11px] font-[800] uppercase tracking-[0.2em] text-white/20">Establishing connection...</p>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-32 bg-white/[0.01] border border-dashed border-white/5 rounded-3xl">
-            <p className="text-white/20 font-bold italic">The black market is currently empty.</p>
+          <div className="flex flex-col items-center justify-center py-48 gap-8">
+            <Loader className="w-12 h-12 text-violet-500 animate-spin" />
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            
             {/* Left Sidebar: Categories */}
-            <div className="lg:w-56 flex-shrink-0">
-              <div className="sticky top-32 p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
-                <div className="flex items-center gap-2 mb-6 text-white/80 font-[800] uppercase tracking-widest text-xs">
-                  <Tags className="w-4 h-4" /> Categories
-                </div>
+            <aside className="lg:w-64 w-full flex-shrink-0 lg:sticky lg:top-32 hidden lg:block">
+              <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6">
+                <h3 className="text-sm font-[800] uppercase tracking-wider text-white/50 mb-6 flex items-center gap-2">
+                  <Tags className="w-4 h-4" /> Категории
+                </h3>
                 <div className="flex flex-col gap-2">
                   {categories.map(category => (
                     <button
                       key={category}
                       onClick={() => setActiveCategory(category)}
-                      className={`text-left px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all ${
+                      className={`text-left px-4 py-3 rounded-xl text-[13px] font-[600] transition-all ${
                         activeCategory === category 
-                          ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' 
-                          : 'bg-white/[0.02] text-white/40 border border-transparent hover:bg-white/5 hover:text-white/80'
+                          ? 'bg-violet-600/20 text-violet-400 border border-violet-500/30' 
+                          : 'text-white/60 hover:bg-white/5 hover:text-white border border-transparent'
                       }`}
                     >
-                      {category}
+                      {category === 'all' ? 'Все товары' : category.replace('_', ' ')}
                     </button>
                   ))}
                 </div>
               </div>
-            </div>
 
-            {/* Main Content: Products Grid */}
-            <div className="flex-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-                {filteredItems.length === 0 ? (
-                  <div className="col-span-full text-center py-20 bg-white/[0.01] border border-dashed border-white/5 rounded-3xl">
-                    <p className="text-white/20 font-bold italic">No items match your criteria.</p>
-                  </div>
-                ) : (
-                  filteredItems.map((item, i) => (
-                    <motion.div
-                      key={item.slug}
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              {/* Right Sidebar logic combined into Left for Yandex style (usually filters are on the left or top) */}
+              <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 mt-6">
+                <h3 className="text-sm font-[800] uppercase tracking-wider text-white/50 mb-6 flex items-center gap-2">
+                  <Filter className="w-4 h-4" /> Фильтры
+                </h3>
+                <div className="flex flex-col gap-2 mb-8">
+                  {[
+                    { id: 'all', label: 'Все предложения' },
+                    { id: 'bestseller', label: 'Хиты продаж' },
+                    { id: 'discount', label: 'Со скидкой' },
+                    { id: 'new', label: 'Новинки' }
+                  ].map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => setActiveFilter(f.id)}
+                      className={`text-left px-4 py-3 rounded-xl text-[13px] font-[600] transition-all ${
+                        activeFilter === f.id 
+                          ? 'bg-white/10 text-white border border-white/20' 
+                          : 'text-white/60 hover:bg-white/5 hover:text-white border border-transparent'
+                      }`}
                     >
-                      <ItemCard
-                        item={item}
-                        owned={inventory.has(item.slug)}
-                        onBuy={handleBuy}
-                        fuel={currentFuel}
-                        buying={buying === item.slug}
-                      />
-                    </motion.div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Right Sidebar: Filters */}
-            <div className="lg:w-56 flex-shrink-0">
-              <div className="sticky top-32 flex flex-col gap-6">
-                {/* Status Filter */}
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
-                  <div className="flex items-center gap-2 mb-6 text-white/80 font-[800] uppercase tracking-widest text-xs">
-                    <Filter className="w-4 h-4" /> Filter
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {[
-                      { id: 'all', label: 'All Items' },
-                      { id: 'affordable', label: 'Affordable' },
-                      { id: 'owned', label: 'Owned' },
-                      { id: 'unowned', label: 'Unowned' }
-                    ].map(f => (
-                      <button
-                        key={f.id}
-                        onClick={() => setActiveFilter(f.id)}
-                        className={`text-left px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all ${
-                          activeFilter === f.id 
-                            ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' 
-                            : 'bg-white/[0.02] text-white/40 border border-transparent hover:bg-white/5 hover:text-white/80'
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
+                      {f.label}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Sort */}
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
-                  <div className="flex items-center gap-2 mb-6 text-white/80 font-[800] uppercase tracking-widest text-xs">
-                    <ArrowDownUp className="w-4 h-4" /> Sort By
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {[
-                      { id: 'default', label: 'Default' },
-                      { id: 'price-asc', label: 'Price: Low to High' },
-                      { id: 'price-desc', label: 'Price: High to Low' }
-                    ].map(s => (
-                      <button
-                        key={s.id}
-                        onClick={() => setSortOrder(s.id)}
-                        className={`text-left px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all ${
-                          sortOrder === s.id 
-                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
-                            : 'bg-white/[0.02] text-white/40 border border-transparent hover:bg-white/5 hover:text-white/80'
-                        }`}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
+                <h3 className="text-sm font-[800] uppercase tracking-wider text-white/50 mb-6 flex items-center gap-2">
+                  <ArrowDownUp className="w-4 h-4" /> Сортировка
+                </h3>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { id: 'default', label: 'По популярности' },
+                    { id: 'price-asc', label: 'Сначала дешевле' },
+                    { id: 'price-desc', label: 'Сначала дороже' },
+                    { id: 'discount', label: 'По размеру скидки' }
+                  ].map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => setSortOrder(s.id)}
+                      className={`text-left px-4 py-3 rounded-xl text-[13px] font-[600] transition-all ${
+                        sortOrder === s.id 
+                          ? 'bg-white/10 text-white border border-white/20' 
+                          : 'text-white/60 hover:bg-white/5 hover:text-white border border-transparent'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 w-full min-w-0">
+              
+              {isHomeView ? (
+                /* Home View with Thematic Sections */
+                <div className="space-y-16">
+                  
+                  {/* Section 1: Best Sellers */}
+                  <section>
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="text-2xl font-[900] text-white">ХИТЫ ПРОДАЖ</h2>
+                      <Flame className="w-6 h-6 text-orange-500" />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                      {bestSellers.map(item => (
+                        <ItemCard key={`bs-${item.slug}`} item={item} onClick={setSelectedItem} onBuy={handleBuy} buying={buying === item.slug} />
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Section 2: For You */}
+                  <section>
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="text-2xl font-[900] text-white">Для вас</h2>
+                      <Sparkles className="w-6 h-6 text-violet-400" />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                      {forYou.map(item => (
+                        <ItemCard key={`fy-${item.slug}`} item={item} onClick={setSelectedItem} onBuy={handleBuy} buying={buying === item.slug} />
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Section 3: WOW Prices */}
+                  <section className="bg-gradient-to-r from-red-500/10 to-transparent p-6 -mx-6 rounded-3xl border border-red-500/10">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="text-3xl font-[900] text-red-400 italic">WOW-цены</h2>
+                      <Percent className="w-8 h-8 text-red-500" />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                      {wowPrices.map(item => (
+                        <ItemCard key={`wow-${item.slug}`} item={item} onClick={setSelectedItem} onBuy={handleBuy} buying={buying === item.slug} />
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Section 4: New Models */}
+                  <section>
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="text-2xl font-[900] text-white">НОВЫЕ МОДЕЛИ</h2>
+                      <Rocket className="w-6 h-6 text-cyan-400" />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                      {newModels.map(item => (
+                        <ItemCard key={`new-${item.slug}`} item={item} onClick={setSelectedItem} onBuy={handleBuy} buying={buying === item.slug} />
+                      ))}
+                    </div>
+                  </section>
+
+                </div>
+              ) : (
+                /* Search / Filter / Category Grid View */
+                <div>
+                  <div className="mb-6 flex items-center justify-between">
+                    <h2 className="text-2xl font-[900] text-white">
+                      {searchQuery ? `Результаты поиска: "${searchQuery}"` : 'Каталог'}
+                    </h2>
+                    <span className="text-white/40 text-sm font-medium">{filteredItems.length} товаров</span>
+                  </div>
+                  
+                  {filteredItems.length === 0 ? (
+                    <div className="text-center py-40 bg-white/[0.01] border border-dashed border-white/10 rounded-3xl">
+                      <p className="text-white/40 font-[600] text-lg">По вашему запросу ничего не найдено.</p>
+                      <button onClick={() => {setSearchQuery(''); setActiveCategory('all'); setActiveFilter('all');}} className="mt-4 text-violet-400 hover:text-violet-300 font-bold">Сбросить фильтры</button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                      {filteredItems.map(item => (
+                        <ItemCard key={item.slug} item={item} onClick={setSelectedItem} onBuy={handleBuy} buying={buying === item.slug} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </main>
+
           </div>
         )}
       </div>
+
+      {/* Product Detail Modal */}
+      {selectedItem && (
+        <ProductModal 
+          item={selectedItem} 
+          onClose={() => setSelectedItem(null)} 
+          onBuy={handleBuy} 
+          buying={buying === selectedItem.slug} 
+        />
+      )}
     </div>
   );
 }

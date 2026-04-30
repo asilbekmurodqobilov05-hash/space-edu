@@ -1,13 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { Mic, ArrowRight } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-
-const topics = [
-  { id: 1, title: 'Professorlar',      titleEn: 'Professors',    emoji: '👨‍🏫', lessonsCount: 6 },
-  { id: 2, title: 'Kosmonavtlar',      titleEn: 'Cosmonauts',    emoji: '🧑‍🚀', lessonsCount: 5 },
-  { id: 3, title: 'Boshqa xodimlar',   titleEn: 'Other Workers', emoji: '👷', lessonsCount: 4 },
-];
+import { interviewsTopicsData } from '@/data/interviewsTopicsData';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 30, scale: 0.96 },
@@ -19,6 +15,8 @@ const cardVariants = {
 
 function TopicCard({ topic, index, color, colorLight, colorBorder }) {
   const [hovered, setHovered] = useState(false);
+  const navigate = useNavigate();
+
   return (
     <motion.div
       custom={index}
@@ -27,6 +25,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
       animate="visible"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => navigate(`/learn/interviews/${topic.id}`)}
       style={{
         padding: '28px',
         borderRadius: '20px',
@@ -61,7 +60,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
               fontSize: '30px', flexShrink: 0,
             }}
           >
-            {topic.emoji}
+            {topic.id === 1 ? '👨‍🏫' : topic.id === 2 ? '🧑‍🚀' : '👷'}
           </div>
           <div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: 700, color: '#fff' }}>{topic.title}</h3>
@@ -70,7 +69,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
-            <span style={{ color, fontWeight: 700 }}>{topic.lessonsCount}</span> intervyu
+            <span style={{ color, fontWeight: 700 }}>{topic.sections ? topic.sections.reduce((acc, s) => acc + s.lessons.length, 0) : topic.lessons.length}</span> intervyu
           </span>
           <div
             style={{
@@ -97,6 +96,7 @@ export default function InterviewsView() {
   const color = '#a78bfa';
   const colorLight = 'rgba(167,139,250,0.10)';
   const colorBorder = 'rgba(167,139,250,0.25)';
+  const topics = Object.values(interviewsTopicsData);
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>

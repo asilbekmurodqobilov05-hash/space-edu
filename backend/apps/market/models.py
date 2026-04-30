@@ -7,6 +7,10 @@ class MarketItem(models.Model):
         ('spaceship', 'Spaceship'),
         ('badge', 'Badge'),
         ('boost', 'XP Boost'),
+        ('book', 'Book'),
+        ('rocket_module', 'Rocket Module'),
+        ('satellite', 'Satellite'),
+        ('other', 'Other'),
     ]
     slug = models.SlugField(unique=True)
     title_en = models.CharField(max_length=100)

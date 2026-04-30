@@ -1,6 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+function normalizeLanguage(lang) {
+  const value = String(lang || "").trim().toUpperCase();
+  if (value === "UZ" || value === "UZB") return "UZB";
+  if (value === "RU" || value === "RUS") return "RUS";
+  if (value === "EN" || value === "ENG") return "ENG";
+  return detectBrowserLanguage();
+}
+
 function detectBrowserLanguage() {
   try {
     const lang = (navigator.language || '').toLowerCase();
@@ -22,7 +30,7 @@ export const useUserStore = create()(
       spaceship: "Explorer I",
       language: detectBrowserLanguage(),
 
-      setLanguage:      (lang)       => set({ language: lang }),
+      setLanguage:      (lang)       => set({ language: normalizeLanguage(lang) }),
       setAstronautName: (name)       => set({ astronautName: name }),
       setSpaceship:     (spaceship)  => set({ spaceship }),
 
