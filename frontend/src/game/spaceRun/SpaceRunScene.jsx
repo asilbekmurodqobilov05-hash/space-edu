@@ -25,8 +25,8 @@ const MAX_MAGNET_INST = 12;
 const MAX_OBSTACLES = 260;
 const Z_KILL = 7;
 const Z_NEAR = 2.35;
-/** Widen horizontal lane + obstacle/coin spread (moving field feels bigger). */
-const PLAYFIELD_XY_SCALE = 1.8;
+/** Widen horizontal lane + obstacle/coin spread (moving field feels bigger). Increased for full-screen range. */
+const PLAYFIELD_XY_SCALE = 4.2; 
 const SHIP_BOUNDS = { x: 3.35 * PLAYFIELD_XY_SCALE, y: 2.4 * PLAYFIELD_XY_SCALE };
 const SPAWN_METEOR_X = 3.15 * PLAYFIELD_XY_SCALE;
 const SPAWN_METEOR_Y = 2.05 * PLAYFIELD_XY_SCALE;
@@ -52,6 +52,8 @@ const BOOST_RECHARGE = 11;
 const BOOST_SPEED_MUL = 2.45;
 const SLOW_MUL = 0.52;
 const HUD_EVERY = 5;
+/** Adjust this value to scale the ship model up or down. */
+const SHIP_SIZE_MULTIPLIER = 0.005;
 
 const _m = new THREE.Matrix4();
 const _p = new THREE.Vector3();
@@ -1045,6 +1047,7 @@ function CinematicPlanets() {
     loadSafe("/models/space-run/planet_mars_-_nasa_mars_landing_2021.glb", "mars");
     loadSafe("/models/space-run/enceladus.glb", "enceladus");
     loadSafe("/models/space-run/moon.glb", "moon");
+    loadSafe("/models/space-run/planet_mercury.glb", "mercury");
     return () => {
       cancelled = true;
     };
@@ -1054,6 +1057,7 @@ function CinematicPlanets() {
   const mRef = useRef(null);
   const eRef = useRef(null);
   const moRef = useRef(null);
+  const merRef = useRef(null);
 
   useFrame((state, delta) => {
     const dt = finiteDelta(delta);
@@ -1061,6 +1065,7 @@ function CinematicPlanets() {
     if (mRef.current) mRef.current.rotation.y += dt * 0.08;
     if (eRef.current) eRef.current.rotation.y += dt * 0.04;
     if (moRef.current) moRef.current.rotation.y += dt * 0.06;
+    if (merRef.current) merRef.current.rotation.y += dt * 0.1;
   });
 
   return (
@@ -1076,6 +1081,9 @@ function CinematicPlanets() {
       )}
       {models.moon && (
         <primitive ref={moRef} object={models.moon} position={[-150, -80, -250]} scale={0.2} />
+      )}
+      {models.mercury && (
+        <primitive ref={merRef} object={models.mercury} position={[120, 65, -180]} scale={0.15} />
       )}
     </group>
   );
@@ -1241,7 +1249,7 @@ function CameraRig({ shipX, shipY, shake, speedRef }) {
   useFrame((_, delta) => {
     const dt = finiteDelta(delta);
     const speedLag = THREE.MathUtils.clamp((speedRef.current - 16) * 0.05, 0, 1.85);
-    camTarget.set(shipX.current * 0.44, shipY.current * 0.48 + 2.8, 12.8 - speedLag * 0.52);
+    camTarget.set(shipX.current * 0.36, shipY.current * 0.4 + 2.8, 12.8 - speedLag * 0.52);
     camera.position.lerp(camTarget, 1 - Math.exp(-5.5 * dt));
     if (shake.current > 0) {
       shake.current = Math.max(0, shake.current - dt * 4.2);
@@ -1564,11 +1572,12 @@ export function SpaceRunScene({ inputRef, runningRef }) {
     const loader = new GLTFLoader(TEXTURE_LOADING_MANAGER);
 
     // Load Rocket (complex scene, not just geometry)
-    loader.load("/models/space-run/rocket.glb", (gltf) => {
+    loader.load("/models/space-run/spaceship_colaid1_50k.glb", (gltf) => {
       if (cancelled) return;
       const scene = gltf.scene;
-      scene.rotation.y = Math.PI; // Face forward
-      scene.scale.set(0.18, 0.18, 0.18); // Made much bigger as requested
+      // Reset loader rotation to allow parent group (Math.PI) to orient it forward
+      scene.rotation.set(0, 0, 0); 
+      scene.scale.setScalar(SHIP_SIZE_MULTIPLIER); 
       setRocketScene(scene);
     });
 
@@ -1703,6 +1712,8 @@ export function SpaceRunScene({ inputRef, runningRef }) {
     shipX.current = THREE.MathUtils.clamp(shipX.current + shipVx.current * dt, -SHIP_BOUNDS.x, SHIP_BOUNDS.x);
     shipY.current = THREE.MathUtils.clamp(shipY.current + shipVy.current * dt, -SHIP_BOUNDS.y, SHIP_BOUNDS.y);
 
+    // Automatic health drain removed as requested - health only decreases on collision
+
     if (slowT.current > 0) slowT.current -= dt;
     if (magnetT.current > 0) magnetT.current -= dt;
 
@@ -1756,7 +1767,7 @@ export function SpaceRunScene({ inputRef, runningRef }) {
           o.rz = Math.random() * Math.PI * 2;
           o.rs = randomRange(1.1, 2.5);
           o.scale = randomRange(0.28, 0.72);
-          o.damage = randomRange(11, 23);
+          o.damage = randomRange(65, 95);
           o.waveX = randomRange(0.12, 0.9);
           o.waveY = randomRange(0.08, 0.62);
           o.waveF = randomRange(0.75, 1.85);
@@ -1805,7 +1816,7 @@ export function SpaceRunScene({ inputRef, runningRef }) {
           o.ry = 0;
           o.rz = 0;
           o.rs = 3.6;
-          o.scale = special ? 0.54 : 0.42;
+          o.scale = special ? 1.62 : 1.35;
           o.phase = Math.random() * Math.PI * 2;
           arr.push(o);
         }
@@ -1839,9 +1850,14 @@ export function SpaceRunScene({ inputRef, runningRef }) {
         o.y += Math.sin(e * 2.55 + (o.phase ?? 0)) * dt * 0.3;
       }
       o.z += o.vz * dt;
-      o.rx += o.rs * dt * 0.68;
-      o.ry += o.rs * dt * 0.52;
-      o.rz += o.rs * dt * 0.38;
+      if (o.type === "meteor") {
+        o.rx += o.rs * dt * 0.68;
+        o.ry += o.rs * dt * 0.52;
+        o.rz += o.rs * dt * 0.38;
+      } else {
+        // Dynamic vertical spin for coins and powerups
+        o.ry += o.rs * dt * 1.5;
+      }
 
       if (magnet && o.type === "coin") {
         const dx = sx - o.x;
@@ -1863,12 +1879,15 @@ export function SpaceRunScene({ inputRef, runningRef }) {
           const d2 = dx * dx + dy * dy;
 
           if (o.type === "meteor") {
-            const xyR = o.scale * 0.95 + SHIP_RADIUS;
-            const zHalf = SHIP_Z_HALF + o.scale * 0.42;
-            if (zDepth < zHalf && d2 < xyR * xyR) {
+            // High-precision AABB collision detection
+            const hitX = Math.abs(o.x - sx) < (o.scale * 0.8 + 0.72);
+            const hitY = Math.abs(o.y - sy) < (o.scale * 0.8 + 0.32);
+            const hitZ = Math.abs(o.z) < (o.scale * 0.8 + 0.95);
+
+            if (hitX && hitY && hitZ) {
               shakeRef.current = Math.max(shakeRef.current, 1);
               playExplosionSound();
-              const incoming = Math.min(40, Math.max(4, o.damage ?? 14));
+              const incoming = Math.min(100, Math.max(25, o.damage ?? 60));
               let hpLoss = incoming;
               if (shieldRef.current > 0) {
                 const absorbCap = incoming * 0.72;
@@ -1941,16 +1960,16 @@ export function SpaceRunScene({ inputRef, runningRef }) {
         meteorIM.current?.setMatrixAt(mi++, _m);
       } else if (o.type === "coin" && !o.special && ci < MAX_COIN_INSTANCES) {
         _p.set(o.x, o.y, o.z);
-        _e.set(0, o.ry, o.rz);
+        _e.set(0, o.ry, 0);
         _q.setFromEuler(_e);
-        _s.setScalar(Math.max(0.26, o.scale * 1.95));
+        _s.setScalar(Math.max(0.26, o.scale * 4.6));
         _m.compose(_p, _q, _s);
         coinIM.current?.setMatrixAt(ci++, _m);
       } else if (o.type === "coin" && o.special && si < MAX_SPEC_INSTANCES) {
         _p.set(o.x, o.y, o.z);
-        _e.set(0, o.ry, o.rz);
+        _e.set(0, o.ry, 0);
         _q.setFromEuler(_e);
-        _s.setScalar(Math.max(0.32, o.scale * 2.15));
+        _s.setScalar(Math.max(0.32, o.scale * 5.0));
         _m.compose(_p, _q, _s);
         specIM.current?.setMatrixAt(si++, _m);
       } else if (o.type === "power" && o.power === "shield" && shi < MAX_SHIELD_INST) {
@@ -2037,7 +2056,7 @@ export function SpaceRunScene({ inputRef, runningRef }) {
       <CinematicPlanets />
       <LeftAsteroidCluster />
       <DistantFleet speedRef={speedRef} />
-      <BlackHoleAnomaly speedRef={speedRef} />
+      {/* BlackHoleAnomaly removed as requested */}
       <EnemyScoutShip speedRef={speedRef} />
 
       <color attach="background" args={["#000000"]} />

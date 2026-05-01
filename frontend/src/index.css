@@ -209,4 +209,282 @@
     opacity: 1;
     transform: translateY(0);
   }
+
+  /* ═══════════════════════════════════════════════════
+     SPACE RUN — Entry Screen Cinematic Animations
+     ═══════════════════════════════════════════════════ */
+
+  /* Portal ring rotation */
+  @keyframes portal-spin {
+    0%   { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  /* Portal glow breathing */
+  @keyframes portal-breathe {
+    0%, 100% {
+      box-shadow:
+        0 0 40px 8px rgba(0, 229, 255, 0.25),
+        0 0 80px 20px rgba(139, 92, 246, 0.12),
+        inset 0 0 30px 6px rgba(0, 229, 255, 0.10);
+    }
+    50% {
+      box-shadow:
+        0 0 60px 14px rgba(0, 229, 255, 0.45),
+        0 0 120px 35px rgba(139, 92, 246, 0.22),
+        inset 0 0 50px 12px rgba(0, 229, 255, 0.18);
+    }
+  }
+
+  /* Neon title shimmer sweep */
+  @keyframes neon-title-shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* Play button glow pulse */
+  @keyframes play-glow-pulse {
+    0%, 100% {
+      box-shadow:
+        0 0 20px 4px rgba(0, 229, 255, 0.3),
+        0 0 50px 10px rgba(0, 229, 255, 0.12),
+        0 0 80px 20px rgba(139, 92, 246, 0.08);
+    }
+    50% {
+      box-shadow:
+        0 0 30px 8px rgba(0, 229, 255, 0.5),
+        0 0 70px 18px rgba(0, 229, 255, 0.2),
+        0 0 110px 30px rgba(139, 92, 246, 0.14);
+    }
+  }
+
+  /* Gentle float for controller icon */
+  @keyframes float-gentle {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+
+  /* HUD bar inner glow scan */
+  @keyframes hud-scan {
+    0%   { background-position: -100% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* Nebula slow drift */
+  @keyframes nebula-drift {
+    0%   { transform: translate(0, 0) scale(1); }
+    33%  { transform: translate(-12px, 8px) scale(1.02); }
+    66%  { transform: translate(8px, -6px) scale(0.98); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
+  /* Star twinkle */
+  @keyframes star-twinkle {
+    0%, 100% { opacity: 0.3; }
+    50%      { opacity: 1; }
+  }
+
+  /* Entry screen fade-in */
+  @keyframes entry-fade-in {
+    0%   { opacity: 0; transform: scale(0.96) translateY(12px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* Ring particle orbit */
+  @keyframes orbit-particle {
+    0%   { transform: rotate(0deg) translateX(145px) rotate(0deg); opacity: 0.8; }
+    25%  { opacity: 1; }
+    50%  { opacity: 0.5; }
+    75%  { opacity: 0.9; }
+    100% { transform: rotate(360deg) translateX(145px) rotate(-360deg); opacity: 0.8; }
+  }
+
+  /* === Utility classes === */
+
+  .sr-portal-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 0deg,
+      rgba(0, 229, 255, 0.8),
+      rgba(139, 92, 246, 0.6),
+      rgba(236, 72, 153, 0.7),
+      rgba(0, 229, 255, 0.4),
+      rgba(139, 92, 246, 0.8),
+      rgba(0, 229, 255, 0.8)
+    );
+    animation: portal-spin 4s linear infinite;
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px), #000 calc(100% - 1px), transparent 100%);
+    mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px), #000 calc(100% - 1px), transparent 100%);
+  }
+
+  .sr-portal-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 310px;
+    height: 310px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 229, 255, 0.15);
+    animation: portal-breathe 3s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .sr-neon-title {
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    background: linear-gradient(
+      90deg,
+      #00e5ff 0%,
+      #a78bfa 25%,
+      #ec4899 50%,
+      #a78bfa 75%,
+      #00e5ff 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: neon-title-shimmer 4s linear infinite;
+    text-shadow: none;
+    filter: drop-shadow(0 0 18px rgba(0, 229, 255, 0.5)) drop-shadow(0 0 40px rgba(139, 92, 246, 0.3));
+  }
+
+  .sr-play-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 1rem 3rem;
+    font-size: 1.25rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fff;
+    border: 2px solid rgba(0, 229, 255, 0.5);
+    border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.22), rgba(139, 92, 246, 0.18), rgba(236, 72, 153, 0.14));
+    animation: play-glow-pulse 2.5s ease-in-out infinite;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .sr-play-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%);
+    animation: shimmer 2.5s ease-in-out infinite;
+  }
+  .sr-play-btn:hover {
+    transform: scale(1.06);
+    border-color: rgba(0, 229, 255, 0.8);
+    box-shadow:
+      0 0 40px 10px rgba(0, 229, 255, 0.45),
+      0 0 80px 25px rgba(139, 92, 246, 0.2);
+  }
+  .sr-play-btn:active {
+    transform: scale(0.97);
+  }
+
+  .sr-controller-icon {
+    animation: float-gentle 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.5)) drop-shadow(0 0 25px rgba(0, 229, 255, 0.2));
+  }
+
+  /* HUD futuristic bar frame */
+  .sr-hud-bar {
+    position: relative;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid;
+    overflow: hidden;
+  }
+  .sr-hud-bar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(255, 255, 255, 0.015) 3px,
+        rgba(255, 255, 255, 0.015) 4px
+      );
+    pointer-events: none;
+  }
+
+  .sr-hud-bar-fill {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    transition: width 0.3s ease;
+  }
+  .sr-hud-bar-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: hud-scan 2.5s ease-in-out infinite;
+  }
+
+  /* Jupiter planet */
+  .sr-planet-jupiter {
+    position: absolute;
+    width: clamp(180px, 22vw, 340px);
+    height: clamp(180px, 22vw, 340px);
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255,255,255,0.08) 0%, transparent 50%),
+      repeating-linear-gradient(
+        175deg,
+        #c9956a 0px,
+        #d4a574 8px,
+        #a67843 16px,
+        #8b6232 24px,
+        #c4915e 32px,
+        #b8834f 40px,
+        #e8c49a 48px,
+        #d4a574 56px,
+        #a67843 64px
+      );
+    box-shadow:
+      inset -20px -8px 40px rgba(0, 0, 0, 0.5),
+      inset 10px 6px 25px rgba(255, 220, 180, 0.12),
+      0 0 50px 10px rgba(200, 150, 80, 0.08),
+      0 0 100px 30px rgba(200, 150, 80, 0.04);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  .sr-planet-jupiter::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.06) 0%, transparent 60%);
+  }
+  /* Great Red Spot */
+  .sr-planet-jupiter::after {
+    content: '';
+    position: absolute;
+    top: 48%;
+    left: 32%;
+    width: 22%;
+    height: 14%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, #c0614a 0%, #a04530 40%, transparent 70%);
+    opacity: 0.7;
+    transform: rotate(-8deg);
+  }
 }
