@@ -236,3 +236,52 @@ class RewardPurchaseView(APIView):
             'purchase': UserRewardPurchaseSerializer(purchase).data,
             'fuel': profile.fuel,
         }, status=status.HTTP_201_CREATED)
+
+
+class MissionClaimView(APIView):
+    """Claim a mission reward."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from .models import Mission, UserMission
+        from django.utils import timezone
+        
+        mission_id = request.data.get('mission_id')
+        if not mission_id:
+            return Response({'detail': 'mission_id is required.'}, status=400)
+
+        try:
+            mission = Mission.objects.get(id=mission_id, is_active=True)
+        except Mission.DoesNotExist:
+            return Response({'detail': 'Mission not found.'}, status=404)
+
+        user_mission, created = UserMission.objects.get_or_create(user=request.user, mission=mission)
+        today = timezone.now().date()
+
+        if mission.is_daily:
+            if user_mission.last_claimed_date == today:
+                return Response({'detail': 'Already claimed today.'}, status=400)
+            user_mission.last_claimed_date = today
+            # keep is_completed = False for daily missions (or True doesn't matter, we check date)
+            user_mission.is_completed = True
+        else:
+            if user_mission.is_completed:
+                return Response({'detail': 'Already claimed.'}, status=400)
+            user_mission.is_completed = True
+
+        user_mission.save()
+
+        # Grant rewards
+        profile, _ = UserGamificationProfile.objects.get_or_create(user=request.user)
+        if mission.reward_xp > 0:
+            profile.add_xp(mission.reward_xp)
+        if mission.reward_fuel > 0:
+            profile.add_fuel(mission.reward_fuel)
+
+        return Response({
+            'success': True,
+            'xp_earned': mission.reward_xp,
+            'fuel_earned': mission.reward_fuel,
+            'current_xp': profile.xp,
+            'current_fuel': profile.fuel,
+        })

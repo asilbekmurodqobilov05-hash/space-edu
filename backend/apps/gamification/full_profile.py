@@ -12,8 +12,8 @@ from apps.challenges.models import (
     ChallengeQuestion, DailyChallenge, QuizSession,
     UserChallengeResult, UserStreak,
 )
-from apps.gamification.models import UserBadge, UserGamificationProfile
-from apps.gamification.serializers import BadgeSerializer, GamificationProfileSerializer
+from apps.gamification.models import UserBadge, UserGamificationProfile, Mission, UserMission
+from apps.gamification.serializers import BadgeSerializer, GamificationProfileSerializer, MissionSerializer, UserMissionSerializer
 from apps.market.models import UserInventory, Wishlist
 from apps.market.serializers import MarketItemSerializer
 
@@ -175,6 +175,30 @@ class FullProfileView(APIView):
             for cr in recent_challenges
         ]
 
+        # ── 11. Missions ──
+        all_missions = Mission.objects.filter(is_active=True).order_by('order', 'id')
+        user_missions = UserMission.objects.filter(user=user).select_related('mission')
+        user_missions_map = {um.mission_id: um for um in user_missions}
+        
+        from django.utils import timezone
+        today = timezone.now().date()
+        
+        missions_data = []
+        for m in all_missions:
+            um = user_missions_map.get(m.id)
+            is_completed = False
+            
+            if um:
+                if m.is_daily:
+                    is_completed = um.last_claimed_date == today
+                else:
+                    is_completed = um.is_completed
+
+            missions_data.append({
+                'mission': MissionSerializer(m).data,
+                'is_completed': is_completed,
+            })
+
         # ── ASSEMBLE ──
         return Response({
             'user': user_data,
@@ -184,6 +208,7 @@ class FullProfileView(APIView):
                 'total_players': total_players,
             },
             'badges': badges_data,
+            'missions': missions_data,
             'daily_challenges': daily_challenge_data,
             'quiz': {
                 'total_quizzes': quiz_overall['total'] or 0,

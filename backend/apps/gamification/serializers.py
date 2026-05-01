@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Badge, UserBadge, UserGamificationProfile, RewardProduct, UserRewardPurchase
+from .models import Badge, UserBadge, UserGamificationProfile, RewardProduct, UserRewardPurchase, Mission, UserMission
 
 
 class BadgeSerializer(serializers.ModelSerializer):
@@ -63,3 +63,20 @@ class UserRewardPurchaseSerializer(serializers.ModelSerializer):
         model = UserRewardPurchase
         fields = ('id', 'product', 'purchased_at')
 
+
+class MissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Mission
+        fields = (
+            'id', 'slug', 'title_en', 'title_uz', 'title_ru',
+            'description_en', 'description_uz', 'description_ru',
+            'mission_type', 'target_value', 'reward_xp', 'reward_fuel',
+            'is_active', 'is_daily', 'order',
+        )
+
+class UserMissionSerializer(serializers.ModelSerializer):
+    mission = MissionSerializer()
+
+    class Meta:
+        model = UserMission
+        fields = ('id', 'mission', 'is_completed', 'last_claimed_date', 'completed_at')

@@ -505,3 +505,53 @@ class ChatRoomsView(APIView):
             slug=d.get('slug',''), name=d.get('name',''), is_global=d.get('is_global', True)
         )
         return Response({'id': r.id, 'slug': r.slug, 'name': r.name, 'is_global': r.is_global}, status=201)
+
+# ═══════════════════════════════════════════════════════════════════
+#  MISSIONS CRUD
+# ═══════════════════════════════════════════════════════════════════
+def _serialize_mission(m):
+    return {
+        'id': m.id, 'slug': m.slug, 'title_en': m.title_en, 'title_uz': m.title_uz, 'title_ru': m.title_ru,
+        'description_en': m.description_en, 'description_uz': m.description_uz, 'description_ru': m.description_ru,
+        'mission_type': m.mission_type, 'target_value': m.target_value, 'reward_xp': m.reward_xp, 'reward_fuel': m.reward_fuel,
+        'is_active': m.is_active, 'is_daily': m.is_daily, 'order': m.order,
+    }
+
+class MissionsListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        return Response([_serialize_mission(m) for m in apps.gamification.models.Mission.objects.all().order_by('order')])
+
+    def post(self, request):
+        import apps.gamification.models as gm
+        d = request.data
+        m = gm.Mission.objects.create(
+            slug=d.get('slug', ''), title_en=d.get('title_en', ''), title_uz=d.get('title_uz', ''), title_ru=d.get('title_ru', ''),
+            description_en=d.get('description_en', ''), description_uz=d.get('description_uz', ''), description_ru=d.get('description_ru', ''),
+            mission_type=d.get('mission_type', 'custom'), target_value=int(d.get('target_value') or 1),
+            reward_xp=int(d.get('reward_xp') or 0), reward_fuel=int(d.get('reward_fuel') or 10),
+            is_active=d.get('is_active', True), is_daily=d.get('is_daily', False), order=int(d.get('order') or 0)
+        )
+        return Response(_serialize_mission(m), status=201)
+
+class MissionDetailView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def patch(self, request, pk):
+        import apps.gamification.models as gm
+        try:
+            m = gm.Mission.objects.get(pk=pk)
+        except gm.Mission.DoesNotExist:
+            return Response(status=404)
+        fields = ['slug', 'title_en', 'title_uz', 'title_ru', 'description_en', 'description_uz', 'description_ru',
+                  'mission_type', 'target_value', 'reward_xp', 'reward_fuel', 'is_active', 'is_daily', 'order']
+        for f in fields:
+            if f in request.data: setattr(m, f, request.data[f])
+        m.save()
+        return Response(_serialize_mission(m))
+
+    def delete(self, request, pk):
+        import apps.gamification.models as gm
+        gm.Mission.objects.filter(pk=pk).delete()
+        return Response(status=204)

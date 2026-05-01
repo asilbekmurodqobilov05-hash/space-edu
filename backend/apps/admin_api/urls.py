@@ -20,4 +20,6 @@ urlpatterns = [
     path('market/', views.MarketItemListView.as_view()),
     path('market/<int:pk>/', views.MarketItemDetailView.as_view()),
     path('chat-rooms/', views.ChatRoomsView.as_view()),
+    path('missions/', views.MissionsListView.as_view()),
+    path('missions/<int:pk>/', views.MissionDetailView.as_view()),
 ]

@@ -22,12 +22,14 @@ import {
   Edit3,
   X,
   Gamepad2,
+  CheckCircle2,
   Heart,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
 import { useLikesStore } from '@/store/useLikesStore';
+import { useLearningStore } from '@/store/useLearningStore';
 
 const CLAIMS_KEY = 'space-edu-profile-mission-claims';
 const STREAK_CLAIM_DAY_KEY = 'space-edu-profile-streak-claim-day';
@@ -46,20 +48,9 @@ function setStreakClaimedToday() {
   } catch { /* ignore */ }
 }
 
-function loadClaimedIds() {
-  try {
-    const raw = localStorage.getItem(CLAIMS_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveClaimedIds(ids) {
-  localStorage.setItem(CLAIMS_KEY, JSON.stringify(ids));
-}
+// We no longer need local storage for claims except fallback for streak
+function loadClaimedIds() { return []; }
+function saveClaimedIds(ids) {}
 
 /** Backend: level = floor(sqrt(xp / 100)) + 1 */
 function xpSegment(level) {
@@ -130,6 +121,7 @@ export default function ProfileView() {
   const { user, updateUser } = useAuthStore();
   const syncFromAPI = useGamificationStore((s) => s.syncFromAPI);
   const { likedLessons } = useLikesStore();
+  const { completedLessons: localCompletedSlugs, lessonMetadata } = useLearningStore();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -152,6 +144,9 @@ export default function ProfileView() {
   const [avatarPreview, setAvatarPreview] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showLessonsModal, setShowLessonsModal] = useState(false);
+  const [showLikedModal, setShowLikedModal] = useState(false);
+  const [showMissionsModal, setShowMissionsModal] = useState(false);
 
   const showToast = useCallback((msg, isError = false) => {
     setToast({ msg, isError });
@@ -265,59 +260,71 @@ export default function ProfileView() {
   const quizStats = fullProfile?.quiz || { categories: [], recent: [] };
   const dailyStats = fullProfile?.daily_challenges || {};
 
+  const apiMissions = fullProfile?.missions || [];
+
   const missions = useMemo(() => {
-    return [
-      {
-        id: 'streak-bonus',
-        title: 'Daily streak bonus',
-        description: 'Claim your daily space fuel and increase your streak!',
-        progress: streakDoneToday ? 100 : 0,
-        isStreak: true,
-      },
-      {
-        id: 'first-lesson',
-        title: 'Complete your first lesson',
-        progress: hasAnyLesson ? 100 : 0,
-        isStreak: false,
-      },
-      {
-        id: 'master-one',
-        title: 'Master a lesson (score ≥ 70%)',
-        progress: masteredCount >= 1 ? 100 : 0,
-        isStreak: false,
-      },
-      {
-        id: 'inventory-two',
-        title: 'Own 2 shop items',
-        progress: Math.min(100, inventory.length >= 2 ? 100 : inventory.length * 50),
-        isStreak: false,
-      },
-    ];
-  }, [hasAnyLesson, masteredCount, inventory.length, streakDoneToday]);
+    return apiMissions.map((item) => {
+      const m = item.mission;
+      let progress = 0;
+      
+      switch (m.mission_type) {
+        case 'streak':
+          progress = streakDoneToday ? 100 : 0;
+          break;
+        case 'lesson':
+          progress = Math.min(100, Math.round((lessons.length / Math.max(1, m.target_value)) * 100));
+          break;
+        case 'mastery':
+          progress = Math.min(100, Math.round((masteredCount / Math.max(1, m.target_value)) * 100));
+          break;
+        case 'inventory':
+          progress = Math.min(100, Math.round((inventory.length / Math.max(1, m.target_value)) * 100));
+          break;
+        default:
+          progress = item.is_completed ? 100 : 0;
+      }
+      
+      return {
+        id: m.id,
+        slug: m.slug,
+        title: m.title_en || m.title_uz,
+        description: m.description_en || m.description_uz,
+        reward_fuel: m.reward_fuel,
+        reward_xp: m.reward_xp,
+        progress: item.is_completed ? 100 : progress,
+        is_completed: item.is_completed,
+        is_daily: m.is_daily,
+        mission_type: m.mission_type,
+      };
+    });
+  }, [apiMissions, lessons.length, masteredCount, inventory.length, streakDoneToday]);
 
   const claimMission = async (mission) => {
-    if (mission.isStreak) {
-      if (streakDoneToday) return;
+    if (mission.is_completed) return;
+    if (mission.progress < 100) return;
+
+    if (mission.mission_type === 'streak') {
       try {
         const { data } = await api.post('/gamification/streak/');
+        await api.post('/gamification/missions/claim/', { mission_id: mission.id });
         await fetchAll();
         setStreakClaimedToday();
         setStreakDoneToday(true);
-        if (data.updated) showToast(`Streak updated! +${data.fuel_bonus ?? 10} fuel`);
-        else showToast('Streak already logged today — data refreshed');
+        if (data.updated) showToast(`Streak updated! +${(data.fuel_bonus ?? 10) + mission.reward_fuel} fuel`);
+        else showToast(`Reward claimed! +${mission.reward_fuel} fuel`);
       } catch {
         showToast('Streak request failed', true);
       }
       return;
     }
 
-    if (claimedMissionIds.includes(mission.id)) return;
-    if (mission.progress < 100) return;
-
-    const next = [...claimedMissionIds, mission.id];
-    setClaimedMissionIds(next);
-    saveClaimedIds(next);
-    showToast('Reward claimed — keep exploring!');
+    try {
+      await api.post('/gamification/missions/claim/', { mission_id: mission.id });
+      await fetchAll();
+      showToast(`Reward claimed! +${mission.reward_fuel} fuel`);
+    } catch {
+      showToast('Failed to claim reward.', true);
+    }
   };
 
   const xp = gamProfile?.xp ?? 0;
@@ -338,7 +345,23 @@ export default function ProfileView() {
     ? `Top ${Math.max(1, Math.round((leaderboardRank / leaderboardTotal) * 100))}%`
     : '—';
 
-  const completedLessons = lessons.filter((l) => l.score != null);
+  const apiLessons = progress?.lessons ?? [];
+  
+  // Merge API lessons with local ones that might not be in API yet
+  const completedLessons = useMemo(() => {
+    const combined = [...apiLessons];
+    localCompletedSlugs.forEach(slug => {
+      if (!combined.some(l => l.lesson_slug === slug)) {
+        combined.push({
+          lesson_slug: slug,
+          score: 100,
+          is_mastered: true,
+          local_only: true
+        });
+      }
+    });
+    return combined.filter((l) => l.score != null);
+  }, [apiLessons, localCompletedSlugs]);
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
@@ -712,29 +735,45 @@ export default function ProfileView() {
 
           {/* Completed Lessons */}
           <div className="rounded-3xl border border-white/10 bg-space-900/70 p-5 flex-1 flex flex-col">
-            <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              <Orbit className="w-5 h-5 text-emerald-400" /> Completed Lessons
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Orbit className="w-5 h-5 text-emerald-400" /> Completed Lessons
+              </h2>
+              {completedLessons.length > 3 && (
+                <button 
+                  onClick={() => setShowLessonsModal(true)}
+                  className="text-[10px] font-bold uppercase tracking-wider text-violet-300 hover:text-white transition-colors bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"
+                >
+                  See All
+                </button>
+              )}
+            </div>
             {completedLessons.length === 0 ? (
               <p className="text-sm text-white/40">No lesson progress yet — start learning.</p>
             ) : (
               <div className="space-y-3">
-                {completedLessons.map((row) => (
-                  <div
-                    key={row.lesson_slug}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-between gap-3 hover:bg-white/10 transition-all"
-                  >
-                    <div>
-                      <p className="font-medium text-white">{row.lesson_slug}</p>
-                      <p className="text-xs text-white/50 mt-1">
-                        Score {row.score}% {row.is_mastered ? '· Mastered' : ''}
-                      </p>
+                {completedLessons.slice(0, 3).map((row) => {
+                  const meta = lessonMetadata[row.lesson_slug];
+                  const displayTitle = meta?.title || row.lesson_slug;
+                  const displaySubject = meta?.subject || (row.local_only ? 'Lesson' : 'Academy');
+                  
+                  return (
+                    <div
+                      key={row.lesson_slug}
+                      className="rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-between gap-3 hover:bg-white/10 transition-all"
+                    >
+                      <div>
+                        <p className="font-medium text-white">{displayTitle}</p>
+                        <p className="text-xs text-white/50 mt-1">
+                          {displaySubject} · Score {row.score}% {row.is_mastered ? '· Mastered' : ''}
+                        </p>
+                      </div>
+                      <span className={`text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider ${row.is_mastered ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-white/70 bg-white/10 border border-white/10'}`}>
+                        {row.is_mastered ? 'Mastered' : 'Done'}
+                      </span>
                     </div>
-                    <span className={`text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider ${row.is_mastered ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-white/70 bg-white/10 border border-white/10'}`}>
-                      {row.is_mastered ? 'Mastered' : 'Done'}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <div className="mt-auto pt-4">
@@ -746,14 +785,24 @@ export default function ProfileView() {
 
           {/* Liked Lessons */}
           <div className="rounded-3xl border border-white/10 bg-space-900/70 p-5 flex-1 flex flex-col">
-            <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              <Heart className="w-5 h-5 text-rose-400" /> Liked Lessons
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Heart className="w-5 h-5 text-rose-400" /> Liked Lessons
+              </h2>
+              {likedLessons.length > 3 && (
+                <button 
+                  onClick={() => setShowLikedModal(true)}
+                  className="text-[10px] font-bold uppercase tracking-wider text-violet-300 hover:text-white transition-colors bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"
+                >
+                  See All
+                </button>
+              )}
+            </div>
             {likedLessons.length === 0 ? (
               <p className="text-sm text-white/40">No liked lessons yet.</p>
             ) : (
               <div className="space-y-3">
-                {likedLessons.map((lesson) => (
+                {likedLessons.slice(0, 3).map((lesson) => (
                   <Link
                     key={lesson.id}
                     to={lesson.url}
@@ -794,40 +843,72 @@ export default function ProfileView() {
 
           {/* Active Missions */}
           <div className="rounded-3xl border border-white/10 bg-space-900/70 p-5">
-            <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              <Rocket className="w-5 h-5 text-violet-400" /> Active Missions
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Rocket className="w-5 h-5 text-violet-400" /> Active Missions
+              </h2>
+              {missions.length > 3 && (
+                <button 
+                  onClick={() => setShowMissionsModal(true)}
+                  className="text-[10px] font-bold uppercase tracking-wider text-violet-300 hover:text-white transition-colors bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"
+                >
+                  See All
+                </button>
+              )}
+            </div>
             <div className="space-y-4">
-              {missions.map((mission) => {
-                const progressVal = mission.isStreak ? (streakDoneToday ? 100 : 0) : mission.progress;
-                const done = mission.progress >= 100;
-                const claimed = mission.isStreak ? streakDoneToday : claimedMissionIds.includes(mission.id);
+              {missions.slice(0, 3).map((mission) => {
+                const isDaily = mission.is_daily;
+                const progressVal = mission.progress;
+                const claimed = mission.is_completed;
+                const canClaim = progressVal >= 100 && !claimed;
+                
                 return (
-                  <div key={mission.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition-all">
+                  <div key={mission.id} className={`rounded-2xl border ${claimed ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-white/10 bg-white/5'} p-4 hover:bg-white/10 transition-all`}>
                     <div className="flex items-center justify-between gap-3 mb-2">
-                      <p className="text-sm font-medium text-white">{mission.title}</p>
-                      <span className="text-xs font-bold text-violet-300">{mission.isStreak ? 'Daily' : `${progressVal}%`}</span>
+                      <p className="text-sm font-medium text-white flex items-center gap-2">
+                        {claimed && <BadgeCheck className="w-4 h-4 text-emerald-400" />}
+                        {mission.title}
+                      </p>
+                      <span className={`text-xs font-bold ${claimed ? 'text-emerald-400' : 'text-violet-300'}`}>
+                        {isDaily ? 'Daily' : claimed ? 'Done' : `${progressVal}%`}
+                      </span>
                     </div>
-                    {!mission.isStreak && (
+                    {!isDaily && !claimed && (
                       <div className="h-2 rounded-full bg-black/40 overflow-hidden mb-3 border border-white/5">
                         <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 relative" style={{ width: `${progressVal}%` }}>
                           <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent rounded-t-full" />
                         </div>
                       </div>
                     )}
-                    {mission.isStreak && (
+                    {(isDaily || !claimed) && (
                       <p className="text-xs text-white/50 mb-3 leading-relaxed">{mission.description}</p>
                     )}
-                    <button
-                      type="button"
-                      disabled={claimed || (!mission.isStreak && !done)}
-                      onClick={() => claimMission(mission)}
-                      className="text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-xl border border-white/20 bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/15 transition-all"
-                    >
-                      {claimed ? (mission.isStreak ? 'Done today' : 'Claimed') : mission.isStreak ? 'Claim streak' : 'Claim reward'}
-                    </button>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-2">
+                        <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                        <span className="text-xs font-bold text-yellow-400">+{mission.reward_fuel}</span>
+                        {mission.reward_xp > 0 && (
+                          <span className="text-xs font-bold text-blue-400 ml-1">+{mission.reward_xp} XP</span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={claimed || !canClaim}
+                        onClick={() => claimMission(mission)}
+                        className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-xl transition-all ${
+                          claimed 
+                            ? 'text-emerald-400/50 bg-transparent cursor-default' 
+                            : canClaim
+                              ? 'bg-violet-500 text-white hover:bg-violet-400 hover:-translate-y-0.5 shadow-[0_0_15px_rgba(139,92,246,0.3)]'
+                              : 'border border-white/20 bg-white/5 opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        {claimed ? 'Claimed' : canClaim ? 'Claim reward' : 'In progress'}
+                      </button>
+                    </div>
                   </div>
-                );
+              );
               })}
             </div>
           </div>
@@ -864,6 +945,143 @@ export default function ProfileView() {
             {allBadges.length === 0 && (
               <p className="text-center text-white/50 py-10">No achievements available yet.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Completed Lessons Modal */}
+      {showLessonsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowLessonsModal(false)}>
+          <div className="relative w-full max-w-2xl bg-space-900 border border-white/10 rounded-3xl p-6 md:p-8 max-h-[85vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button 
+              onClick={() => setShowLessonsModal(false)}
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+              <Orbit className="w-7 h-7 text-emerald-400" /> All Completed Lessons
+            </h2>
+            <div className="space-y-4">
+              {completedLessons.map((row) => {
+                const meta = lessonMetadata[row.lesson_slug];
+                const displayTitle = meta?.title || row.lesson_slug;
+                const displaySubject = meta?.subject || (row.local_only ? 'Lesson' : 'Academy');
+                return (
+                  <div key={row.lesson_slug} className="rounded-2xl border border-white/10 bg-white/5 p-5 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-lg text-white">{displayTitle}</p>
+                      <p className="text-sm text-white/50 mt-1">{displaySubject} · Score {row.score}%</p>
+                    </div>
+                    <span className={`text-xs px-4 py-1.5 rounded-full font-bold uppercase tracking-widest ${row.is_mastered ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-white/70 bg-white/10 border border-white/10'}`}>
+                      {row.is_mastered ? 'Mastered' : 'Completed'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Liked Lessons Modal */}
+      {showLikedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowLikedModal(false)}>
+          <div className="relative w-full max-w-2xl bg-space-900 border border-white/10 rounded-3xl p-6 md:p-8 max-h-[85vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button 
+              onClick={() => setShowLikedModal(false)}
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+              <Heart className="w-7 h-7 text-rose-400" /> Favorite Lessons
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {likedLessons.map((lesson) => (
+                <Link
+                  key={lesson.id}
+                  to={lesson.url}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-5 flex items-center justify-between gap-3 hover:bg-white/10 transition-all group"
+                >
+                  <div className="overflow-hidden">
+                    <p className="font-semibold text-white group-hover:text-rose-400 transition-colors truncate">{lesson.title}</p>
+                    <p className="text-xs text-white/40 mt-1 capitalize">{lesson.subject}</p>
+                  </div>
+                  <Heart className="w-5 h-5 text-rose-500 shrink-0" fill="#f43f5e" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Active Missions Modal */}
+      {showMissionsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowMissionsModal(false)}>
+          <div className="relative w-full max-w-2xl bg-space-900 border border-white/10 rounded-3xl p-6 md:p-8 max-h-[85vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button 
+              onClick={() => setShowMissionsModal(false)}
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+              <Rocket className="w-7 h-7 text-violet-400" /> Mission Log
+            </h2>
+            <div className="space-y-4">
+              {missions.map((mission) => {
+                const isDaily = mission.is_daily;
+                const progressVal = mission.progress;
+                const claimed = mission.is_completed;
+                const canClaim = progressVal >= 100 && !claimed;
+                return (
+                  <div key={mission.id} className={`rounded-2xl border ${claimed ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-white/10 bg-white/5'} p-5 transition-all`}>
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <div>
+                        <p className="font-bold text-lg text-white flex items-center gap-2">
+                          {claimed && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
+                          {mission.title}
+                        </p>
+                        <p className="text-sm text-white/50 mt-1">{mission.description}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={`text-xs font-black uppercase tracking-widest ${claimed ? 'text-emerald-400' : 'text-violet-400'}`}>
+                          {isDaily ? 'Daily' : claimed ? 'Archived' : `${progressVal}%`}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <Coins className="w-4 h-4 text-yellow-400" />
+                          <span className="text-sm font-bold text-yellow-400">+{mission.reward_fuel}</span>
+                        </div>
+                        {mission.reward_xp > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-bold text-blue-400">+{mission.reward_xp} XP</span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={claimed || !canClaim}
+                        onClick={() => claimMission(mission)}
+                        className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+                          claimed 
+                            ? 'text-emerald-400/50 bg-transparent' 
+                            : canClaim
+                              ? 'bg-violet-500 text-white hover:bg-violet-400 shadow-lg'
+                              : 'bg-white/5 text-white/20'
+                        }`}
+                      >
+                        {claimed ? 'Claimed' : canClaim ? 'Claim Now' : 'In Progress'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

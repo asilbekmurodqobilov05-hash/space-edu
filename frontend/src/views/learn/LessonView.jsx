@@ -9,6 +9,7 @@ import { useGamificationStore } from '@/store/useGamificationStore';
 import { useAIStore } from '@/store/useAIStore';
 import { getFieldByLang } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLearningStore } from '@/store/useLearningStore';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -206,6 +207,7 @@ export default function LessonView() {
     const { unitId, lessonId } = useParams();
     const { isAuthenticated } = useAuthStore();
     const { applyLessonResult } = useGamificationStore();
+    const completeLessonLocal = useLearningStore(s => s.completeLesson);
     const { setContext } = useAIStore();
     const { language } = useTranslation();
 
@@ -218,6 +220,7 @@ export default function LessonView() {
     const [completed, setCompleted] = useState(false);
     const [result, setResult] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
         api.get(`/courses/lessons/${lessonId}/`)
@@ -257,10 +260,30 @@ export default function LessonView() {
                 try {
                     const { data } = await api.post(`/progress/lessons/${lessonId}/complete/`, { score });
                     applyLessonResult(data);
+                    completeLessonLocal(lessonId, unitId, score, lesson.xp_reward, {
+                        title: getFieldByLang(lesson, 'title', language),
+                        subject: 'Academy'
+                    });
                     setResult(data);
-                } catch { /* ignore */ } finally {
+                    setToast({ msg: 'Progress saved!', type: 'success' });
+                } catch (err) { 
+                    console.error('Failed to save progress:', err);
+                    setToast({ msg: 'Could not save progress to server.', type: 'error' });
+                    // Still mark local as complete as fallback
+                    completeLessonLocal(lessonId, unitId, score, lesson.xp_reward, {
+                        title: getFieldByLang(lesson, 'title', language),
+                        subject: 'Academy'
+                    });
+                } finally {
                     setSubmitting(false);
+                    setTimeout(() => setToast(null), 3000);
                 }
+            } else {
+                // Not authenticated — still update local store if possible
+                completeLessonLocal(lessonId, unitId, score, lesson.xp_reward, {
+                    title: getFieldByLang(lesson, 'title', language),
+                    subject: 'Academy'
+                });
             }
 
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#8b5cf6', '#00e5ff', '#ffffff'] });
@@ -368,6 +391,16 @@ export default function LessonView() {
                 </div>
             </div>
         </div>
-    );
 
+        {/* Simple Toast */}
+        {toast && (
+            <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 ${
+                toast.type === 'error' ? 'bg-red-500/10 border-red-500/20' : 'bg-space-900 border-white/10'
+            }`}>
+                <div className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                <p className="text-sm font-medium text-white">{toast.msg}</p>
+            </div>
+        )}
+    </div>
+    );
 }

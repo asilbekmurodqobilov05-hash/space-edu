@@ -9,16 +9,19 @@ import { Play, Info, CheckCircle2, Trophy, Coins, Heart } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useGamificationStore } from '@/store/useGamificationStore';
 import { useLikesStore } from '@/store/useLikesStore';
+import { useLearningStore } from '@/store/useLearningStore';
 import confetti from 'canvas-confetti';
 
 export default function UniversalLessonView() {
   const { subject, topicId, subIdx, lessonIdx, partIdx } = useParams();
   const navigate = useNavigate();
   const addRewards = useGamificationStore(s => s.addRewards);
+  const completeLessonLocal = useLearningStore(s => s.completeLesson);
   const { likeLesson, unlikeLesson, isLiked } = useLikesStore();
   
   const [completed, setCompleted] = useState(false);
   const [showRewardModal, setShowRewardModal] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const lessonUniqueId = `${subject}-${topicId}-${subIdx || ''}-${lessonIdx || ''}-${partIdx || ''}`;
   const liked = isLiked(lessonUniqueId);
@@ -91,7 +94,15 @@ export default function UniversalLessonView() {
     if (completed) return;
     setCompleted(true);
     addRewards(25, 25);
+    completeLessonLocal(lessonUniqueId, topicId, 100, 25, {
+      title: displayTitle,
+      subject: subject
+    });
     setShowRewardModal(true);
+    
+    setToast({ msg: "Progress saved locally!", type: 'success' });
+    setTimeout(() => setToast(null), 3000);
+
     confetti({
       particleCount: 150,
       spread: 70,
@@ -354,6 +365,14 @@ export default function UniversalLessonView() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Simple Toast */}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl bg-space-900 border border-white/10 shadow-2xl backdrop-blur-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
+          <div className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+          <p className="text-sm font-medium text-white">{toast.msg}</p>
+        </div>
+      )}
     </div>
   );
 }
