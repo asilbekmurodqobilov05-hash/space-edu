@@ -302,37 +302,48 @@ const SmokeParticles = ({ active }) => {
   );
 };
 
-const LaunchAnimator = ({ launchState, rocketRef, stage1Ref, speed }) => {
+const LaunchAnimator = ({ launchState, rocketRef, stage1Ref, armRef, speed }) => {
   useFrame((state) => {
     if (launchState === 'launched') {
       const altitude = rocketRef.current?.position.y || 0;
-      const shakeIntensity = Math.max(0, 0.1 - altitude * 0.002);
+      const shakeIntensity = Math.max(0, 0.08 - altitude * 0.0016);
       
-      // Camera shake
-      state.camera.position.x = Math.sin(state.clock.elapsedTime * 50) * shakeIntensity;
-      state.camera.position.y = 5 + Math.cos(state.clock.elapsedTime * 45) * shakeIntensity;
+      // Camera shake + follow
+      state.camera.position.x = Math.sin(state.clock.elapsedTime * 42) * shakeIntensity;
+      state.camera.position.y = 5.5 + Math.cos(state.clock.elapsedTime * 38) * shakeIntensity + altitude * 0.06;
       
       if (rocketRef.current) {
-        rocketRef.current.position.y += 0.1 * speed;
+        rocketRef.current.position.y += (0.06 + Math.min(0.22, altitude * 0.006)) * speed;
+        rocketRef.current.position.x += 0.004 * speed; // slight gravity turn feel
+
         // Stage separation
-        if (rocketRef.current.position.y > 15 && stage1Ref.current) {
-          stage1Ref.current.position.y -= 0.15 * speed; // falls away relative to rocket
-          stage1Ref.current.rotation.z += 0.01 * speed;
-          stage1Ref.current.rotation.x += 0.005 * speed;
+        if (rocketRef.current.position.y > 14 && stage1Ref.current) {
+          stage1Ref.current.position.y -= 0.17 * speed;
+          stage1Ref.current.position.x -= 0.06 * speed;
+          stage1Ref.current.rotation.z += 0.014 * speed;
+          stage1Ref.current.rotation.x += 0.008 * speed;
         }
       }
-      
-      // Camera follow
-      state.camera.position.z = 15 + altitude * 0.2;
-      state.camera.lookAt(0, altitude, 0);
+
+      if (armRef.current) {
+        armRef.current.rotation.z = Math.max(-1.25, armRef.current.rotation.z - 0.06 * speed);
+      }
+
+      state.camera.position.z = 16 + altitude * 0.16;
+      state.camera.lookAt((rocketRef.current?.position.x || 0), altitude, 0);
     } else {
       state.camera.position.lerp(new THREE.Vector3(0, 5, 15), 0.1);
       if (launchState === 'idle' && rocketRef.current) {
         rocketRef.current.position.y = 0;
+        rocketRef.current.position.x = 0;
         if (stage1Ref.current) {
-          stage1Ref.current.position.y = 2.5; // reset position
+          stage1Ref.current.position.y = 2.5;
+          stage1Ref.current.position.x = 0;
           stage1Ref.current.rotation.z = 0;
           stage1Ref.current.rotation.x = 0;
+        }
+        if (armRef.current) {
+          armRef.current.rotation.z = 0;
         }
       }
     }
@@ -348,6 +359,7 @@ const RocketLaunchSimulator = () => {
   const [speed, setSpeed] = useState(1);
   const rocketRef = useRef(null);
   const stage1Ref = useRef(null);
+  const armRef = useRef(null);
 
   const handleLaunch = () => {
     if (launchState === 'idle') {
@@ -369,10 +381,16 @@ const RocketLaunchSimulator = () => {
     }
   };
 
+  const launchStatusText = launchState === 'idle'
+    ? t('lab', 'statusHolding')
+    : launchState === 'countdown'
+      ? `T-MINUS 00:00:0${countdown}`
+      : t('lab', 'statusLiftoff');
+
   return (
     <div className="flex flex-col md:flex-row h-full gap-6">
       <div className="w-full md:w-1/3 space-y-6">
-        <div className="glass p-6 rounded-2xl">
+        <div className="glass p-6 rounded-2xl border border-orange-500/20 shadow-[0_0_30px_rgba(255,125,0,0.12)]">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Flame className="text-orange-500" /> {t('lab', 'launchControl')}</h3>
           
           <div className="flex justify-center mb-8 mt-4">
@@ -395,7 +413,7 @@ const RocketLaunchSimulator = () => {
             <div className="bg-space-800 p-4 rounded-xl border border-white/5">
               <div className="text-xs text-gray-400 mb-1">{t('lab', 'status')}</div>
               <div className="font-mono text-neon-blue font-bold">
-                {launchState === 'idle' ? t('lab', 'statusHolding') : launchState === 'countdown' ? `T-MINUS 00:00:0${countdown}` : t('lab', 'statusLiftoff')}
+                {launchStatusText}
               </div>
             </div>
 
@@ -414,108 +432,152 @@ const RocketLaunchSimulator = () => {
                 className="w-full accent-orange-500"
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <div className="rounded-xl border border-white/10 bg-black/30 p-2.5">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Fuel</div>
+                <div className="font-mono text-sm text-cyan-300">
+                  {launchState === 'launched' ? `${Math.max(12, Math.round(100 - speed * 22))}%` : '100%'}
+                </div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-black/30 p-2.5">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Thrust</div>
+                <div className="font-mono text-sm text-orange-300">
+                  {launchState === 'launched' ? `${(7600 * speed).toFixed(0)} kN` : 'Standby'}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="w-full md:w-2/3 bg-space-900/50 rounded-3xl border border-white/10 overflow-hidden relative min-h-[400px]">
+      <div className="w-full md:w-2/3 rounded-3xl border border-white/10 overflow-hidden relative min-h-[400px] bg-gradient-to-b from-[#03050b] via-[#060912] to-[#0f1118]">
         <Canvas shadows camera={{ position: [0, 5, 15], fov: 45 }} gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping }}>
-          <LaunchAnimator launchState={launchState} rocketRef={rocketRef} stage1Ref={stage1Ref} speed={speed} />
-          <ambientLight intensity={0.2} />
-          <directionalLight position={[10, 10, 10]} intensity={2} castShadow />
-          <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-          
-          <group ref={rocketRef} position={[0, 0, 0]}>
-            {/* Stage 1 */}
-            <mesh ref={stage1Ref} position={[0, 2.5, 0]} castShadow receiveShadow>
-              <cylinderGeometry args={[0.5, 0.5, 5, 32]} />
-              <meshPhysicalMaterial color="#ffffff" metalness={0.8} roughness={0.2} />
-              
-              {/* Engine Nozzle */}
-              <mesh position={[0, -2.6, 0]} castShadow>
-                <cylinderGeometry args={[0.3, 0.5, 0.4, 32, 1, true]} />
-                <meshPhysicalMaterial color="#333333" metalness={0.9} roughness={0.5} side={THREE.DoubleSide} />
-              </mesh>
+          <LaunchAnimator launchState={launchState} rocketRef={rocketRef} stage1Ref={stage1Ref} armRef={armRef} speed={speed} />
+          <ambientLight intensity={0.18} />
+          <hemisphereLight skyColor="#9dc1ff" groundColor="#2e2a25" intensity={0.3} />
+          <directionalLight position={[7, 12, 9]} intensity={2.1} castShadow />
+          <Stars radius={100} depth={50} count={6000} factor={4} saturation={0} fade speed={1} />
 
-              {/* Fire/Exhaust attached to Stage 1 */}
-              {launchState === 'launched' && (
-                <group position={[0, -3.5, 0]}>
-                  <mesh>
-                    <coneGeometry args={[0.8, 4, 32]} />
-                    <meshBasicMaterial color="#ff5500" transparent opacity={0.8} blending={THREE.AdditiveBlending} />
-                  </mesh>
-                  <mesh position={[0, -1, 0]}>
-                    <coneGeometry args={[1.2, 6, 32]} />
-                    <meshBasicMaterial color="#ffaa00" transparent opacity={0.4} blending={THREE.AdditiveBlending} />
-                  </mesh>
-                  <pointLight intensity={5} distance={20} color="#ffaa00" />
-                </group>
-              )}
-            </mesh>
-            
-            {/* Stage 2 & Payload */}
-            <group position={[0, 5.5, 0]}>
+          <group ref={rocketRef} position={[0, 0, 0]}>
+            {/* Falcon 9 first stage */}
+            <group ref={stage1Ref} position={[0, 2.5, 0]}>
               <mesh castShadow receiveShadow>
-                <coneGeometry args={[0.5, 1, 32]} />
-                <meshPhysicalMaterial color="#ffffff" metalness={0.8} roughness={0.2} />
+                <cylinderGeometry args={[0.5, 0.5, 5, 36]} />
+                <meshPhysicalMaterial color="#f4f4f4" metalness={0.78} roughness={0.24} />
               </mesh>
-              {/* Stage 2 engine fire (ignites after separation) */}
-              {launchState === 'launched' && rocketRef.current && rocketRef.current.position.y > 15 && (
-                <group position={[0, -0.5, 0]}>
+              <mesh position={[0, 2.48, 0]} castShadow receiveShadow>
+                <cylinderGeometry args={[0.53, 0.53, 0.16, 36]} />
+                <meshStandardMaterial color="#1f2631" metalness={0.7} roughness={0.45} />
+              </mesh>
+              <mesh position={[0, -2.6, 0]} castShadow>
+                <cylinderGeometry args={[0.3, 0.5, 0.45, 36, 1, true]} />
+                <meshPhysicalMaterial color="#2f353f" metalness={0.9} roughness={0.5} side={THREE.DoubleSide} />
+              </mesh>
+              {launchState === 'launched' && (
+                <group position={[0, -3.45, 0]}>
                   <mesh>
-                    <coneGeometry args={[0.4, 2, 32]} />
-                    <meshBasicMaterial color="#00f0ff" transparent opacity={0.8} blending={THREE.AdditiveBlending} />
+                    <coneGeometry args={[0.95, 5.7, 32]} />
+                    <meshBasicMaterial color="#ff6b00" transparent opacity={0.92} blending={THREE.AdditiveBlending} />
                   </mesh>
+                  <mesh position={[0, -1.4, 0]}>
+                    <coneGeometry args={[1.6, 8.2, 32]} />
+                    <meshBasicMaterial color="#ffd77a" transparent opacity={0.5} blending={THREE.AdditiveBlending} />
+                  </mesh>
+                  <pointLight intensity={8} distance={30} color="#ffb766" />
                 </group>
               )}
             </group>
+
+            {/* Falcon 9 second stage + fairing */}
+            <group position={[0, 5.55, 0]}>
+              <mesh position={[0, -0.55, 0]} castShadow receiveShadow>
+                <cylinderGeometry args={[0.5, 0.5, 1.15, 36]} />
+                <meshPhysicalMaterial color="#ececec" metalness={0.75} roughness={0.28} />
+              </mesh>
+              <mesh castShadow receiveShadow>
+                <coneGeometry args={[0.5, 1.2, 36]} />
+                <meshPhysicalMaterial color="#ffffff" metalness={0.8} roughness={0.2} />
+              </mesh>
+            </group>
           </group>
 
-          {/* Launch Pad Structure */}
+          {/* Ground and launch pad */}
           <group position={[0, -0.5, 0]}>
+            <mesh position={[0, -0.55, 0]} receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[90, 90]} />
+              <meshStandardMaterial color="#1a1d24" roughness={1} />
+            </mesh>
             <mesh receiveShadow>
               <boxGeometry args={[8, 1, 8]} />
-              <meshStandardMaterial color="#333333" roughness={0.9} />
+              <meshStandardMaterial color="#353a44" roughness={0.9} />
             </mesh>
-            {/* Flame Trench */}
-            <mesh position={[0, 0.51, 0]} receiveShadow>
-              <boxGeometry args={[2, 0.02, 2]} />
-              <meshStandardMaterial color="#111111" roughness={1} />
+            <mesh position={[0, 0.52, 0]} receiveShadow>
+              <boxGeometry args={[2.1, 0.03, 2.1]} />
+              <meshStandardMaterial color="#15171c" roughness={1} />
             </mesh>
-            
-            {/* Launch Tower */}
+
+            {/* Hold-down clamps */}
+            <group position={[0, 0.78, 0]}>
+              <mesh position={[0.75, 0, 0]} castShadow receiveShadow>
+                <boxGeometry args={[0.55, 0.16, 0.4]} />
+                <meshStandardMaterial color="#4f5865" metalness={0.64} roughness={0.5} />
+              </mesh>
+              <mesh position={[-0.75, 0, 0]} castShadow receiveShadow>
+                <boxGeometry args={[0.55, 0.16, 0.4]} />
+                <meshStandardMaterial color="#4f5865" metalness={0.64} roughness={0.5} />
+              </mesh>
+              <mesh position={[0, 0, 0.75]} castShadow receiveShadow>
+                <boxGeometry args={[0.4, 0.16, 0.55]} />
+                <meshStandardMaterial color="#4f5865" metalness={0.64} roughness={0.5} />
+              </mesh>
+              <mesh position={[0, 0, -0.75]} castShadow receiveShadow>
+                <boxGeometry args={[0.4, 0.16, 0.55]} />
+                <meshStandardMaterial color="#4f5865" metalness={0.64} roughness={0.5} />
+              </mesh>
+            </group>
+
+            {/* Service tower + arm */}
             <group position={[-2, 5, 0]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[0.8, 10, 0.8]} />
-                <meshStandardMaterial color="#883333" roughness={0.7} metalness={0.5} />
+                <meshStandardMaterial color="#7b2f2f" roughness={0.72} metalness={0.48} />
               </mesh>
-              {/* Tower Arms */}
-              <mesh position={[1.2, 3, 0]} castShadow>
-                <boxGeometry args={[2, 0.2, 0.2]} />
-                <meshStandardMaterial color="#555555" />
-              </mesh>
-              <mesh position={[1.2, -1, 0]} castShadow>
-                <boxGeometry args={[2, 0.2, 0.2]} />
-                <meshStandardMaterial color="#555555" />
-              </mesh>
+              <group ref={armRef} position={[0.45, 2.1, 0]}>
+                <mesh position={[1.1, 0, 0]} castShadow>
+                  <boxGeometry args={[2.2, 0.18, 0.28]} />
+                  <meshStandardMaterial color="#6d7786" metalness={0.6} roughness={0.45} />
+                </mesh>
+              </group>
             </group>
           </group>
-          
-          {/* Smoke Particles */}
+
           <group position={[0, 0, 0]}>
-            <SmokeParticles active={launchState === 'launched' && (rocketRef.current?.position.y || 0) < 15} />
+            <SmokeParticles active={launchState === 'launched' && (rocketRef.current?.position.y || 0) < 16} />
           </group>
 
           <OrbitControls enablePan={false} maxPolarAngle={Math.PI / 2 - 0.1} />
           <EffectComposer>
-            <Bloom luminanceThreshold={1} mipmapBlur intensity={2} />
+            <Bloom luminanceThreshold={1} mipmapBlur intensity={2.2} />
             <Vignette eskil={false} offset={0.1} darkness={1.1} />
             <ChromaticAberration offset={new THREE.Vector2(0.001, 0.001)} />
             <Noise opacity={0.05} />
           </EffectComposer>
         </Canvas>
-        <div className="absolute bottom-4 left-4 text-xs text-gray-400 bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">
-          {t('lab', 'hintDrag')} — {t('lab', 'hintScroll')}
+
+        <div className="absolute bottom-4 left-4 right-4 z-20 grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className="rounded-xl border border-cyan-400/25 bg-black/45 backdrop-blur-md p-2.5">
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Vehicle</div>
+            <div className="text-sm font-semibold text-cyan-300">Falcon 9</div>
+          </div>
+          <div className="rounded-xl border border-orange-400/25 bg-black/45 backdrop-blur-md p-2.5">
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Launch State</div>
+            <div className="text-sm font-semibold text-orange-300">{launchStatusText}</div>
+          </div>
+          <div className="rounded-xl border border-white/20 bg-black/45 backdrop-blur-md p-2.5">
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Simulation Gain</div>
+            <div className="text-sm font-semibold text-white">{speed.toFixed(1)}x</div>
+          </div>
         </div>
       </div>
     </div>
@@ -854,6 +916,164 @@ const UniverseChangesSimulator = () => {
   );
 };
 
+const OrbitalEarthAndVehicle = ({ altitude, inclination, solarPanelsDeployed, satelliteType }) => {
+  const earthRef = useRef(null);
+  const cloudRef = useRef(null);
+  const satelliteRef = useRef(null);
+  const orbitAngleRef = useRef(0);
+  const inclinationRad = useMemo(() => inclination * (Math.PI / 180), [inclination]);
+  const orbitRadius = useMemo(() => 2.8 + altitude / 900, [altitude]);
+
+  const [dayMap, bumpMap, specularMap, nightMap, cloudMap] = useLoader(THREE.TextureLoader, [
+    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
+    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_normal_2048.jpg',
+    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_specular_2048.jpg',
+    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_lights_2048.png',
+    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png',
+  ]);
+
+  useFrame((_, delta) => {
+    if (earthRef.current) earthRef.current.rotation.y += delta * 0.06;
+    if (cloudRef.current) cloudRef.current.rotation.y += delta * 0.08;
+    orbitAngleRef.current += delta * 0.42;
+
+    if (satelliteRef.current) {
+      const a = orbitAngleRef.current;
+      const x = orbitRadius * Math.cos(a);
+      const y = orbitRadius * Math.sin(a) * Math.sin(inclinationRad);
+      const z = orbitRadius * Math.sin(a) * Math.cos(inclinationRad);
+      satelliteRef.current.position.set(x, y, z);
+      satelliteRef.current.rotation.y += delta * 1.2;
+      satelliteRef.current.rotation.z += delta * 0.3;
+    }
+  });
+
+  return (
+    <group>
+      <group ref={earthRef}>
+        <mesh castShadow receiveShadow>
+          <sphereGeometry args={[2.15, 96, 96]} />
+          <meshPhongMaterial
+            map={dayMap}
+            bumpMap={bumpMap}
+            bumpScale={0.03}
+            specularMap={specularMap}
+            specular={new THREE.Color('#5f769b')}
+            shininess={24}
+          />
+        </mesh>
+        <mesh>
+          <sphereGeometry args={[2.154, 96, 96]} />
+          <meshBasicMaterial map={nightMap} transparent opacity={0.4} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
+      </group>
+      <mesh ref={cloudRef}>
+        <sphereGeometry args={[2.2, 96, 96]} />
+        <meshPhongMaterial map={cloudMap} transparent opacity={0.24} depthWrite={false} />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[2.26, 64, 64]} />
+        <meshBasicMaterial color="#4ca6ff" transparent opacity={0.09} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
+      </mesh>
+
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[orbitRadius - 0.012, orbitRadius + 0.012, 160]} />
+        <meshBasicMaterial color="#66d9ff" transparent opacity={0.28} side={THREE.DoubleSide} />
+      </mesh>
+
+      <group ref={satelliteRef}>
+        {satelliteType === 'iss' && (
+          <group scale={0.55}>
+            <mesh castShadow receiveShadow>
+              <boxGeometry args={[4.4, 0.16, 0.18]} />
+              <meshPhysicalMaterial color="#cfd6df" metalness={0.86} roughness={0.18} />
+            </mesh>
+            <mesh position={[0, 0, 0.55]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+              <cylinderGeometry args={[0.32, 0.32, 1.8, 28]} />
+              <meshPhysicalMaterial color="#f8fafc" metalness={0.55} roughness={0.4} />
+            </mesh>
+            <group position={[1.65, 0, 0]} rotation={[0, 0, solarPanelsDeployed ? 0 : Math.PI / 2]}>
+              <mesh castShadow receiveShadow position={[0, 0, 0.95]}>
+                <boxGeometry args={[1.0, 0.04, 2.3]} />
+                <meshPhysicalMaterial color="#123d74" metalness={0.94} roughness={0.1} />
+              </mesh>
+              <mesh castShadow receiveShadow position={[0, 0, -0.95]}>
+                <boxGeometry args={[1.0, 0.04, 2.3]} />
+                <meshPhysicalMaterial color="#123d74" metalness={0.94} roughness={0.1} />
+              </mesh>
+            </group>
+            <group position={[-1.65, 0, 0]} rotation={[0, 0, solarPanelsDeployed ? 0 : -Math.PI / 2]}>
+              <mesh castShadow receiveShadow position={[0, 0, 0.95]}>
+                <boxGeometry args={[1.0, 0.04, 2.3]} />
+                <meshPhysicalMaterial color="#123d74" metalness={0.94} roughness={0.1} />
+              </mesh>
+              <mesh castShadow receiveShadow position={[0, 0, -0.95]}>
+                <boxGeometry args={[1.0, 0.04, 2.3]} />
+                <meshPhysicalMaterial color="#123d74" metalness={0.94} roughness={0.1} />
+              </mesh>
+            </group>
+          </group>
+        )}
+
+        {satelliteType === 'tiangong' && (
+          <group scale={0.72}>
+            <mesh rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
+              <cylinderGeometry args={[0.44, 0.44, 2.2, 32]} />
+              <meshPhysicalMaterial color="#ececec" metalness={0.65} roughness={0.32} />
+            </mesh>
+            <group rotation={[solarPanelsDeployed ? 0 : Math.PI / 2, 0, 0]}>
+              <mesh castShadow receiveShadow position={[0, 0, 1.35]}>
+                <boxGeometry args={[1.75, 0.05, 0.9]} />
+                <meshPhysicalMaterial color="#1a4b8c" metalness={0.92} roughness={0.12} />
+              </mesh>
+              <mesh castShadow receiveShadow position={[0, 0, -1.35]}>
+                <boxGeometry args={[1.75, 0.05, 0.9]} />
+                <meshPhysicalMaterial color="#1a4b8c" metalness={0.92} roughness={0.12} />
+              </mesh>
+            </group>
+          </group>
+        )}
+
+        {satelliteType === 'dragon' && (
+          <group scale={0.85}>
+            <mesh castShadow receiveShadow position={[0, 0.2, 0]}>
+              <coneGeometry args={[0.6, 1.2, 36]} />
+              <meshPhysicalMaterial color="#ffffff" metalness={0.35} roughness={0.2} />
+            </mesh>
+            <mesh castShadow receiveShadow position={[0, -0.62, 0]}>
+              <cylinderGeometry args={[0.6, 0.6, 1.05, 32]} />
+              <meshPhysicalMaterial color="#22272f" metalness={0.8} roughness={0.5} />
+            </mesh>
+            {solarPanelsDeployed && (
+              <mesh position={[0, -0.62, 0.66]}>
+                <planeGeometry args={[0.9, 0.9]} />
+                <meshPhysicalMaterial color="#143e75" metalness={0.92} roughness={0.1} />
+              </mesh>
+            )}
+          </group>
+        )}
+
+        {satelliteType === 'soyuz' && (
+          <group scale={0.85}>
+            <mesh castShadow receiveShadow position={[0, 1, 0]}>
+              <sphereGeometry args={[0.42, 30, 30]} />
+              <meshPhysicalMaterial color="#e1e1e1" metalness={0.55} roughness={0.45} />
+            </mesh>
+            <mesh castShadow receiveShadow position={[0, 0.4, 0]}>
+              <cylinderGeometry args={[0.3, 0.5, 0.65, 32]} />
+              <meshPhysicalMaterial color="#b2b2b2" metalness={0.65} roughness={0.52} />
+            </mesh>
+            <mesh castShadow receiveShadow position={[0, -0.45, 0]}>
+              <cylinderGeometry args={[0.5, 0.5, 1.1, 32]} />
+              <meshPhysicalMaterial color="#cecece" metalness={0.72} roughness={0.35} />
+            </mesh>
+          </group>
+        )}
+      </group>
+    </group>
+  );
+};
+
 const SatelliteControlSimulator = () => {
   const { t } = useTranslation();
   const trackEvent = useGamificationStore((s) => s.trackEvent);
@@ -955,134 +1175,24 @@ const SatelliteControlSimulator = () => {
       </div>
 
       <div className="w-full md:w-2/3 bg-space-900/50 rounded-3xl border border-white/10 overflow-hidden relative min-h-[400px]">
-        <Canvas shadows camera={{ position: [0, 2, 8], fov: 45 }} gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping }}>
-          <ambientLight intensity={0.2} />
-          <directionalLight position={[10, 10, 10]} intensity={2} castShadow />
-          <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-          
+        <Canvas shadows camera={{ position: [0, 2.1, 8.4], fov: 44 }} gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping }}>
+          <ambientLight intensity={0.16} />
+          <hemisphereLight skyColor="#9dc1ff" groundColor="#2c2621" intensity={0.33} />
+          <directionalLight position={[9, 8, 8]} intensity={2.25} castShadow />
+          <Stars radius={120} depth={60} count={7000} factor={3.2} saturation={0} fade speed={0.8} />
+
           <Suspense fallback={null}>
-            <group rotation={[inclination * (Math.PI / 180), 0, 0]}>
-              {/* Realistic Earth */}
-              <RealisticEarth radius={5} position={[0, -5 - (altitude / 200), 0]} />
-
-              {/* Satellite */}
-              <group position={[0, 0, 0]}>
-                {satelliteType === 'iss' && (
-                  <group>
-                    {/* ISS Main Truss */}
-                    <mesh castShadow receiveShadow>
-                      <boxGeometry args={[4, 0.2, 0.2]} />
-                      <meshPhysicalMaterial color="#cccccc" metalness={0.8} roughness={0.2} />
-                    </mesh>
-                    {/* ISS Modules */}
-                    <mesh position={[0, 0, 0.5]} rotation={[Math.PI/2, 0, 0]} castShadow receiveShadow>
-                      <cylinderGeometry args={[0.3, 0.3, 1.5]} />
-                      <meshPhysicalMaterial color="#ffffff" metalness={0.5} roughness={0.5} />
-                    </mesh>
-                    {/* Solar Arrays */}
-                    <group position={[1.5, 0, 0]} rotation={[0, 0, solarPanelsDeployed ? 0 : Math.PI / 2]}>
-                      <mesh castShadow receiveShadow position={[0, 0, 0.8]}>
-                        <boxGeometry args={[0.8, 0.05, 2]} />
-                        <meshPhysicalMaterial color="#113366" metalness={0.9} roughness={0.1} />
-                      </mesh>
-                      <mesh castShadow receiveShadow position={[0, 0, -0.8]}>
-                        <boxGeometry args={[0.8, 0.05, 2]} />
-                        <meshPhysicalMaterial color="#113366" metalness={0.9} roughness={0.1} />
-                      </mesh>
-                    </group>
-                    <group position={[-1.5, 0, 0]} rotation={[0, 0, solarPanelsDeployed ? 0 : -Math.PI / 2]}>
-                      <mesh castShadow receiveShadow position={[0, 0, 0.8]}>
-                        <boxGeometry args={[0.8, 0.05, 2]} />
-                        <meshPhysicalMaterial color="#113366" metalness={0.9} roughness={0.1} />
-                      </mesh>
-                      <mesh castShadow receiveShadow position={[0, 0, -0.8]}>
-                        <boxGeometry args={[0.8, 0.05, 2]} />
-                        <meshPhysicalMaterial color="#113366" metalness={0.9} roughness={0.1} />
-                      </mesh>
-                    </group>
-                  </group>
-                )}
-
-                {satelliteType === 'tiangong' && (
-                  <group>
-                    {/* Tiangong Core Module */}
-                    <mesh rotation={[0, 0, Math.PI/2]} castShadow receiveShadow>
-                      <cylinderGeometry args={[0.4, 0.4, 2]} />
-                      <meshPhysicalMaterial color="#eeeeee" metalness={0.6} roughness={0.4} />
-                    </mesh>
-                    {/* Solar Arrays */}
-                    <group position={[0, 0, 0]} rotation={[solarPanelsDeployed ? 0 : Math.PI / 2, 0, 0]}>
-                      <mesh castShadow receiveShadow position={[0, 0, 1.2]}>
-                        <boxGeometry args={[1.5, 0.05, 0.8]} />
-                        <meshPhysicalMaterial color="#1a4b8c" metalness={0.9} roughness={0.1} />
-                      </mesh>
-                      <mesh castShadow receiveShadow position={[0, 0, -1.2]}>
-                        <boxGeometry args={[1.5, 0.05, 0.8]} />
-                        <meshPhysicalMaterial color="#1a4b8c" metalness={0.9} roughness={0.1} />
-                      </mesh>
-                    </group>
-                  </group>
-                )}
-
-                {satelliteType === 'dragon' && (
-                  <group>
-                    {/* Crew Dragon Capsule */}
-                    <mesh castShadow receiveShadow position={[0, 0.2, 0]}>
-                      <coneGeometry args={[0.6, 1.2, 32]} />
-                      <meshPhysicalMaterial color="#ffffff" metalness={0.3} roughness={0.2} />
-                    </mesh>
-                    {/* Trunk */}
-                    <mesh castShadow receiveShadow position={[0, -0.6, 0]}>
-                      <cylinderGeometry args={[0.6, 0.6, 1, 32]} />
-                      <meshPhysicalMaterial color="#222222" metalness={0.8} roughness={0.5} />
-                    </mesh>
-                    {/* Solar Panels on Trunk */}
-                    {solarPanelsDeployed && (
-                      <mesh position={[0, -0.6, 0.61]}>
-                        <planeGeometry args={[0.8, 0.8]} />
-                        <meshPhysicalMaterial color="#113366" metalness={0.9} roughness={0.1} />
-                      </mesh>
-                    )}
-                  </group>
-                )}
-
-                {satelliteType === 'soyuz' && (
-                  <group>
-                    {/* Soyuz Orbital Module */}
-                    <mesh castShadow receiveShadow position={[0, 1, 0]}>
-                      <sphereGeometry args={[0.4, 32, 32]} />
-                      <meshPhysicalMaterial color="#dddddd" metalness={0.5} roughness={0.5} />
-                    </mesh>
-                    {/* Descent Module */}
-                    <mesh castShadow receiveShadow position={[0, 0.4, 0]}>
-                      <cylinderGeometry args={[0.3, 0.5, 0.6, 32]} />
-                      <meshPhysicalMaterial color="#aaaaaa" metalness={0.6} roughness={0.6} />
-                    </mesh>
-                    {/* Service Module */}
-                    <mesh castShadow receiveShadow position={[0, -0.4, 0]}>
-                      <cylinderGeometry args={[0.5, 0.5, 1, 32]} />
-                      <meshPhysicalMaterial color="#cccccc" metalness={0.7} roughness={0.4} />
-                    </mesh>
-                    {/* Solar Arrays */}
-                    <group position={[0, -0.4, 0]} rotation={[0, 0, solarPanelsDeployed ? 0 : Math.PI / 2]}>
-                      <mesh castShadow receiveShadow position={[1, 0, 0]}>
-                        <boxGeometry args={[1.5, 0.05, 0.4]} />
-                        <meshPhysicalMaterial color="#113366" metalness={0.9} roughness={0.1} />
-                      </mesh>
-                      <mesh castShadow receiveShadow position={[-1, 0, 0]}>
-                        <boxGeometry args={[1.5, 0.05, 0.4]} />
-                        <meshPhysicalMaterial color="#113366" metalness={0.9} roughness={0.1} />
-                      </mesh>
-                    </group>
-                  </group>
-                )}
-              </group>
-            </group>
+            <OrbitalEarthAndVehicle
+              altitude={altitude}
+              inclination={inclination}
+              solarPanelsDeployed={solarPanelsDeployed}
+              satelliteType={satelliteType}
+            />
           </Suspense>
 
-          <OrbitControls enablePan={false} autoRotate autoRotateSpeed={0.5} />
+          <OrbitControls enablePan={false} autoRotate autoRotateSpeed={0.35} />
           <EffectComposer>
-            <Bloom luminanceThreshold={1} mipmapBlur intensity={1.5} />
+            <Bloom luminanceThreshold={1} mipmapBlur intensity={1.7} />
             <Vignette eskil={false} offset={0.1} darkness={1.1} />
           </EffectComposer>
         </Canvas>
@@ -1112,10 +1222,9 @@ const FalconTrackerLab = () => {
 
 export default function SpaceLabView() {
   const { t } = useTranslation();
-  const [activeModule, setActiveModule] = useState('rocket');
+  const [activeModule, setActiveModule] = useState('falcon');
 
   const modules = [
-    { id: 'rocket', name: t('lab', 'rocketEngineering'), icon: Rocket, color: 'text-neon-blue', bg: 'bg-neon-blue/10' },
     { id: 'falcon', name: 'Falcon 9 AI Tracker', icon: Satellite, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
     { id: 'launch', name: t('lab', 'launchSimulator'), icon: Flame, color: 'text-orange-500', bg: 'bg-orange-500/10' },
     { id: 'satellite', name: t('lab', 'satelliteControl'), icon: Globe2, color: 'text-blue-400', bg: 'bg-blue-400/10' },
@@ -1125,20 +1234,7 @@ export default function SpaceLabView() {
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div className="mb-12">
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl md:text-5xl font-bold mb-4"
-        >
-          {t('lab', 'title')} <span className="text-glow-blue text-neon-blue">{t('lab', 'titleHighlight')}</span>
-        </motion.h1>
-        <p className="text-gray-400 text-lg max-w-2xl">
-          {t('lab', 'subtitle')}
-        </p>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-250px)] min-h-[600px]">
+      <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-140px)] min-h-[600px]">
         {/* Sidebar */}
         <div className="w-full lg:w-64 shrink-0 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0">
           {modules.map(mod => (
@@ -1172,7 +1268,6 @@ export default function SpaceLabView() {
               transition={{ duration: 0.3 }}
               className="h-full"
             >
-              {activeModule === 'rocket' && <RocketEngineeringLab />}
               {activeModule === 'falcon' && <FalconTrackerLab />}
               {activeModule === 'launch' && <RocketLaunchSimulator />}
               {activeModule === 'satellite' && <SatelliteControlSimulator />}
