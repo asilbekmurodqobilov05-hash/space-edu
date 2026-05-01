@@ -253,7 +253,7 @@ const RocketEngineeringLab = () => {
           </EffectComposer>
         </Canvas>
         <div className="absolute bottom-4 left-4 text-xs text-gray-400 bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">
-          Drag to rotate —ў Scroll to zoom —ў Click parts
+          {t('lab', 'hintDrag')} — {t('lab', 'hintScroll')} — {t('lab', 'hintClick')}
         </div>
       </div>
     </div>
@@ -514,6 +514,9 @@ const RocketLaunchSimulator = () => {
             <Noise opacity={0.05} />
           </EffectComposer>
         </Canvas>
+        <div className="absolute bottom-4 left-4 text-xs text-gray-400 bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">
+          {t('lab', 'hintDrag')} — {t('lab', 'hintScroll')}
+        </div>
       </div>
     </div>
   );
@@ -707,6 +710,9 @@ const PlanetaryProcessesLab = () => {
             {activeEvent === 'dust' && <Noise opacity={intensity / 200} />}
           </EffectComposer>
         </Canvas>
+        <div className="absolute bottom-4 left-4 text-xs text-gray-400 bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">
+          {t('lab', 'hintDrag')} — {t('lab', 'hintScroll')}
+        </div>
       </div>
     </div>
   );
@@ -840,6 +846,9 @@ const UniverseChangesSimulator = () => {
             <Vignette eskil={false} offset={0.1} darkness={1.1} />
           </EffectComposer>
         </Canvas>
+        <div className="absolute bottom-4 left-4 text-xs text-gray-400 bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">
+          {t('lab', 'hintDrag')} — {t('lab', 'hintScroll')}
+        </div>
       </div>
     </div>
   );
@@ -1077,6 +1086,9 @@ const SatelliteControlSimulator = () => {
             <Vignette eskil={false} offset={0.1} darkness={1.1} />
           </EffectComposer>
         </Canvas>
+        <div className="absolute bottom-4 left-4 text-xs text-gray-400 bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">
+          {t('lab', 'hintDrag')} — {t('lab', 'hintScroll')}
+        </div>
       </div>
     </div>
   );
