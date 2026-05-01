@@ -51,7 +51,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
           {index + 1}
         </div>
         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 500, color: hovered ? '#fff' : 'rgba(255,255,255,0.85)', transition: 'color 0.2s ease' }}>
-          {lesson}
+          {typeof lesson === 'object' ? lesson.name : lesson}
         </h3>
       </div>
       

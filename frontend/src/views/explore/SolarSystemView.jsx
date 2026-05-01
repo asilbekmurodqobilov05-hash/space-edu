@@ -8,6 +8,7 @@ import { X, Info, Maximize2, FastForward, Play, Pause, Rewind, Calendar, Thermom
 import { celestialBodies, moons } from '@/data/solarSystemData';
 import { calculatePosition } from '@/lib/astronomy';
 import AsteroidBelt from '@/components/game/AsteroidBelt';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // --- Utils & Scaling ---
 // 1 AU = 40 units
@@ -283,6 +284,7 @@ const CameraController = ({ targetObject, orbitControlsRef, selectedObj }) => {
 // --- Main View Component ---
 
 export default function SolarSystemView() {
+  const { t } = useTranslation();
   const [selectedObj, setSelectedObj] = useState(null);
   const [targetGroupRef, setTargetGroupRef] = useState(null);
   const orbitControlsRef = useRef();
@@ -370,17 +372,17 @@ export default function SolarSystemView() {
       <div className="absolute top-20 left-6 z-10 pointer-events-none">
         <h1 className="text-4xl font-black text-white tracking-tight drop-shadow-md flex items-center gap-3">
           <Globe2 className="w-8 h-8 text-neon-purple" />
-          SOLAR SYSTEM <span className="text-neon-purple text-xl font-medium mt-2">REAL-TIME</span>
+          {t('explore', 'ssTitle')} <span className="text-neon-purple text-xl font-medium mt-2">{t('explore', 'ssRealtime')}</span>
         </h1>
         <p className="text-white/60 mt-1 max-w-md text-sm leading-relaxed backdrop-blur-sm bg-black/20 p-2 rounded-lg border border-white/5">
-          Live Keplerian orbital simulation. Data provided by NASA JPL Horizons.
+          {t('explore', 'ssDescription')}
         </p>
       </div>
 
       {/* Time Controls Panel */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 glass-panel px-6 py-3 rounded-2xl flex items-center gap-6 border border-white/10 shadow-2xl bg-black/40 backdrop-blur-xl">
         <div className="flex flex-col items-center min-w-[140px]">
-          <span className="text-[10px] uppercase tracking-widest text-white/50 font-bold mb-1">Current Date</span>
+          <span className="text-[10px] uppercase tracking-widest text-white/50 font-bold mb-1">{t('explore', 'currentDate')}</span>
           <span className="text-neon-blue font-mono font-bold tracking-tight">
             {currentDate.toISOString().split('T')[0]}
           </span>
@@ -390,13 +392,13 @@ export default function SolarSystemView() {
 
         <div className="flex items-center gap-2">
           <button onClick={() => setTimeScale(1/86400)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${timeScale === 1/86400 ? 'bg-neon-purple text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]' : 'bg-white/5 hover:bg-white/10 text-white/60'}`}>
-            LIVE
+            {t('explore', 'live')}
           </button>
           <button onClick={() => setTimeScale(1)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${timeScale === 1 ? 'bg-neon-blue text-white shadow-[0_0_10px_rgba(59,130,246,0.4)]' : 'bg-white/5 hover:bg-white/10 text-white/60'}`}>
-            1 DAY/S
+            {t('explore', 'oneDayPerSec')}
           </button>
           <button onClick={() => setTimeScale(30)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${timeScale === 30 ? 'bg-neon-blue text-white shadow-[0_0_10px_rgba(59,130,246,0.4)]' : 'bg-white/5 hover:bg-white/10 text-white/60'}`}>
-            1 MO/S
+            {t('explore', 'oneMonthPerSec')}
           </button>
         </div>
 
@@ -417,9 +419,9 @@ export default function SolarSystemView() {
         <div className="h-8 w-[1px] bg-white/10"></div>
 
         <div className="flex flex-col items-center min-w-[80px]">
-          <span className="text-[10px] uppercase tracking-widest text-white/50 font-bold mb-1">Speed</span>
+          <span className="text-[10px] uppercase tracking-widest text-white/50 font-bold mb-1">{t('explore', 'speed')}</span>
           <span className="text-white font-mono text-xs">
-            {timeScale === 1/86400 ? 'REAL TIME' : `${timeScale > 0 ? '+' : ''}${timeScale.toFixed(timeScale < 1 ? 2 : 0)} d/s`}
+            {timeScale === 1/86400 ? t('explore', 'realTimeValue') : `${timeScale > 0 ? '+' : ''}${timeScale.toFixed(timeScale < 1 ? 2 : 0)} d/s`}
           </span>
         </div>
       </div>

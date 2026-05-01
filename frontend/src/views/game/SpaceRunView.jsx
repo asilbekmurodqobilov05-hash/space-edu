@@ -19,8 +19,10 @@ import { useSpaceRunHud } from "@/game/spaceRun/spaceRunHudStore";
 import { useSpaceArcadeStore, SHIP_SKINS, skinPrice } from "@/game/spaceRun/spaceArcadeStore";
 import { resumeAudio, startEngineHum, startSpaceMusic, stopEngineHum, stopSpaceMusic } from "@/game/spaceRun/spaceRunSounds";
 import MiniSolarSystem from "@/components/layout/MiniSolarSystem";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function SpaceRunView() {
+  const { t, language } = useTranslation();
   const [gameKey, setGameKey] = useState(0);
   const [started, setStarted] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -194,9 +196,9 @@ export default function SpaceRunView() {
                 }}
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/20 group-hover:bg-cyan-500/25">
-                  <ArrowLeft className="w-4 h-4" strokeWidth={2.5} />
+                  <ArrowLeft className="w-4 h-4" strokeWidth={2.25} />
                 </span>
-                <span className="hidden min-[380px]:inline">Home</span>
+                <span className="hidden min-[380px]:inline">{t('common', 'home')}</span>
               </Link>
               <div className="hidden sm:flex items-center gap-2 min-w-0 ml-2 border-l border-white/10 pl-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-600/30 to-cyan-500/25 ring-1 ring-white/10">
@@ -204,9 +206,9 @@ export default function SpaceRunView() {
                 </span>
                 <div className="min-w-0 leading-tight">
                   <p className="font-display text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-300/90 truncate">
-                    Space Run
+                    {t('game', 'title')}
                   </p>
-                  <p className="text-[10px] text-white/45 truncate">Arcade · dodge and collect</p>
+                  <p className="text-[10px] text-white/45 truncate">{t('game', 'subtitle')}</p>
                 </div>
               </div>
             </div>
@@ -262,7 +264,7 @@ export default function SpaceRunView() {
                   <Trophy className="w-4 h-4" strokeWidth={2.25} />
                 </span>
                 <div className="min-w-0 text-left">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">Score</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">{t('game', 'score')}</p>
                   <p className="font-display text-lg sm:text-xl font-extrabold tabular-nums text-cyan-100 leading-none truncate">
                     {scoreDisplay}
                   </p>
@@ -274,7 +276,7 @@ export default function SpaceRunView() {
                   <Coins className="w-4 h-4" strokeWidth={2.25} />
                 </span>
                 <div className="min-w-0 text-left">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">Energy</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">{t('game', 'energy')}</p>
                   <p className="font-display text-lg sm:text-xl font-extrabold tabular-nums text-amber-100 leading-none">
                     {coinsCollected}
                   </p>
@@ -286,7 +288,7 @@ export default function SpaceRunView() {
                   <Sparkles className="w-4 h-4" strokeWidth={2.25} />
                 </span>
                 <div className="min-w-0 text-left">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">Stars</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">{t('game', 'stars')}</p>
                   <p className="font-display text-lg sm:text-xl font-extrabold tabular-nums text-fuchsia-100 leading-none">
                     {wallet}
                   </p>
@@ -298,31 +300,31 @@ export default function SpaceRunView() {
               <>
                 <div className="flex md:hidden w-full justify-center">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-white/45">Time</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-white/45">{t('game', 'time')}</span>
                     <span className="font-display text-sm font-extrabold tabular-nums text-white">{timeDisplay}</span>
                     <span className="text-[10px] text-white/40">·</span>
                     <span className="text-[10px] text-cyan-200/80">×{difficulty.toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="hidden md:flex flex-col items-end justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 min-w-[5.5rem]">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">Time</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">{t('game', 'time')}</p>
                   <p className="font-display text-xl font-extrabold tabular-nums text-white/90">{timeDisplay}</p>
-                  <p className="text-[10px] text-white/35">×{difficulty.toFixed(2)} speed</p>
+                  <p className="text-[10px] text-white/35">×{difficulty.toFixed(2)} {t('game', 'speed').toLowerCase()}</p>
                 </div>
               </>
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2">
-              <div className="flex justify-between text-[10px] uppercase tracking-wider text-rose-100/80 font-bold"><span>Health</span><span>{Math.round(health)}%</span></div>
+              <div className="flex justify-between text-[10px] uppercase tracking-wider text-rose-100/80 font-bold"><span>{t('game', 'health')}</span><span>{Math.round(health)}%</span></div>
               <div className="mt-1.5 h-1.5 rounded-full bg-black/25 overflow-hidden"><div className="h-full bg-rose-400 transition-[width]" style={{ width: `${health}%` }} /></div>
             </div>
             <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2">
-              <div className="flex justify-between text-[10px] uppercase tracking-wider text-cyan-100/80 font-bold"><span>Shield</span><span>{Math.round(shield)}%</span></div>
+              <div className="flex justify-between text-[10px] uppercase tracking-wider text-cyan-100/80 font-bold"><span>{t('game', 'shield')}</span><span>{Math.round(shield)}%</span></div>
               <div className="mt-1.5 h-1.5 rounded-full bg-black/25 overflow-hidden"><div className="h-full bg-cyan-300 transition-[width]" style={{ width: `${Math.min(100, shield)}%` }} /></div>
             </div>
             <div className="rounded-xl border border-fuchsia-400/20 bg-fuchsia-500/10 px-3 py-2">
-              <div className="flex justify-between text-[10px] uppercase tracking-wider text-fuchsia-100/80 font-bold"><span>Boost</span><span>{Math.round(boost)}%</span></div>
+              <div className="flex justify-between text-[10px] uppercase tracking-wider text-fuchsia-100/80 font-bold"><span>{t('game', 'boost')}</span><span>{Math.round(boost)}%</span></div>
               <div className="mt-1.5 h-1.5 rounded-full bg-black/25 overflow-hidden"><div className="h-full bg-fuchsia-300 transition-[width]" style={{ width: `${boost}%` }} /></div>
             </div>
           </div>
@@ -359,41 +361,40 @@ export default function SpaceRunView() {
         {!started && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 backdrop-blur-sm px-6 text-center">
             <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-fuchsia-300 to-amber-300 mb-3">
-              Space Run
+              {t('game', 'title')}
             </h1>
             <p className="text-white/75 max-w-md mb-6 text-sm sm:text-base leading-relaxed">
-              Survive the asteroid field, collect glowing energy cores, and push distance. Arrows or WASD steer, hold Shift
-              or Space for boost. Cores restore health/boost, and power-ups grant shield, slow-mo, or magnet.
+              {t('game', 'introDesc')}
             </p>
             <button
               type="button"
               onClick={() => void handleStart()}
               className="px-8 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black text-lg shadow-lg shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98] transition-transform"
             >
-              Play
+              {t('game', 'play')}
             </button>
           </div>
         )}
 
         {started && paused && !gameOver && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
-            <p className="text-2xl font-black text-white mb-4">Paused</p>
+            <p className="text-2xl font-black text-white mb-4">{t('game', 'paused')}</p>
             <button
               type="button"
               onClick={() => setHud({ paused: false })}
               className="px-6 py-2 rounded-xl bg-cyan-500 text-space-900 font-bold"
             >
-              Resume
+              {t('game', 'resume')}
             </button>
           </div>
         )}
 
         {gameOver && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 backdrop-blur-md px-6">
-            <p className="text-4xl font-black text-rose-400 mb-2">Game Over</p>
-            <p className="text-white/80 mb-1">Score: {Math.floor(score)}</p>
+            <p className="text-4xl font-black text-rose-400 mb-2">{t('game', 'gameOver')}</p>
+            <p className="text-white/80 mb-1">{t('game', 'score')}: {Math.floor(score)}</p>
             <p className="text-white/60 text-sm mb-6">
-              Time {survivalSec.toFixed(1)}s · Distance {Math.floor(distance)}m · Energy {coinsCollected} · Speed ×{difficulty.toFixed(2)}
+              {t('game', 'time')} {survivalSec.toFixed(1)}s · {t('game', 'distance')} {Math.floor(distance)}m · {t('game', 'energy')} {coinsCollected} · {t('game', 'speed')} ×{difficulty.toFixed(2)}
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <button
@@ -404,14 +405,14 @@ export default function SpaceRunView() {
                 className="flex items-center gap-2 px-6 py-3 rounded-xl bg-cyan-500 text-space-900 font-bold"
               >
                 <RotateCcw className="w-5 h-5" />
-                Play again
+                {t('game', 'playAgain')}
               </button>
               <button
                 type="button"
                 onClick={handleRestart}
                 className="px-6 py-3 rounded-xl border border-white/20 text-white font-bold hover:bg-white/10"
               >
-                Menu
+                {t('game', 'menu')}
               </button>
             </div>
           </div>
@@ -424,12 +425,12 @@ export default function SpaceRunView() {
           >
             <div className="w-full max-w-md rounded-2xl border border-white/15 bg-space-900/95 p-6 shadow-2xl">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-black text-white">Ship skins</h2>
+                <h2 className="text-xl font-black text-white">{t('game', 'shipSkins')}</h2>
                 <button type="button" className="text-white/60 hover:text-white text-sm" onClick={() => setShopOpen(false)}>
-                  Close
+                  {t('game', 'shopClose')}
                 </button>
               </div>
-              <p className="text-white/55 text-sm mb-4">Spend arcade stars ★ (earned from coins &amp; survival). Equipped: {equippedSkin}</p>
+              <p className="text-white/55 text-sm mb-4">{t('game', 'shopDesc', { skin: equippedSkin })}</p>
               <ul className="space-y-3">
                 {SHIP_SKINS.map((skin) => {
                   const price = skinPrice(skin.id);
@@ -443,7 +444,7 @@ export default function SpaceRunView() {
                         <span className="w-8 h-8 rounded-full border-2 border-white/20" style={{ background: skin.color }} />
                         <div>
                           <p className="font-bold text-white">{skin.label}</p>
-                          <p className="text-xs text-white/50">{own ? "Owned" : `${price} ★`}</p>
+                          <p className="text-xs text-white/50">{own ? t('game', 'owned') : `${price} ★`}</p>
                         </div>
                       </div>
                       <button
@@ -455,7 +456,7 @@ export default function SpaceRunView() {
                         }}
                         className="shrink-0 px-3 py-1.5 rounded-lg text-sm font-bold bg-amber-500/90 text-space-900 disabled:opacity-40"
                       >
-                        {own ? (equippedSkin === skin.id ? "Equipped" : "Equip") : "Buy"}
+                        {own ? (equippedSkin === skin.id ? t('game', 'equipped') : t('game', 'equip')) : t('game', 'buy')}
                       </button>
                     </li>
                   );
@@ -467,8 +468,8 @@ export default function SpaceRunView() {
 
         {started && !gameOver && (
           <div className="pointer-events-none absolute bottom-3 left-3 right-3 flex justify-between text-xs sm:text-sm font-semibold text-white/85 [text-shadow:1px_1px_2px_rgba(0,0,0,0.8)] bg-black/45 rounded-lg px-3 py-2 backdrop-blur-[1px]">
-            <span>{activePower ? `Power: ${activePower}` : "Hold Shift/Space to boost · blue shield · purple slow · green magnet"}</span>
-            <span className="hidden sm:inline">Esc pause</span>
+            <span>{activePower ? `${t('game', 'power')}: ${activePower}` : t('game', 'controlsDesc')}</span>
+            <span className="hidden sm:inline">{t('game', 'escPause')}</span>
           </div>
         )}
 
@@ -486,7 +487,7 @@ export default function SpaceRunView() {
             }}
             className="sm:hidden absolute bottom-14 right-3 z-20 rounded-full px-4 py-2.5 border border-fuchsia-300/35 bg-fuchsia-500/20 text-fuchsia-100 text-xs font-bold tracking-wide active:scale-95"
           >
-            BOOST
+            {t('game', 'boostBtn')}
           </button>
         )}
       </div>

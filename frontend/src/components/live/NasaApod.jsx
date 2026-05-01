@@ -1,42 +1,62 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Camera, Calendar, ExternalLink } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const NASA_KEY = 'DEMO_KEY';
 
 export default function NasaApod() {
   const [apod, setApod] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { t, language } = useTranslation();
 
   useEffect(() => {
+    const translateText = async (text, target) => {
+      if (!text || target === 'ENG') return text;
+      const langMap = { 'UZB': 'uz', 'RUS': 'ru' };
+      const targetLang = langMap[target] || 'en';
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURI(text)}`);
+        const data = await res.json();
+        return data[0].map(x => x[0]).join('');
+      } catch (err) {
+        return text;
+      }
+    };
+
     const fetchApod = async () => {
       try {
         const res = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${NASA_KEY}`);
         if (res.ok) {
           const data = await res.json();
-          setApod(data);
+          const translatedTitle = await translateText(data.title, language);
+          const translatedExpl = await translateText(data.explanation, language);
+          setApod({ ...data, title: translatedTitle, explanation: translatedExpl });
         } else {
           throw new Error('API error');
         }
       } catch {
-        setApod({
+        const mockData = {
           title: 'The Carina Nebula',
           url: 'https://apod.nasa.gov/apod/image/2307/STScI-01_1024.png',
           explanation: 'A star-forming region captured by the James Webb Space Telescope, revealing hundreds of previously hidden young stars in the Carina Nebula.',
           date: new Date().toISOString().split('T')[0],
           media_type: 'image',
-        });
+        };
+        const translatedTitle = await translateText(mockData.title, language);
+        const translatedExpl = await translateText(mockData.explanation, language);
+        setApod({ ...mockData, title: translatedTitle, explanation: translatedExpl });
       } finally {
         setLoading(false);
       }
     };
     fetchApod();
-  }, []);
+  }, [language]);
 
   if (loading || !apod) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>
-        Loading NASA image of the day...
+        {t('live', 'loadingApod')}
       </div>
     );
   }
@@ -65,7 +85,7 @@ export default function NasaApod() {
           background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
         }}>
           <div style={{ fontSize: '10px', color: '#a78bfa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Camera style={{ width: '12px', height: '12px' }} /> NASA Astronomy Picture of the Day
+            <Camera style={{ width: '12px', height: '12px' }} /> {t('live', 'nasaApod')}
           </div>
           <h4 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', margin: 0 }}>{apod.title}</h4>
         </div>
