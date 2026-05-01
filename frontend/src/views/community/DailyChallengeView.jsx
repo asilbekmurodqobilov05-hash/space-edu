@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function DailyChallengeView() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { dailyChallengeCompleted, completeDailyChallenge, checkStreak } = useGamificationStore();
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -115,7 +115,7 @@ export default function DailyChallengeView() {
           </h2>
 
           <div className="space-y-4 mb-8">
-            {currentQ.options.map((option, idx) => {
+            {currentQ?.options?.[language === 'uz' ? 'uz' : language === 'ru' ? 'ru' : 'en']?.map((option, idx) => {
               let btnClass = "glass hover:bg-white/10 border-transparent";
               if (isAnswerChecked) {
                 if (idx === currentQ.correct) {

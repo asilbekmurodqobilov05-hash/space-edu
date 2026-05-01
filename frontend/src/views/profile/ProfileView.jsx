@@ -21,7 +21,7 @@ import {
   Camera,
   Edit3,
   X,
-  Gamepad2,
+  Gamepad,
   CheckCircle2,
   Heart,
 } from 'lucide-react';
@@ -477,7 +477,7 @@ export default function ProfileView() {
               <Link to="/space-game" className="flex items-center gap-3 bg-fuchsia-500/10 p-3 rounded-2xl border border-fuchsia-500/20 shadow-[0_0_15px_rgba(217,70,239,0.1)] hover:bg-fuchsia-500/20 hover:border-fuchsia-400/40 hover:shadow-[0_0_25px_rgba(217,70,239,0.25)] transition-all h-16 group relative overflow-hidden mt-1 cursor-pointer">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 <div className="w-10 h-10 rounded-full border-2 border-fuchsia-400/30 bg-fuchsia-500/20 flex items-center justify-center shadow-inner shrink-0 group-hover:scale-110 transition-transform duration-300">
-                  <Gamepad2 className="w-4 h-4 text-fuchsia-300" />
+                  <Gamepad className="w-4 h-4 text-fuchsia-300" />
                 </div>
                 <div className="flex flex-col justify-center relative z-10">
                   <span className="block text-lg font-black text-white leading-none tracking-wide">LAUNCH</span>

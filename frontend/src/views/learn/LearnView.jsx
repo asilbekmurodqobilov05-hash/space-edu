@@ -11,10 +11,10 @@ const sections = [
     titleEn: 'Physics',
     link: '/learn/physics',
     icon: Atom,
-    color: '#00e5ff',
-    colorLight: 'rgba(0,229,255,0.10)',
-    colorBorder: 'rgba(0,229,255,0.22)',
-    glow: 'rgba(0,229,255,0.4)',
+    color: '#a78bfa',
+    colorLight: 'rgba(167,139,250,0.10)',
+    colorBorder: 'rgba(167,139,250,0.22)',
+    glow: 'rgba(167,139,250,0.4)',
     description: 'Kosmik mexanika, gravitatsiya va energiya asoslari',
     topics: ['Nyuton qonunlari', 'Gravitatsiya', 'Termodinamika', 'Kvant fizikasi'],
     lessonsCount: 24,
@@ -335,7 +335,7 @@ export default function LearnView() {
         style={{
           position: 'fixed', top: '-200px', left: '-200px',
           width: '600px', height: '600px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0,229,255,0.07) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(192,132,252,0.08) 0%, transparent 70%)',
           pointerEvents: 'none', zIndex: 0,
         }}
       />
@@ -367,8 +367,8 @@ export default function LearnView() {
             <span style={{ color: '#fff' }}>Koinot </span>
             <span
               style={{
-                color: '#00e5ff',
-                textShadow: '0 0 40px rgba(0,229,255,0.55), 0 0 90px rgba(0,229,255,0.2)',
+                color: '#c084fc',
+                textShadow: '0 0 40px rgba(192,132,252,0.55), 0 0 90px rgba(192,132,252,0.2)',
               }}
             >
               Akademiyasi
@@ -395,7 +395,7 @@ export default function LearnView() {
             height: '2px',
             maxWidth: '180px',
             margin: '28px auto 0',
-            background: 'linear-gradient(90deg, transparent, rgba(0,229,255,0.6), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(192,132,252,0.6), transparent)',
           }}
         />
       </div>

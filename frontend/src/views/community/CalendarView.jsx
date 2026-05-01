@@ -100,14 +100,14 @@ export default function CalendarView() {
   return (
     <div className="relative min-h-screen pt-32 pb-24 px-4 overflow-hidden">
       <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[140px] pointer-events-none z-0"
-        style={{ background: 'radial-gradient(circle, rgba(0,229,255,0.03) 0%, transparent 70%)' }} />
+        style={{ background: 'radial-gradient(circle, rgba(167,139,250,0.04) 0%, transparent 70%)' }} />
 
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-16">
           <motion.h1 initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
             className="text-[clamp(36px,6vw,56px)] font-[900] tracking-tight text-white mb-4">
-            {t('calendar', 'title')} <span className="text-glow-blue text-neon-blue">{t('calendar', 'titleHighlight')}</span>
+            {t('calendar', 'title')} <span className="text-glow-purple text-violet-400">{t('calendar', 'titleHighlight')}</span>
           </motion.h1>
           <p className="text-white/40 max-w-xl mx-auto text-[16px]">
             {t('calendar', 'subtitle')}
@@ -119,13 +119,13 @@ export default function CalendarView() {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="p-8 rounded-3xl mb-12 relative overflow-hidden bg-white/[0.02] border border-neon-blue/15"
-            style={{ boxShadow: '0 0 60px rgba(0,229,255,0.05)' }}
+            className="p-8 rounded-3xl mb-12 relative overflow-hidden bg-white/[0.02] border border-violet-500/20"
+            style={{ boxShadow: '0 0 60px rgba(139,92,246,0.08)' }}
           >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
               <div>
-                <p className="text-[11px] font-[800] tracking-[0.3em] uppercase text-neon-blue mb-2">{t('calendar', 'nextEvent')}</p>
+                <p className="text-[11px] font-[800] tracking-[0.3em] uppercase text-violet-400 mb-2">{t('calendar', 'nextEvent')}</p>
                 <h3 className="text-2xl font-[900] text-white mb-2">{nextEvent.title}</h3>
                 <p className="text-white/40 text-sm flex items-center gap-2">
                   <Calendar className="w-4 h-4" />

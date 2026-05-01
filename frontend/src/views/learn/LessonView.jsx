@@ -390,17 +390,16 @@ export default function LessonView() {
                     )}
                 </div>
             </div>
-        </div>
 
-        {/* Simple Toast */}
-        {toast && (
-            <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 ${
-                toast.type === 'error' ? 'bg-red-500/10 border-red-500/20' : 'bg-space-900 border-white/10'
-            }`}>
-                <div className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                <p className="text-sm font-medium text-white">{toast.msg}</p>
-            </div>
-        )}
-    </div>
+            {/* Simple Toast */}
+            {toast && (
+                <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 ${
+                    toast.type === 'error' ? 'bg-red-500/10 border-red-500/20' : 'bg-space-900 border-white/10'
+                }`}>
+                    <div className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                    <p className="text-sm font-medium text-white">{toast.msg}</p>
+                </div>
+            )}
+        </div>
     );
 }
