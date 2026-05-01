@@ -161,3 +161,59 @@ class UserRewardPurchase(models.Model):
     def __str__(self):
         return f'{self.user.username} — {self.product.slug}'
 
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  MISSION  —  dynamic objectives like "Complete 1 lesson", "Streak bonus"
+# ──────────────────────────────────────────────────────────────────────────────
+class Mission(models.Model):
+    MISSION_TYPES = [
+        ('streak', 'Daily Streak'),
+        ('lesson', 'Lessons Completed'),
+        ('mastery', 'Lessons Mastered'),
+        ('inventory', 'Shop Items Owned'),
+        ('custom', 'Custom'),
+    ]
+
+    slug = models.SlugField(unique=True)
+    title_en = models.CharField(max_length=150)
+    title_uz = models.CharField(max_length=150, blank=True, default='')
+    title_ru = models.CharField(max_length=150, blank=True, default='')
+    description_en = models.TextField()
+    description_uz = models.TextField(blank=True, default='')
+    description_ru = models.TextField(blank=True, default='')
+    
+    mission_type = models.CharField(max_length=30, choices=MISSION_TYPES, default='custom')
+    target_value = models.PositiveIntegerField(default=1, help_text='How many actions required (e.g., 2 items)')
+    reward_xp = models.PositiveIntegerField(default=0)
+    reward_fuel = models.PositiveIntegerField(default=10)
+    
+    is_active = models.BooleanField(default=True)
+    is_daily = models.BooleanField(default=False, help_text='If True, mission resets daily')
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = 'Mission'
+
+    def __str__(self):
+        return f'{self.title_en} [{self.mission_type}]'
+
+
+class UserMission(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='completed_missions',
+    )
+    mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name='completions')
+    is_completed = models.BooleanField(default=False)
+    last_claimed_date = models.DateField(null=True, blank=True)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'mission')
+        verbose_name = 'User Mission'
+
+    def __str__(self):
+        return f'{self.user.username} — {self.mission.slug}'
+

@@ -4,6 +4,7 @@ import { Trophy, Star, Crown, Flame, Shield, Target } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import GlassCard from '@/components/ui/GlassCard';
 
 const RANK_STYLES = {
@@ -15,6 +16,7 @@ const RANK_STYLES = {
 export default function LeaderboardView() {
   const { user } = useAuthStore();
   const { xp, level } = useGamificationStore();
+  const { t } = useTranslation();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,20 +66,20 @@ export default function LeaderboardView() {
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             className="text-[clamp(32px,6vw,56px)] font-[900] tracking-tight mb-4">
-            Galactic <span className="text-glow-purple text-violet">Ranks</span>
+            {t('leaderboard', 'title')} <span className="text-glow-purple text-violet">{t('leaderboard', 'titleHighlight')}</span>
           </motion.h1>
           <p className="text-white/40 text-[16px] font-[500] max-w-sm mx-auto leading-relaxed">
-            Ascend through the levels to become the ultimate cosmic pioneer.
+            {t('leaderboard', 'subtitle')}
           </p>
         </div>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-8 h-8 border-2 border-violet/30 border-t-violet rounded-full animate-spin" />
-            <p className="text-[10px] font-[800] uppercase tracking-widest text-white/20">Syncing rankings...</p>
+            <p className="text-[10px] font-[800] uppercase tracking-widest text-white/20">{t('leaderboard', 'syncing')}</p>
           </div>
         ) : all.length < 3 ? (
-          <div className="text-center text-white/30 py-20 font-[700] italic">Not enough pioneers yet. Be the first!</div>
+          <div className="text-center text-white/30 py-20 font-[700] italic">{t('leaderboard', 'noPioneers')}</div>
         ) : (
           <>
             {/* Podium */}
@@ -99,7 +101,7 @@ export default function LeaderboardView() {
                     <div className={`w-full rounded-2xl bg-gradient-to-b ${style.bg} border border-white/5 flex flex-col items-center justify-end pb-4 transition-all hover:scale-[1.02] ${heights[podiumIdx]} ${style.glow}`}>
                       <div className="mb-auto pt-4">{style.icon}</div>
                       <span className={`text-sm font-[900] ${style.text}`}>#{rank + 1}</span>
-                      <span className="text-[9px] font-[700] text-white/40 uppercase tracking-widest mt-1">{u.xp.toLocaleString()} XP</span>
+                      <span className="text-[9px] font-[700] text-white/40 uppercase tracking-widest mt-1">{u.xp.toLocaleString()} {t('leaderboard', 'xpPoints')}</span>
                     </div>
                   </div>
                 );
@@ -110,9 +112,9 @@ export default function LeaderboardView() {
             <GlassCard delay={0.3} className="overflow-hidden !p-0">
               <div className="grid grid-cols-12 gap-2 px-8 py-5 border-b border-white/5 bg-white/[0.02] text-[10px] font-[800] text-white/30 uppercase tracking-[0.2em]">
                 <div className="col-span-1 text-center">#</div>
-                <div className="col-span-6">Explorer</div>
-                <div className="col-span-2 text-center">Level</div>
-                <div className="col-span-3 text-right">Experience</div>
+                <div className="col-span-6">{t('leaderboard', 'explorer')}</div>
+                <div className="col-span-2 text-center">{t('leaderboard', 'level')}</div>
+                <div className="col-span-3 text-right">{t('leaderboard', 'experience')}</div>
               </div>
               <div className="divide-y divide-white/5">
                 {rest.map((u, i) => (
@@ -134,7 +136,7 @@ export default function LeaderboardView() {
                     </div>
                     <div className="col-span-3 text-right">
                       <p className="text-sm font-[900] text-white tracking-tight">{u.xp.toLocaleString()}</p>
-                      <p className="text-[9px] font-[800] text-white/20 uppercase tracking-widest">XP points</p>
+                      <p className="text-[9px] font-[800] text-white/20 uppercase tracking-widest">{t('leaderboard', 'xpPoints')}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -144,7 +146,7 @@ export default function LeaderboardView() {
               <div className="p-4 bg-black/40 border-t border-white/5 flex items-center justify-center gap-6">
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-violet-light/40" />
-                  <span className="text-[10px] font-[800] text-white/20 uppercase tracking-[0.3em]">Secure Data Protocol Verified</span>
+                  <span className="text-[10px] font-[800] text-white/20 uppercase tracking-[0.3em]">{t('leaderboard', 'secureProtocol')}</span>
                 </div>
               </div>
             </GlassCard>

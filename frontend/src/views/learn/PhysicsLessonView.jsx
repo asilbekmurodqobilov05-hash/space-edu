@@ -1,4 +1,4 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { physicsTopicsData } from '@/data/physicsTopicsData';
@@ -13,7 +13,7 @@ const blockVariants = {
   }),
 };
 
-function LessonPartBlock({ partNumber, lessonName, color, index }) {
+function LessonPartBlock({ partNumber, lessonName, color, index, onClick }) {
   const [hovered, setHovered] = useState(false);
   const colorLight = `${color}1A`; // 10% opacity
   const colorBorder = `${color}40`; // 25% opacity
@@ -26,6 +26,7 @@ function LessonPartBlock({ partNumber, lessonName, color, index }) {
       animate="visible"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={onClick}
       style={{
         display: 'flex',
         flexDirection: 'row',
@@ -38,6 +39,7 @@ function LessonPartBlock({ partNumber, lessonName, color, index }) {
         transition: 'all 0.3s ease',
         boxShadow: hovered ? `0 8px 32px rgba(0,0,0,0.2), 0 0 20px ${colorLight}` : 'none',
         alignItems: 'stretch',
+        cursor: 'pointer',
       }}
     >
       {/* Video Placeholder (Left Side) */}
@@ -55,7 +57,6 @@ function LessonPartBlock({ partNumber, lessonName, color, index }) {
           justifyContent: 'center',
           position: 'relative',
           overflow: 'hidden',
-          cursor: 'pointer',
         }}
       >
         <div style={{
@@ -110,6 +111,7 @@ function LessonPartBlock({ partNumber, lessonName, color, index }) {
 
 export default function PhysicsLessonView() {
   const { topicId, lessonIdx } = useParams();
+  const navigate = useNavigate();
   
   const topic = physicsTopicsData[topicId];
   if (!topic) {
@@ -143,6 +145,7 @@ export default function PhysicsLessonView() {
               lessonName={lessonName} 
               color={topic.color}
               index={index}
+              onClick={() => navigate(`/learn/physics/${topicId}/lesson/${lessonIdx}/part/${index}`)}
             />
           ))}
         </div>

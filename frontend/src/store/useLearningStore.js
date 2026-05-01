@@ -3,15 +3,22 @@ import { persist } from 'zustand/middleware';
 import { useGamificationStore } from './useGamificationStore';
 import api from '@/lib/api';
 
+const initialState = {
+  enrolledUnits: [],
+  completedLessons: [],
+  masteredLessons: [],
+  lessonScores: {},
+  lessonMetadata: {}, // { slug: { title, subject } }
+  currentLessonId: null,
+  currentUnitId: null,
+};
+
 export const useLearningStore = create()(
   persist(
     (set, get) => ({
-      enrolledUnits: [],
-      completedLessons: [],
-      masteredLessons: [],
-      lessonScores: {},
-      currentLessonId: null,
-      currentUnitId: null,
+      ...initialState,
+
+      reset: () => set(initialState),
 
       enrollUnit: (unitId) => {
         const s = get();
@@ -19,7 +26,7 @@ export const useLearningStore = create()(
           set({ enrolledUnits: [...s.enrolledUnits, unitId] });
       },
 
-      completeLesson: async (lessonId, unitId, score, xpReward) => {
+      completeLesson: async (lessonId, unitId, score, xpReward, metadata) => {
         const s = get();
         const mastered = score >= 80;
         set({
@@ -30,6 +37,7 @@ export const useLearningStore = create()(
             ? [...s.masteredLessons, lessonId]
             : s.masteredLessons,
           lessonScores: { ...s.lessonScores, [lessonId]: Math.max(score, s.lessonScores[lessonId] || 0) },
+          lessonMetadata: metadata ? { ...s.lessonMetadata, [lessonId]: metadata } : s.lessonMetadata,
         });
         
         try {

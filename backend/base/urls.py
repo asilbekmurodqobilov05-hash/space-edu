@@ -14,4 +14,5 @@ urlpatterns = [
     path('api/v1/news/',         include('apps.news.urls')),
     path('api/v1/events/',       include('apps.events.urls')),
     path('api/v1/challenges/',   include('apps.challenges.urls')),
+    path('api/v1/admin-panel/',  include('apps.admin_api.urls')),
 ] + static(settings.MEDIA_URL, document_root=getattr(settings, 'MEDIA_ROOT', ''))

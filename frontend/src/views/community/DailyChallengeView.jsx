@@ -4,8 +4,10 @@ import { generateDailyChallenge } from '@/data/quizData';
 import { useGamificationStore } from '@/store/useGamificationStore';
 import { Timer, Award, Zap, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function DailyChallengeView() {
+  const { t } = useTranslation();
   const { dailyChallengeCompleted, completeDailyChallenge, checkStreak } = useGamificationStore();
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -66,10 +68,10 @@ export default function DailyChallengeView() {
           <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-green-400" />
           </div>
-          <h2 className="text-3xl font-bold mb-4">Challenge Completed!</h2>
-          <p className="text-gray-400 mb-8">You've already completed today's challenge. Come back tomorrow for more XP!</p>
+          <h2 className="text-3xl font-bold mb-4">{t('daily', 'challengeCompleted')}</h2>
+          <p className="text-gray-400 mb-8">{t('daily', 'alreadyCompleted')}</p>
           <Link to="/profile" className="px-8 py-3.5 bg-violet text-white font-[800] rounded-2xl hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all inline-block uppercase text-xs tracking-widest">
-            View Profile
+            {t('daily', 'viewProfile')}
           </Link>
         </div>
       </div>

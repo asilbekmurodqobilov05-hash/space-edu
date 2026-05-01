@@ -28,22 +28,22 @@ const MAIN_NAV = (t) => [
 ];
 
 const FEATURES = (t) => [
-  { path: "/3d-solar-system", label: "3D Solar System", icon: Globe },
-  { path: "/daily", label: "Daily Challenge", icon: Zap },
-  { path: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { path: "/3d-solar-system", label: t('nav', 'solarSystem'), icon: Globe },
+  { path: "/daily", label: t('nav', 'dailyChallenge'), icon: Zap },
+  { path: "/leaderboard", label: t('nav', 'leaderboard'), icon: Trophy },
   { path: "/star-finder", label: t('nav', 'starFinder'), icon: Star },
   { path: "/lab", label: t('nav', 'lab'), icon: FlaskConical },
   { path: "/live", label: t('nav', 'live'), icon: Activity },
   { path: "/calendar", label: t('nav', 'calendar'), icon: Calendar },
   { path: "/history", label: t('nav', 'history'), icon: History },
   { path: "/space-game", label: t('nav', 'spaceGame'), icon: Gamepad2 },
-  { path: "/quiz", label: "Quiz & TEST", icon: Brain },
-  { path: "/premium", label: "Premium", icon: Crown },
+  { path: "/quiz", label: t('nav', 'quiz'), icon: Brain },
+  { path: "/premium", label: t('nav', 'premium'), icon: Crown },
 ];
 
-const PROFILE_ITEMS = [
-  { path: "/profile", label: "My Profile", icon: User },
-  { path: "/portfolio", label: "Portfolio", icon: FolderGit2 },
+const PROFILE_ITEMS = (t) => [
+  { path: "/profile", label: t('nav', 'myProfile'), icon: User },
+  { path: "/portfolio", label: t('nav', 'portfolio'), icon: FolderGit2 },
 ];
 
 // ── shared button styles ──────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ function LangDropdown() {
   const cur = LANG_META[language];
 
   return (
-    <Dropdown label={`${cur.flag} ${language}`} icon={Globe}>
+    <Dropdown label={language} icon={Globe}>
       {(close) => Object.entries(LANG_META).map(([code, { flag, label }]) => (
         <button
           key={code}
@@ -158,7 +158,6 @@ function LangDropdown() {
           onMouseEnter={e => { if (language !== code) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)'; } }}
           onMouseLeave={e => { if (language !== code) { e.currentTarget.style.color = 'rgba(255,255,255,0.60)'; e.currentTarget.style.background = 'transparent'; } }}
         >
-          <span className="text-base leading-none">{flag}</span>
           <span>{label}</span>
           {language === code && (
             <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -186,13 +185,14 @@ export default function Navigation() {
 
   const mainNav = MAIN_NAV(t);
   const features = FEATURES(t);
+  const profileItems = PROFILE_ITEMS(t);
 
   const isActive = useCallback((path) =>
     location.pathname === path || (path !== '/' && location.pathname.startsWith(path)),
     [location.pathname]);
 
   const featuresHasActive = features.some(f => isActive(f.path));
-  const profileHasActive = PROFILE_ITEMS.some(p => isActive(p.path));
+  const profileHasActive = profileItems.some(p => isActive(p.path));
 
   useEffect(() => { setIsMobileOpen(false); setMobileSection(null); }, [location.pathname]);
 
@@ -249,7 +249,7 @@ export default function Navigation() {
             );
           })}
 
-          <Dropdown label="Features" icon={LayoutGrid} isActive={featuresHasActive}>
+          <Dropdown label={t('nav', 'features')} icon={LayoutGrid} isActive={featuresHasActive}>
             {(close) => features.map((f) => <DropLink key={f.path} {...f} close={() => close(false)} />)}
           </Dropdown>
 
@@ -292,10 +292,10 @@ export default function Navigation() {
               {t("auth", "login")}
             </Link>
           ) : (
-            <Dropdown label="My Profile" icon={User} isActive={profileHasActive}>
+            <Dropdown label={t('nav', 'myProfile')} icon={User} isActive={profileHasActive}>
               {(close) => (
                 <>
-                  {PROFILE_ITEMS.map((p) => <DropLink key={p.path} {...p} close={() => close(false)} />)}
+                  {profileItems.map((p) => <DropLink key={p.path} {...p} close={() => close(false)} />)}
                   <div className="h-px w-full my-1" style={{ background: 'rgba(139,92,246,0.15)' }} />
                   <button
                     onClick={() => {
@@ -344,7 +344,7 @@ export default function Navigation() {
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider text-[#c4b5fd] border border-[#a78bfa]/30"
               style={{ background: 'rgba(139,92,246,0.15)' }}
             >
-              Profile
+              {t('nav', 'myProfile')}
             </Link>
           )}
           <button
@@ -394,8 +394,8 @@ export default function Navigation() {
 
               {/* Features accordion */}
               {[
-                { key: 'features', label: 'Features', icon: LayoutGrid, items: features },
-                { key: 'lang', label: 'Language', icon: Globe, items: [] },
+                { key: 'features', label: t('nav', 'features'), icon: LayoutGrid, items: features },
+                { key: 'lang', label: t('nav', 'language'), icon: Globe, items: [] },
               ].map(({ key, label, icon: Icon, items }) => (
                 <div key={key} className="rounded-xl overflow-hidden"
                   style={{ border: '1px solid rgba(139,92,246,0.15)' }}>

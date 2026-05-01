@@ -1,0 +1,18 @@
+{
+  "name": "satellite-tracker",
+  "version": "2.0.0",
+  "description": "Real-time 3D Satellite Tracker with Hand Gesture Control",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "satellite.js": "^5.0.0",
+    "three": "^0.165.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

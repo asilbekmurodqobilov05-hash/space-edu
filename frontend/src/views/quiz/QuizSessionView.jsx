@@ -2,8 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Home, ArrowRight, Hourglass, Trophy, Star, Target, Zap } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 import { quizData } from "@/data/quizData";
 import { useGamificationStore } from "@/store/useGamificationStore";
+
+// Map store language codes to quizData keys
+const LANG_MAP = { ENG: "en", RUS: "ru", UZB: "uz" };
 
 // Helper to get time in seconds from difficulty (1 = 1m, 2 = 2m, 3 = 3m)
 const getTimeForDifficulty = (diff) => (diff || 1) * 60;
@@ -11,6 +15,8 @@ const getTimeForDifficulty = (diff) => (diff || 1) * 60;
 export default function QuizSessionView() {
   const { category } = useParams();
   const navigate = useNavigate();
+  const { t, language } = useTranslation();
+  const currentLang = LANG_MAP[language] || "en";
   
   const questions = quizData[category] || [];
   
@@ -45,7 +51,7 @@ export default function QuizSessionView() {
 
   // Handlers
   const handleAnswer = (selectedIndex) => {
-    const isCorrect = selectedIndex === questions[currentIndex].correctAnswer;
+    const isCorrect = selectedIndex === (questions[currentIndex].correctAnswer !== undefined ? questions[currentIndex].correctAnswer : questions[currentIndex].correct);
     if (isCorrect) setScore(s => s + 1);
     goToNextQuestion();
   };
@@ -89,28 +95,28 @@ export default function QuizSessionView() {
   const total = questions.length;
   const percentage = Math.round((score / total) * 100);
   
-  let feedback = "Good effort!";
+  let feedback = t('quiz', 'goodEffort');
   let achievementIcon = Target;
-  let achievementText = "Learner";
+  let achievementText = t('quiz', 'achievementLearner');
   let achievementColor = "#60a5fa"; // blue
 
   if (percentage === 100) {
-    feedback = "Absolutely perfect! Flawless victory.";
+    feedback = t('quiz', 'perfectScore');
     achievementIcon = Trophy;
-    achievementText = "Perfect Score";
+    achievementText = t('quiz', 'achievementPerfect');
     achievementColor = "#fbbf24"; // gold
   } else if (percentage >= 80) {
-    feedback = "Excellent work! You have great knowledge in this area.";
+    feedback = t('quiz', 'excellentWork');
     achievementIcon = Star;
-    achievementText = "Expert";
+    achievementText = t('quiz', 'achievementExpert');
     achievementColor = "#34d399"; // green
   } else if (percentage >= 50) {
-    feedback = "Not bad, but there's room for improvement.";
+    feedback = t('quiz', 'notBad');
     achievementIcon = Zap;
-    achievementText = "Challenger";
+    achievementText = t('quiz', 'achievementChallenger');
     achievementColor = "#a78bfa"; // purple
   } else {
-    feedback = "Keep studying! Review the materials and try again.";
+    feedback = t('quiz', 'keepStudying');
   }
 
   // Timer format (MM:SS)
@@ -129,11 +135,11 @@ export default function QuizSessionView() {
         {/* Header / Progress */}
         <div className="flex items-center justify-between mb-8 px-2">
           <h2 className="text-2xl font-bold uppercase tracking-widest text-white/80">
-            {category} Test
+            {t('quiz', category)}
           </h2>
           {!isCompleted && (
             <div className="text-sm font-medium text-white/50">
-              Question {currentIndex + 1} / {total}
+              {t('quiz', 'question')} {currentIndex + 1} / {total}
             </div>
           )}
         </div>
@@ -162,11 +168,11 @@ export default function QuizSessionView() {
               className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl"
             >
               <h3 className="text-2xl md:text-3xl font-medium leading-relaxed text-white mb-10">
-                {currentQ.text}
+                {(currentQ.text && currentQ.text[currentLang]) || (currentQ.question && currentQ.question[currentLang]) || currentQ.text || currentQ.question}
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {currentQ.options.map((opt, i) => (
+                {(currentQ.options[currentLang] || currentQ.options).map((opt, i) => (
                   <button
                     key={i}
                     onClick={() => handleAnswer(i)}
@@ -201,16 +207,16 @@ export default function QuizSessionView() {
                 {React.createElement(achievementIcon, { className: "w-12 h-12", style: { color: achievementColor } })}
               </motion.div>
               
-              <h2 className="text-4xl md:text-5xl font-bold mb-2 text-white">Test Completed!</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-2 text-white">{t('quiz', 'testCompleted')}</h2>
               <p className="text-xl text-white/60 mb-8">{feedback}</p>
               
               <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto mb-12">
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                  <div className="text-sm text-white/50 uppercase tracking-wider mb-1">Score</div>
+                  <div className="text-sm text-white/50 uppercase tracking-wider mb-1">{t('quiz', 'score')}</div>
                   <div className="text-4xl font-bold text-white">{score}<span className="text-2xl text-white/30">/{total}</span></div>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                  <div className="text-sm text-white/50 uppercase tracking-wider mb-1">Accuracy</div>
+                  <div className="text-sm text-white/50 uppercase tracking-wider mb-1">{t('quiz', 'accuracy')}</div>
                   <div className="text-4xl font-bold" style={{ color: achievementColor }}>{percentage}%</div>
                 </div>
               </div>
@@ -220,13 +226,13 @@ export default function QuizSessionView() {
                   onClick={() => window.location.reload()}
                   className="px-8 py-4 rounded-xl font-semibold text-white bg-white/10 hover:bg-white/20 transition-colors"
                 >
-                  Retry Test
+                  {t('quiz', 'retryTest')}
                 </button>
                 <button 
                   onClick={() => navigate("/quiz")}
                   className="flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-white bg-violet-600 hover:bg-violet-500 transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]"
                 >
-                  <Home className="w-5 h-5" /> Return Home
+                  <Home className="w-5 h-5" /> {t('quiz', 'returnHome')}
                 </button>
               </div>
             </motion.div>
@@ -273,7 +279,7 @@ export default function QuizSessionView() {
             <div className="flex flex-col">
               <span className="text-xs uppercase tracking-wider font-semibold" 
                     style={{ color: timeLeft < 30 ? "#fca5a5" : "rgba(255,255,255,0.5)" }}>
-                Time Left
+                {t('quiz', 'timeLeft')}
               </span>
               <span className="text-2xl font-mono font-bold tracking-tight"
                     style={{ color: timeLeft < 30 ? "#ef4444" : "#fff" }}>

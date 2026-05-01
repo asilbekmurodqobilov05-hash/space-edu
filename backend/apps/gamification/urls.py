@@ -16,4 +16,7 @@ urlpatterns = [
     path('rewards/',           views.RewardProductListView.as_view()),
     path('rewards/purchases/', views.UserRewardPurchaseListView.as_view()),
     path('rewards/buy/',       views.RewardPurchaseView.as_view()),
+    
+    # Missions
+    path('missions/claim/',    views.MissionClaimView.as_view()),
 ]

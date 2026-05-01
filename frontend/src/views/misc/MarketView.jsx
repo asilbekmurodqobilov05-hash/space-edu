@@ -4,6 +4,7 @@ import { ShoppingCart, Fuel, Check, Lock, Loader, Search, Menu, X, Star, Percent
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // ── MOCK DATA ───────────────────────────────────────────────────────────────
 const MOCK_ITEMS = [
@@ -11,7 +12,10 @@ const MOCK_ITEMS = [
     slug: 'quantum-book', 
     title_en: 'Quantum Physics', 
     title_ru: 'Квантовая физика',
+    title_uz: 'Kvant fizikasi',
     description_en: 'A deep dive into the fundamental laws of the universe, covering entanglement and wave-particle duality.', 
+    description_ru: 'Глубокое погружение в фундаментальные законы Вселенной, охватывающее запутанность и корпускулярно-волновой дуализм.',
+    description_uz: 'Koinotning fundamental qonunlariga chuqur sho\'ng\'ish, kvant chalkashligi va korpuskulyar-to\'lqin dualizmini qamrab oladi.',
     item_type: 'book', 
     price: 125000,
     original_price: 150000,
@@ -26,7 +30,10 @@ const MOCK_ITEMS = [
     slug: 'mars-book', 
     title_en: 'The Martian Chronicles', 
     title_ru: 'Марсианские хроники',
+    title_uz: 'Mars xronikalari',
     description_en: 'Ray Bradbury\'s classic exploration of humanity\'s first steps on the Red Planet.', 
+    description_ru: 'Классическое исследование Рэя Брэдбери первых шагов человечества на Красной планете.',
+    description_uz: 'Rey Bredberining insoniyatning Qizil sayyoradagi ilk qadamlari haqidagi klassik asari.',
     item_type: 'book', 
     price: 85000,
     is_bestseller: false,
@@ -39,7 +46,10 @@ const MOCK_ITEMS = [
     slug: 'raptor-engine', 
     title_en: 'Raptor Engine V2', 
     title_ru: 'Двигатель Raptor V2',
+    title_uz: 'Raptor dvigateli V2',
     description_en: 'High-performance methalox engine designed for the next generation of interplanetary transport.', 
+    description_ru: 'Высокоэффективный металоксовый двигатель, предназначенный для межпланетного транспорта следующего поколения.',
+    description_uz: 'Interplanetar transportning keyingi avlodi uchun mo\'ljallangan yuqori samarali metaloks dvigateli.',
     item_type: 'rocket_module', 
     price: 12500000,
     original_price: 15000000,
@@ -54,7 +64,10 @@ const MOCK_ITEMS = [
     slug: 'space-helmet', 
     title_en: 'Astra Helmet', 
     title_ru: 'Шлем Astra',
+    title_uz: 'Astra dubulg\'asi',
     description_en: 'Next-gen HUD with real-time oxygen monitoring and wide-angle panoramic visor.', 
+    description_ru: 'HUD следующего поколения с мониторингом кислорода в реальном времени и широкоугольным панорамным козырьком.',
+    description_uz: 'Haqiqiy vaqtda kislorod monitoringi va keng burchakli panoramali vizorga ega keyingi avlod HUD tizimi.',
     item_type: 'other', 
     price: 450000,
     is_bestseller: true,
@@ -67,7 +80,10 @@ const MOCK_ITEMS = [
     slug: 'solar-wing', 
     title_en: 'Solar Array Wing', 
     title_ru: 'Солнечная панель',
+    title_uz: 'Quyosh batareyasi paneli',
     description_en: 'High-efficiency gallium arsenide solar panels for continuous power generation in orbit.', 
+    description_ru: 'Высокоэффективные солнечные панели из арсенида галлия для непрерывной выработки энергии на орбите.',
+    description_uz: 'Orbitada uzluksiz energiya ishlab chiqarish uchun yuqori samarali galliy arsenidli quyosh panellari.',
     item_type: 'satellite', 
     price: 890000,
     original_price: 1100000,
@@ -82,7 +98,10 @@ const MOCK_ITEMS = [
     slug: 'imaging-sensor', 
     title_en: 'Multi-Spectral Sensor', 
     title_ru: 'Мультиспектральный сенсор',
+    title_uz: 'Multispektral datchik',
     description_en: 'Capture high-resolution data across various spectrums for planetary analysis.', 
+    description_ru: 'Захват данных высокого разрешения в различных спектрах для планетарного анализа.',
+    description_uz: 'Sayyoralarni tahlil qilish uchun turli spektrlarda yuqori aniqlikdagi ma\'lumotlarni olish.',
     item_type: 'satellite', 
     price: 1150000,
     is_bestseller: false,
@@ -95,7 +114,10 @@ const MOCK_ITEMS = [
     slug: 'gravity-boots', 
     title_en: 'Mag-Grip Boots', 
     title_ru: 'Магнитные ботинки Mag-Grip',
+    title_uz: 'Mag-Grip magnitli etiklari',
     description_en: 'Magnetic soles designed for zero-G environments and metallic hull walking.', 
+    description_ru: 'Магнитные подошвы, предназначенные для условий невесомости и ходьбы по металлическим корпусам.',
+    description_uz: 'Vaznsizlik sharoitida va metall korpuslarda yurish uchun mo\'ljallangan magnitli tagliklar.',
     item_type: 'other', 
     price: 320000,
     original_price: 400000,
@@ -110,7 +132,10 @@ const MOCK_ITEMS = [
     slug: 'lunar-wheel', 
     title_en: 'Regolith Wheel', 
     title_ru: 'Колесо для реголита',
+    title_uz: 'Regolit g\'ildiragi',
     description_en: 'Specially engineered mesh wheel for maximum traction on loose lunar and martian soil.', 
+    description_ru: 'Специально разработанное сетчатое колесо для максимального сцепления с рыхлым лунным и марсианским грунтом.',
+    description_uz: 'Bo\'sh oy va mars tuprog\'ida maksimal tortishish uchun maxsus ishlab chiqilgan to\'rli g\'ildirak.',
     item_type: 'other', 
     price: 250000,
     is_bestseller: false,
@@ -123,7 +148,10 @@ const MOCK_ITEMS = [
     slug: 'fuel-tank', 
     title_en: 'Titanium Fuel Tank', 
     title_ru: 'Титановый топливный бак',
+    title_uz: 'Titanli yoqilg\'i baki',
     description_en: 'Ultra-lightweight storage for cryogenic propellants with advanced thermal insulation.', 
+    description_ru: 'Сверхлегкое хранилище для криогенного топлива с современной теплоизоляцией.',
+    description_uz: 'Ilg\'or issiqlik izolatsiyasiga ega kriogenli yoqilg\'i uchun o\'ta yengil ombor.',
     item_type: 'rocket_module', 
     price: 780000,
     original_price: 900000,
@@ -138,7 +166,10 @@ const MOCK_ITEMS = [
     slug: 'antenna-high', 
     title_en: 'Ka-Band Antenna', 
     title_ru: 'Антенна Ka-диапазона',
+    title_uz: 'Ka-diapazonli antenna',
     description_en: 'Long-range communication array for high-bandwidth data transfer across the solar system.', 
+    description_ru: 'Антенная решетка дальнего действия для высокоскоростной передачи данных по всей Солнечной системе.',
+    description_uz: 'Quyosh tizimi bo\'ylab yuqori o\'tkazish qobiliyatiga ega ma\'lumotlarni uzatish uchun uzoq masofali aloqa majmuasi.',
     item_type: 'satellite', 
     price: 550000,
     is_bestseller: false,
@@ -151,7 +182,10 @@ const MOCK_ITEMS = [
     slug: 'astrophysics-book', 
     title_en: 'Astrophysics 101', 
     title_ru: 'Основы астрофизики',
+    title_uz: 'Astrofizika asoslari',
     description_en: 'Essential knowledge for every space explorer, from stellar evolution to black holes.', 
+    description_ru: 'Необходимые знания для каждого исследователя космоса, от звездной эволюции до черных дыр.',
+    description_uz: 'Har bir kosmik tadqiqotchi uchun yulduzlar evolyutsiyasidan tortib qora tuynuklargacha bo\'lgan zarur bilimlar.',
     item_type: 'book', 
     price: 180000,
     is_bestseller: true,
@@ -164,7 +198,10 @@ const MOCK_ITEMS = [
     slug: 'guidance-pc', 
     title_en: 'Nav-Core Mk-III', 
     title_ru: 'Навигационный компьютер Mk-III',
+    title_uz: 'Nav-Core Mk-III navigatsiya kompyuteri',
     description_en: 'Advanced guidance computer with AI trajectory plotting and redundant safety systems.', 
+    description_ru: 'Усовершенствованный навигационный компьютер с ИИ-построением траекторий и дублирующими системами безопасности.',
+    description_uz: 'Sun\'iy intellekt asosida trayektoriya qurish va zaxira xavfsizlik tizimlariga ega ilg\'or navigatsiya kompyuteri.',
     item_type: 'rocket_module', 
     price: 1450000,
     original_price: 1600000,
@@ -177,9 +214,10 @@ const MOCK_ITEMS = [
   },
 ];
 
-const formatPrice = (price) => {
+const formatPrice = (price, t) => {
   if (price == null) return '—';
-  return Number(price).toLocaleString('ru-RU') + ' сум';
+  const formatted = Number(price).toLocaleString('uz-UZ').replace(/,/g, ' ');
+  return `${formatted} ${t('market', 'sum')}`;
 };
 
 const getPrice = (item) => item.price ?? item.cost_fuel ?? 0;
@@ -196,6 +234,8 @@ function ItemCard({ item, onClick, onBuy, buying }) {
   };
 
   const accent = getAccent();
+  const { t, language } = useTranslation();
+  const title = item[`title_${language.toLowerCase()}`] || item.title_en;
 
   return (
     <div 
@@ -207,7 +247,7 @@ function ItemCard({ item, onClick, onBuy, buying }) {
         {item.image_url ? (
           <img 
             src={item.image_url} 
-            alt={item.title_ru || item.title_en} 
+            alt={title} 
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
           />
         ) : (
@@ -225,12 +265,12 @@ function ItemCard({ item, onClick, onBuy, buying }) {
           )}
           {item.is_bestseller && (
             <span className="bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg flex items-center gap-1 w-max">
-              <Flame className="w-3 h-3" /> ХИТ
+              <Flame className="w-3 h-3" /> {t('market', 'hit')}
             </span>
           )}
           {item.is_new && (
             <span className="bg-cyan-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg flex items-center gap-1 w-max">
-              <Sparkles className="w-3 h-3" /> НОВИНКА
+              <Sparkles className="w-3 h-3" /> {t('market', 'newBadge')}
             </span>
           )}
         </div>
@@ -242,17 +282,17 @@ function ItemCard({ item, onClick, onBuy, buying }) {
         <div className="mb-2">
           {item.original_price ? (
             <div className="flex items-end gap-2 flex-wrap">
-              <span className="text-xl font-[900] text-red-400 leading-none">{formatPrice(getPrice(item))}</span>
-              <span className="text-sm font-medium text-white/30 line-through leading-none">{formatPrice(item.original_price)}</span>
+              <span className="text-xl font-[900] text-red-400 leading-none">{formatPrice(getPrice(item), t)}</span>
+              <span className="text-sm font-medium text-white/30 line-through leading-none">{formatPrice(item.original_price, t)}</span>
             </div>
           ) : (
-            <span className="text-xl font-[900] text-white leading-none">{formatPrice(getPrice(item))}</span>
+            <span className="text-xl font-[900] text-white leading-none">{formatPrice(getPrice(item), t)}</span>
           )}
         </div>
         
         {/* Title */}
         <h3 className="text-[15px] font-[600] text-white/90 leading-snug line-clamp-2 flex-1 mb-4 group-hover:text-violet-400 transition-colors">
-          {item.title_ru || item.title_en}
+          {title}
         </h3>
 
         {/* Action Button */}
@@ -265,7 +305,7 @@ function ItemCard({ item, onClick, onBuy, buying }) {
           className="w-full bg-violet-600 hover:bg-violet-500 text-white py-3 rounded-xl font-[700] text-[13px] flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
         >
           {buying ? <Loader className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
-          В корзину
+          {t('market', 'inCart')}
         </button>
       </div>
     </div>
@@ -274,7 +314,10 @@ function ItemCard({ item, onClick, onBuy, buying }) {
 
 // Product Modal Component
 function ProductModal({ item, onClose, onBuy, buying }) {
+  const { t, language } = useTranslation();
   if (!item) return null;
+  const title = item[`title_${language.toLowerCase()}`] || item.title_en;
+  const description = item[`description_${language.toLowerCase()}`] || item.description_en;
 
   return (
     <AnimatePresence>
@@ -299,14 +342,14 @@ function ProductModal({ item, onClose, onBuy, buying }) {
           {/* Left: Image */}
           <div className="w-full md:w-1/2 bg-black relative min-h-[300px]">
             {item.image_url ? (
-              <img src={item.image_url} alt={item.title_ru} className="w-full h-full object-cover" />
+              <img src={item.image_url} alt={title} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-8xl">📦</div>
             )}
             {/* Badges */}
             <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
               {item.discount_percent > 0 && <span className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg w-max">-{item.discount_percent}%</span>}
-              {item.is_bestseller && <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 w-max"><Flame className="w-4 h-4" /> ХИТ ПРОДАЖ</span>}
+              {item.is_bestseller && <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 w-max"><Flame className="w-4 h-4" /> {t('market', 'bestSellers').toUpperCase()}</span>}
             </div>
           </div>
 
@@ -314,21 +357,21 @@ function ProductModal({ item, onClose, onBuy, buying }) {
           <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto flex flex-col">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xs font-bold uppercase tracking-wider text-violet-400 bg-violet-400/10 px-3 py-1 rounded-full">
-                {item.item_type.replace('_', ' ')}
+                {t('market', `types.${item.item_type}`)}
               </span>
             </div>
             
-            <h2 className="text-3xl font-[800] text-white mb-2 leading-tight">{item.title_ru || item.title_en}</h2>
-            <p className="text-white/50 text-sm mb-6">{item.description_en}</p>
+            <h2 className="text-3xl font-[800] text-white mb-2 leading-tight">{title}</h2>
+            <p className="text-white/50 text-sm mb-6">{description}</p>
 
             <div className="bg-white/[0.03] rounded-2xl p-6 mb-8 border border-white/5">
               {item.original_price && (
                 <div className="text-white/40 line-through text-lg font-medium mb-1">
-                  {formatPrice(item.original_price)}
+                  {formatPrice(item.original_price, t)}
                 </div>
               )}
               <div className="flex items-center gap-4">
-                <span className="text-4xl font-[900] text-white">{formatPrice(getPrice(item))}</span>
+                <span className="text-4xl font-[900] text-white">{formatPrice(getPrice(item), t)}</span>
               </div>
               
               <button
@@ -337,15 +380,15 @@ function ProductModal({ item, onClose, onBuy, buying }) {
                 className="w-full mt-6 bg-violet-600 hover:bg-violet-500 text-white py-4 rounded-xl font-[800] text-[15px] flex items-center justify-center gap-2 transition-all shadow-[0_10px_30px_rgba(124,58,237,0.3)] active:scale-[0.98]"
               >
                 {buying ? <Loader className="w-5 h-5 animate-spin" /> : <ShoppingCart className="w-5 h-5" />}
-                Добавить в корзину
+                {t('market', 'addCart')}
               </button>
             </div>
 
-            <h4 className="text-sm font-[800] uppercase tracking-wider text-white/40 mb-4">Характеристики</h4>
+            <h4 className="text-sm font-[800] uppercase tracking-wider text-white/40 mb-4">{t('market', 'specs')}</h4>
             <div className="space-y-3">
               {Object.entries(item.specs || {}).map(([key, val]) => (
                 <div key={key} className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-sm text-white/50 capitalize">{key}</span>
+                  <span className="text-sm text-white/50 capitalize">{t('market', `specLabels.${key}`) || key}</span>
                   <span className="text-sm font-medium text-white/90">{val}</span>
                 </div>
               ))}
@@ -358,6 +401,7 @@ function ProductModal({ item, onClose, onBuy, buying }) {
 }
 
 export default function MarketView() {
+  const { t, language } = useTranslation();
   const { isAuthenticated } = useAuthStore();
 
   const [items, setItems] = useState([]);
@@ -397,16 +441,16 @@ export default function MarketView() {
 
   const handleBuy = async (slug) => {
     if (!isAuthenticated) {
-      alert('Please log in to purchase items.');
+      alert(t('market', 'loginRequired'));
       return;
     }
     setBuying(slug);
     try {
       await api.post('/market/purchase/', { item_slug: slug });
       setInventory(prev => new Set([...prev, slug]));
-      alert('Purchase successful!');
+      alert(t('market', 'purchaseSuccess'));
     } catch (err) {
-      alert(err.response?.data?.detail || 'Purchase failed.');
+      alert(err.response?.data?.detail || t('market', 'purchaseFailed'));
     } finally {
       setBuying(null);
     }
@@ -446,17 +490,17 @@ export default function MarketView() {
       <div className="sticky top-0 z-50 bg-[#020106]/90 backdrop-blur-xl border-b border-white/5 pt-[100px] pb-4 px-4 sm:px-8">
         <div className="max-w-[1600px] mx-auto flex items-center gap-4 md:gap-8">
           
-          <h1 className="text-2xl md:text-3xl font-[900] tracking-tighter text-white shrink-0 hidden sm:block">Market</h1>
+          <h1 className="text-2xl md:text-3xl font-[900] tracking-tighter text-white shrink-0 hidden sm:block">{t('market', 'title')}</h1>
           
           <button className="shrink-0 bg-violet-600 hover:bg-violet-500 text-white px-5 py-3 rounded-xl font-[800] text-sm flex items-center gap-2 transition-colors">
             <Menu className="w-5 h-5" />
-            <span className="hidden sm:inline">Каталог</span>
+            <span className="hidden sm:inline">{t('market', 'catalog')}</span>
           </button>
 
           <div className="flex-1 relative">
             <input 
               type="text" 
-              placeholder="Искать книги, модули, спутники..." 
+              placeholder={t('market', 'searchPlaceholder')} 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white/[0.05] border border-white/10 hover:border-white/20 focus:border-violet-500 rounded-xl py-3 pl-12 pr-4 text-white text-sm font-medium outline-none transition-all placeholder:text-white/30"
@@ -489,7 +533,7 @@ export default function MarketView() {
             <aside className="lg:w-64 w-full flex-shrink-0 lg:sticky lg:top-32 hidden lg:block">
               <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6">
                 <h3 className="text-sm font-[800] uppercase tracking-wider text-white/50 mb-6 flex items-center gap-2">
-                  <Tags className="w-4 h-4" /> Категории
+                  <Tags className="w-4 h-4" /> {t('market', 'categories')}
                 </h3>
                 <div className="flex flex-col gap-2">
                   {categories.map(category => (
@@ -502,7 +546,7 @@ export default function MarketView() {
                           : 'text-white/60 hover:bg-white/5 hover:text-white border border-transparent'
                       }`}
                     >
-                      {category === 'all' ? 'Все товары' : category.replace('_', ' ')}
+                      {category === 'all' ? t('market', 'allProducts') : t('market', `types.${category}`)}
                     </button>
                   ))}
                 </div>
@@ -511,14 +555,14 @@ export default function MarketView() {
               {/* Right Sidebar logic combined into Left for Yandex style (usually filters are on the left or top) */}
               <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 mt-6">
                 <h3 className="text-sm font-[800] uppercase tracking-wider text-white/50 mb-6 flex items-center gap-2">
-                  <Filter className="w-4 h-4" /> Фильтры
+                  <Filter className="w-4 h-4" /> {t('market', 'filters')}
                 </h3>
                 <div className="flex flex-col gap-2 mb-8">
                   {[
-                    { id: 'all', label: 'Все предложения' },
-                    { id: 'bestseller', label: 'Хиты продаж' },
-                    { id: 'discount', label: 'Со скидкой' },
-                    { id: 'new', label: 'Новинки' }
+                    { id: 'all', label: t('market', 'allOffers') },
+                    { id: 'bestseller', label: t('market', 'bestSellers') },
+                    { id: 'discount', label: t('market', 'onSale') },
+                    { id: 'new', label: t('market', 'new') }
                   ].map(f => (
                     <button
                       key={f.id}
@@ -535,14 +579,14 @@ export default function MarketView() {
                 </div>
 
                 <h3 className="text-sm font-[800] uppercase tracking-wider text-white/50 mb-6 flex items-center gap-2">
-                  <ArrowDownUp className="w-4 h-4" /> Сортировка
+                  <ArrowDownUp className="w-4 h-4" /> {t('market', 'sort')}
                 </h3>
                 <div className="flex flex-col gap-2">
                   {[
-                    { id: 'default', label: 'По популярности' },
-                    { id: 'price-asc', label: 'Сначала дешевле' },
-                    { id: 'price-desc', label: 'Сначала дороже' },
-                    { id: 'discount', label: 'По размеру скидки' }
+                    { id: 'default', label: t('market', 'popular') },
+                    { id: 'price-asc', label: t('market', 'priceAsc') },
+                    { id: 'price-desc', label: t('market', 'priceDesc') },
+                    { id: 'discount', label: t('market', 'discountSort') }
                   ].map(s => (
                     <button
                       key={s.id}
@@ -570,7 +614,7 @@ export default function MarketView() {
                   {/* Section 1: Best Sellers */}
                   <section>
                     <div className="flex items-center gap-3 mb-6">
-                      <h2 className="text-2xl font-[900] text-white">ХИТЫ ПРОДАЖ</h2>
+                      <h2 className="text-2xl font-[900] text-white">{t('market', 'bestSellersSection')}</h2>
                       <Flame className="w-6 h-6 text-orange-500" />
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
@@ -583,7 +627,7 @@ export default function MarketView() {
                   {/* Section 2: For You */}
                   <section>
                     <div className="flex items-center gap-3 mb-6">
-                      <h2 className="text-2xl font-[900] text-white">Для вас</h2>
+                      <h2 className="text-2xl font-[900] text-white">{t('market', 'forYou')}</h2>
                       <Sparkles className="w-6 h-6 text-violet-400" />
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
@@ -596,7 +640,7 @@ export default function MarketView() {
                   {/* Section 3: WOW Prices */}
                   <section className="bg-gradient-to-r from-red-500/10 to-transparent p-6 -mx-6 rounded-3xl border border-red-500/10">
                     <div className="flex items-center gap-3 mb-6">
-                      <h2 className="text-3xl font-[900] text-red-400 italic">WOW-цены</h2>
+                      <h2 className="text-3xl font-[900] text-red-400 italic">{t('market', 'wowPrices')}</h2>
                       <Percent className="w-8 h-8 text-red-500" />
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
@@ -609,7 +653,7 @@ export default function MarketView() {
                   {/* Section 4: New Models */}
                   <section>
                     <div className="flex items-center gap-3 mb-6">
-                      <h2 className="text-2xl font-[900] text-white">НОВЫЕ МОДЕЛИ</h2>
+                      <h2 className="text-2xl font-[900] text-white">{t('market', 'newModels')}</h2>
                       <Rocket className="w-6 h-6 text-cyan-400" />
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
@@ -625,15 +669,15 @@ export default function MarketView() {
                 <div>
                   <div className="mb-6 flex items-center justify-between">
                     <h2 className="text-2xl font-[900] text-white">
-                      {searchQuery ? `Результаты поиска: "${searchQuery}"` : 'Каталог'}
+                      {searchQuery ? `${t('market', 'results')}: "${searchQuery}"` : t('market', 'catalog')}
                     </h2>
-                    <span className="text-white/40 text-sm font-medium">{filteredItems.length} товаров</span>
+                    <span className="text-white/40 text-sm font-medium">{filteredItems.length} {t('market', 'allProducts').toLowerCase()}</span>
                   </div>
                   
                   {filteredItems.length === 0 ? (
                     <div className="text-center py-40 bg-white/[0.01] border border-dashed border-white/10 rounded-3xl">
-                      <p className="text-white/40 font-[600] text-lg">По вашему запросу ничего не найдено.</p>
-                      <button onClick={() => {setSearchQuery(''); setActiveCategory('all'); setActiveFilter('all');}} className="mt-4 text-violet-400 hover:text-violet-300 font-bold">Сбросить фильтры</button>
+                      <p className="text-white/40 font-[600] text-lg">{t('market', 'noResults')}</p>
+                      <button onClick={() => {setSearchQuery(''); setActiveCategory('all'); setActiveFilter('all');}} className="mt-4 text-violet-400 hover:text-violet-300 font-bold">{t('market', 'resetFilters')}</button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
