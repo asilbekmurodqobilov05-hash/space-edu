@@ -91,34 +91,7 @@
     "missionProgress": "Прогресс Миссии",
     "activities": "Заданий"
   },
-  "market": {
-    "hub": "Магазин",
-    "title": "Космический",
-    "titleHighlight": "Магазин",
-    "subtitle": "Топливо — это очки за уроки. Выберите предмет и нажмите «Купить». Всё просто.",
-    "simpleHowTitle": "Как это работает",
-    "simpleStep1": "Проходите уроки и зарабатывайте топливо.",
-    "simpleStep2": "На каждой карточке указана цена в топливе.",
-    "simpleStep3": "Нажмите «Купить». Купленные предметы отмечены как «Приобретено».",
-    "priceLabel": "Цена",
-    "availableFuel": "Доступное топливо",
-    "units": "Единиц",
-    "acquired": "Приобретено",
-    "purchase": "Купить предмет",
-    "insufficient": "Недостаточно топлива",
-    "miniMars": "Модель Мини-Марса",
-    "miniMarsDesc": "Детализированная 3D-печатная модель Марса для вашего виртуального стола.",
-    "astroBook": "Руководство по Выживанию Астронавта",
-    "astroBookDesc": "Обязательное чтение для любого начинающего исследователя космоса.",
-    "telescopeUpgrade": "Улучшение Телескопа",
-    "telescopeUpgradeDesc": "Улучшите свои возможности поиска звезд с помощью лучшей оптики.",
-    "spaceSuitPatch": "Нашивка Space edu",
-    "spaceSuitPatchDesc": "Официальная нашивка миссии для вашего виртуального скафандра.",
-    "miniIss": "Модель Мини-МКС",
-    "miniIssDesc": "Миниатюрная копия Международной Космической Станции.",
-    "rocketBlueprint": "Чертежи Сатурн-5",
-    "rocketBlueprintDesc": "Исторические чертежи легендарной ракеты Сатурн-5."
-  },
+
   "portfolio": {
     "title": "Досье",
     "titleHighlight": "Астронавта",
@@ -438,6 +411,22 @@
     "3dSolarSystem": "3D Солнечная Система",
     "leaderboard": "Таблица Лидеров"
   },
+<<<<<<< HEAD
+  "liveMap": {
+    "simBlurb": "Предпросмотр созвездий в WebGL с имитацией TLE. Для официальных эфемерид — CelesTrak / Space-Track.",
+    "menuSolar": "3D Солнечная Система",
+    "menuDaily": "Ежедневное задание",
+    "menuLeader": "Таблица Лидеров",
+    "footerUpdated": "Данные страницы",
+    "footerEditor": "Редактор",
+    "footerCopyright": "Space Edu · симуляция",
+    "socialTelegram": "Telegram",
+    "socialInstagram": "Instagram",
+    "socialX": "X",
+    "socialYoutube": "YouTube",
+    "collisionTitle": "Проверка столкновений",
+    "collisionNominal": "Система в норме"
+=======
   "daily": {
     "challengeCompleted": "Задание выполнено!",
     "alreadyCompleted": "Вы уже выполнили сегодняшнее задание. Возвращайтесь завтра за новым опытом!",
@@ -659,7 +648,49 @@
     "specs": "Характеристики",
     "hit": "ХИТ",
     "newBadge": "НОВИНКА",
-    "sum": "сум"
+    "sum": "сум",
+    "loginRequired": "Пожалуйста, войдите в систему, чтобы совершать покупки.",
+    "purchaseSuccess": "Покупка успешно завершена!",
+    "purchaseFailed": "Ошибка при покупке.",
+    "types": {
+      "book": "Книга",
+      "rocket_module": "Ракетный модуль",
+      "satellite": "Спутник",
+      "other": "Другое"
+    },
+    "specLabels": {
+      "pages": "Страницы",
+      "level": "Уровень",
+      "format": "Формат",
+      "thrust": "Тяга",
+      "fuel": "Топливо",
+      "mass": "Масса",
+      "air": "Воздух",
+      "visor": "Визор",
+      "comm": "Связь",
+      "power": "Мощность",
+      "span": "Размах",
+      "efficiency": "Эффективность",
+      "res": "Разрешение",
+      "bands": "Диапазоны",
+      "storage": "Память",
+      "strength": "Прочность",
+      "weight": "Вес",
+      "battery": "Батарея",
+      "material": "Материал",
+      "temp": "Температура",
+      "life": "Срок службы",
+      "volume": "Объем",
+      "pressure": "Давление",
+      "alloy": "Сплав",
+      "freq": "Частота",
+      "gain": "Усиление",
+      "reach": "Дистанция",
+      "cpu": "Процессор",
+      "ram": "ОЗУ",
+      "accuracy": "Точность"
+    }
+>>>>>>> 46bf3a3e66e7a739beb78836551f839af4bbce7e
   },
   "common": {
     "loading": "Загрузка...",

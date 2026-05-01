@@ -91,34 +91,7 @@
     "missionProgress": "Mission Progress",
     "activities": "Activities"
   },
-  "market": {
-    "hub": "Shop",
-    "title": "Space",
-    "titleHighlight": "Shop",
-    "subtitle": "Fuel is points you earn from lessons. Pick an item and tap Purchase — simple.",
-    "simpleHowTitle": "How it works",
-    "simpleStep1": "Complete lessons to earn fuel.",
-    "simpleStep2": "Each card shows the fuel price.",
-    "simpleStep3": "Tap Purchase. Owned items show “Acquired”.",
-    "priceLabel": "Price",
-    "availableFuel": "Available Fuel",
-    "units": "Units",
-    "acquired": "Acquired",
-    "purchase": "Purchase Item",
-    "insufficient": "Insufficient Fuel",
-    "miniMars": "Mini Mars Model",
-    "miniMarsDesc": "A detailed 3D printable model of Mars for your virtual desk.",
-    "astroBook": "Astronaut Survival Guide",
-    "astroBookDesc": "Essential reading for any aspiring space explorer.",
-    "telescopeUpgrade": "Telescope Upgrade",
-    "telescopeUpgradeDesc": "Enhance your star-finding capabilities with better optics.",
-    "spaceSuitPatch": "Space edu mission patch",
-    "spaceSuitPatchDesc": "Official mission patch to wear on your virtual spacesuit.",
-    "miniIss": "Mini ISS Model",
-    "miniIssDesc": "A miniature replica of the International Space Station.",
-    "rocketBlueprint": "Saturn V Blueprints",
-    "rocketBlueprintDesc": "Historical blueprints of the legendary Saturn V rocket."
-  },
+
   "portfolio": {
     "title": "Astronaut",
     "titleHighlight": "Dossier",
@@ -480,6 +453,22 @@
     "proFeat4": "Fuel lasts 3.5x longer",
     "proFeat5": "Special care by admin"
   },
+<<<<<<< HEAD
+  "liveMap": {
+    "simBlurb": "WebGL constellation preview with mock TLE propagation. For official ephemeris see CelesTrak / Space-Track.",
+    "menuSolar": "3D Solar System",
+    "menuDaily": "Daily mission",
+    "menuLeader": "Leaderboard",
+    "footerUpdated": "Page data",
+    "footerEditor": "Editor",
+    "footerCopyright": "Space Edu · simulation",
+    "socialTelegram": "Telegram",
+    "socialInstagram": "Instagram",
+    "socialX": "X",
+    "socialYoutube": "YouTube",
+    "collisionTitle": "Collision check",
+    "collisionNominal": "System nominal"
+=======
   "leaderboard": {
     "title": "Galactic",
     "titleHighlight": "Ranks",
@@ -659,7 +648,49 @@
     "specs": "Characteristics",
     "hit": "HIT",
     "newBadge": "NEW",
-    "sum": "sum"
+    "sum": "sum",
+    "loginRequired": "Please log in to purchase items.",
+    "purchaseSuccess": "Purchase successful!",
+    "purchaseFailed": "Purchase failed.",
+    "types": {
+      "book": "Book",
+      "rocket_module": "Rocket Module",
+      "satellite": "Satellite",
+      "other": "Other"
+    },
+    "specLabels": {
+      "pages": "Pages",
+      "level": "Level",
+      "format": "Format",
+      "thrust": "Thrust",
+      "fuel": "Fuel",
+      "mass": "Mass",
+      "air": "Air",
+      "visor": "Visor",
+      "comm": "Comm",
+      "power": "Power",
+      "span": "Span",
+      "efficiency": "Efficiency",
+      "res": "Res",
+      "bands": "Bands",
+      "storage": "Storage",
+      "strength": "Strength",
+      "weight": "Weight",
+      "battery": "Battery",
+      "material": "Material",
+      "temp": "Temp",
+      "life": "Life",
+      "volume": "Volume",
+      "pressure": "Pressure",
+      "alloy": "Alloy",
+      "freq": "Freq",
+      "gain": "Gain",
+      "reach": "Reach",
+      "cpu": "CPU",
+      "ram": "RAM",
+      "accuracy": "Accuracy"
+    }
+>>>>>>> 46bf3a3e66e7a739beb78836551f839af4bbce7e
   },
   "common": {
     "loading": "Loading...",

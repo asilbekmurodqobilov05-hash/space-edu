@@ -22,10 +22,12 @@ import {
   Edit3,
   X,
   Gamepad2,
+  Heart,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import { useLikesStore } from '@/store/useLikesStore';
 
 const CLAIMS_KEY = 'space-edu-profile-mission-claims';
 const STREAK_CLAIM_DAY_KEY = 'space-edu-profile-streak-claim-day';
@@ -127,6 +129,7 @@ function pickInventoryIcon(item) {
 export default function ProfileView() {
   const { user, updateUser } = useAuthStore();
   const syncFromAPI = useGamificationStore((s) => s.syncFromAPI);
+  const { likedLessons } = useLikesStore();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -739,6 +742,34 @@ export default function ProfileView() {
                 Explore Courses →
               </Link>
             </div>
+          </div>
+
+          {/* Liked Lessons */}
+          <div className="rounded-3xl border border-white/10 bg-space-900/70 p-5 flex-1 flex flex-col">
+            <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+              <Heart className="w-5 h-5 text-rose-400" /> Liked Lessons
+            </h2>
+            {likedLessons.length === 0 ? (
+              <p className="text-sm text-white/40">No liked lessons yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {likedLessons.map((lesson) => (
+                  <Link
+                    key={lesson.id}
+                    to={lesson.url}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-between gap-3 hover:bg-white/10 transition-all block"
+                  >
+                    <div>
+                      <p className="font-medium text-white">{lesson.title}</p>
+                      <p className="text-xs text-white/50 mt-1 capitalize">
+                        {lesson.subject}
+                      </p>
+                    </div>
+                    <Heart className="w-4 h-4 text-rose-500" fill="#f43f5e" />
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

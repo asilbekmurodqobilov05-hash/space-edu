@@ -7,11 +7,22 @@ export function useTranslation() {
   const t = (section, key) => {
     const langData = translations[language] || translations.ENG;
     const sectionData = langData[section];
-    if (sectionData && sectionData[key]) return sectionData[key];
+    
+    if (!sectionData) return `${section}.${key}`;
+
+    const getNested = (obj, path) => {
+      return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+    };
+
+    const value = getNested(sectionData, key);
+    if (value) return value;
 
     // Fallback to English
-    const fallback = translations.ENG[section];
-    if (fallback && fallback[key]) return fallback[key];
+    const fallbackSection = translations.ENG[section];
+    if (fallbackSection) {
+      const fallbackValue = getNested(fallbackSection, key);
+      if (fallbackValue) return fallbackValue;
+    }
 
     return `${section}.${key}`;
   };
