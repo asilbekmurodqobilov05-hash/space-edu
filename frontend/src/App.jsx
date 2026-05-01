@@ -120,6 +120,7 @@ export default function App() {
             {/* Unified Sub-Topic and Lesson routes for Astronomy, Creativity, and Interviews */}
             <Route path="/learn/:subject/:topicId/sub/:subIdx" element={<PT><SubTopicView /></PT>} />
             <Route path="/learn/:subject/:topicId/sub/:subIdx/lesson/:lessonIdx" element={<PT><UniversalLessonView /></PT>} />
+            <Route path="/learn/:subject/:topicId/lesson/:lessonIdx/part/:partIdx" element={<PT><UniversalLessonView /></PT>} />
 
             <Route path="/learn/problems"                         element={<PT><ProblemsView /></PT>} />
             <Route path="/learn/problems/:id"                     element={<PT><ProblemDetailView /></PT>} />

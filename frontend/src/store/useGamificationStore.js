@@ -33,6 +33,17 @@ export const useGamificationStore = create()(
         api.post('/gamification/grant/', { fuel: amount }).catch(() => {});
       },
 
+      addRewards: (xp, fuel) => {
+        const newXp = get().xp + xp;
+        set((s) => ({ 
+          xp: newXp, 
+          level: calcLevel(newXp),
+          fuel: Math.min(1000, s.fuel + fuel)
+        }));
+        get().checkBadges();
+        api.post('/gamification/grant/', { xp, fuel }).catch(() => {});
+      },
+
       spendFuel: (amount) => {
         const cur = get().fuel;
         if (cur < amount) return false;
