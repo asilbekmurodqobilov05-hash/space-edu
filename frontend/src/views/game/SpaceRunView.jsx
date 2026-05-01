@@ -246,7 +246,7 @@ export default function SpaceRunView() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/20 group-hover:bg-cyan-500/25">
                   <ArrowLeft className="w-4 h-4" strokeWidth={2.25} />
                 </span>
-                <span className="hidden min-[380px]:inline">{t('common', 'home')}</span>
+                <span className="hidden min-[380px]:inline">Home</span>
               </Link>
               <div className="hidden sm:flex items-center gap-2 min-w-0 ml-2 border-l border-white/10 pl-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-600/30 to-cyan-500/25 ring-1 ring-white/10">
@@ -363,7 +363,6 @@ export default function SpaceRunView() {
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-<<<<<<< HEAD
             {/* Health HUD Bar */}
             <div className="sr-hud-bar" style={{ borderColor: 'rgba(251,113,133,0.35)', boxShadow: '0 0 18px rgba(251,113,133,0.08), inset 0 0 12px rgba(251,113,133,0.04)' }}>
               <div className="flex justify-between text-[10px] uppercase tracking-wider font-bold mb-2">
@@ -393,19 +392,6 @@ export default function SpaceRunView() {
               <div className="h-[6px] rounded-[3px] bg-black/40 overflow-hidden" style={{ boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.5)' }}>
                 <div className="sr-hud-bar-fill h-full" style={{ width: `${boost}%`, background: 'linear-gradient(90deg, #e879f9, #d946ef, #a21caf)', boxShadow: '0 0 10px rgba(217,70,239,0.6), 0 0 20px rgba(217,70,239,0.25)' }} />
               </div>
-=======
-            <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2">
-              <div className="flex justify-between text-[10px] uppercase tracking-wider text-rose-100/80 font-bold"><span>{t('game', 'health')}</span><span>{Math.round(health)}%</span></div>
-              <div className="mt-1.5 h-1.5 rounded-full bg-black/25 overflow-hidden"><div className="h-full bg-rose-400 transition-[width]" style={{ width: `${health}%` }} /></div>
-            </div>
-            <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2">
-              <div className="flex justify-between text-[10px] uppercase tracking-wider text-cyan-100/80 font-bold"><span>{t('game', 'shield')}</span><span>{Math.round(shield)}%</span></div>
-              <div className="mt-1.5 h-1.5 rounded-full bg-black/25 overflow-hidden"><div className="h-full bg-cyan-300 transition-[width]" style={{ width: `${Math.min(100, shield)}%` }} /></div>
-            </div>
-            <div className="rounded-xl border border-fuchsia-400/20 bg-fuchsia-500/10 px-3 py-2">
-              <div className="flex justify-between text-[10px] uppercase tracking-wider text-fuchsia-100/80 font-bold"><span>{t('game', 'boost')}</span><span>{Math.round(boost)}%</span></div>
-              <div className="mt-1.5 h-1.5 rounded-full bg-black/25 overflow-hidden"><div className="h-full bg-fuchsia-300 transition-[width]" style={{ width: `${boost}%` }} /></div>
->>>>>>> 4219bc6f12be7b5661981e94567b9fb465afb997
             </div>
           </div>
         </div>
@@ -439,7 +425,6 @@ export default function SpaceRunView() {
         </Canvas>
 
         {!started && (
-<<<<<<< HEAD
           <div className="absolute inset-0 z-[15] overflow-hidden" style={{ animation: 'entry-fade-in 0.8s ease-out both' }}>
             {/* === DEEP SPACE BACKGROUND === */}
             {/* Base dark overlay */}
@@ -593,22 +578,6 @@ export default function SpaceRunView() {
                 <span className="text-[10px] uppercase tracking-[0.2em] text-cyan-300/50 font-bold">Press to Play</span>
               </div>
             </div>
-=======
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 backdrop-blur-sm px-6 text-center">
-            <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-fuchsia-300 to-amber-300 mb-3">
-              {t('game', 'title')}
-            </h1>
-            <p className="text-white/75 max-w-md mb-6 text-sm sm:text-base leading-relaxed">
-              {t('game', 'introDesc')}
-            </p>
-            <button
-              type="button"
-              onClick={() => void handleStart()}
-              className="px-8 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black text-lg shadow-lg shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            >
-              {t('game', 'play')}
-            </button>
->>>>>>> 4219bc6f12be7b5661981e94567b9fb465afb997
           </div>
         )}
 
