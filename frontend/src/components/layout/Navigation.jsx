@@ -6,7 +6,7 @@ import {
   ChevronDown, Menu, X, Globe,
   Zap, Trophy,
   FlaskConical, Activity, Calendar, History,
-  Gamepad2, FolderGit2, User, Star, LayoutGrid, Brain, Coins,
+  Gamepad2, FolderGit2, User, Star, LayoutGrid, Brain, Coins, Crown,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useUserStore } from "@/store/useUserStore";
@@ -38,6 +38,7 @@ const FEATURES = (t) => [
   { path: "/history", label: t('nav', 'history'), icon: History },
   { path: "/space-game", label: t('nav', 'spaceGame'), icon: Gamepad2 },
   { path: "/quiz", label: "Quiz & TEST", icon: Brain },
+  { path: "/premium", label: "Premium", icon: Crown },
 ];
 
 const PROFILE_ITEMS = [

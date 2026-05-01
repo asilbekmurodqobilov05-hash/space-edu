@@ -44,6 +44,7 @@ import LeaderboardView    from '@/views/community/LeaderboardView';
 import CalendarView       from '@/views/community/CalendarView';
 import NewsView           from '@/views/community/NewsView';
 import LiveSpaceView      from '@/views/community/LiveSpaceView';
+import PremiumView        from '@/views/features/PremiumView';
 import PortfolioView      from '@/views/profile/PortfolioView';
 import ProfileView        from '@/views/profile/ProfileView';
 import HistoryView        from '@/views/misc/HistoryView';
@@ -98,6 +99,7 @@ export default function App() {
             <Route path="/calendar"      element={<PT><CalendarView /></PT>} />
             <Route path="/news"          element={<PT><NewsView /></PT>} />
             <Route path="/live"          element={<PT><LiveSpaceView /></PT>} />
+            <Route path="/premium"       element={<PT><PremiumView /></PT>} />
             <Route path="/quiz"          element={<PT><QuizHubView /></PT>} />
             <Route path="/quiz/:category" element={<PT><QuizSessionView /></PT>} />
 

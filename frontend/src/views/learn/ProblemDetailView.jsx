@@ -31,7 +31,23 @@ export default function ProblemDetailView() {
   };
 
   const handleCloseAlert = () => {
-    navigate('/learn/problems');
+    setStatus(null);
+  };
+
+  const handleRetry = () => {
+    setUserAnswer('');
+    setStatus(null);
+  };
+
+  const handleNext = () => {
+    const nextId = parseInt(id) + 1;
+    if (problemsData[nextId]) {
+      navigate(`/learn/problems/${nextId}`);
+      setUserAnswer('');
+      setStatus(null);
+    } else {
+      navigate('/learn/problems');
+    }
   };
 
   return (
@@ -133,63 +149,168 @@ export default function ProblemDetailView() {
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 2000,
-              backdropFilter: 'blur(8px)',
+              backdropFilter: 'blur(12px)',
             }}
           >
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
               style={{
-                background: '#1a1f2e',
+                background: '#151921',
                 borderRadius: '32px',
-                padding: '40px',
-                width: '400px',
+                padding: '48px 40px',
+                width: '100%',
+                maxWidth: '480px',
                 textAlign: 'center',
-                border: `1px solid ${status === 'correct' ? color : '#ef4444'}40`,
-                boxShadow: `0 30px 60px rgba(0,0,0,0.5), 0 0 30px ${status === 'correct' ? color : '#ef4444'}20`,
+                border: '1px solid rgba(255,255,255,0.05)',
+                boxShadow: `0 40px 80px rgba(0,0,0,0.6), 0 0 40px ${status === 'correct' ? color : '#ef4444'}15`,
+                position: 'relative',
               }}
             >
-              <div style={{
-                width: '80px', height: '80px', borderRadius: '50%',
-                background: `${status === 'correct' ? color : '#ef4444'}20`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 24px',
-                color: status === 'correct' ? color : '#ef4444'
-              }}>
-                {status === 'correct' ? <CheckCircle2 size={48} /> : <XCircle size={48} />}
+              {/* Icon Section */}
+              <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 32px' }}>
+                <motion.div
+                  initial={{ scale: 0.5, rotate: -45 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', damping: 12 }}
+                  style={{
+                    width: '100%', height: '100%', borderRadius: '50%',
+                    background: status === 'correct' ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: status === 'correct' ? color : '#ef4444',
+                    border: `1px solid ${status === 'correct' ? color : '#ef4444'}30`,
+                  }}
+                >
+                  {status === 'correct' ? <CheckCircle2 size={56} /> : <XCircle size={56} />}
+                </motion.div>
+                {/* Decorative particles for wrong answer as seen in image */}
+                {status === 'wrong' && (
+                  <>
+                    <div style={{ position: 'absolute', top: -10, right: -10, color: '#ff8a8a', opacity: 0.6 }}>✦</div>
+                    <div style={{ position: 'absolute', bottom: 10, left: -20, color: '#ff8a8a', opacity: 0.4 }}>•</div>
+                    <div style={{ position: 'absolute', top: 20, left: -10, color: '#ff8a8a', opacity: 0.5 }}>✦</div>
+                  </>
+                )}
               </div>
               
-              <h3 style={{ fontSize: '32px', fontWeight: 800, color: '#fff', marginBottom: '12px' }}>
-                {status === 'correct' ? 'Correct' : 'Wrong'}
+              <h3 style={{ fontSize: '32px', fontWeight: 800, color: '#fff', marginBottom: '12px', letterSpacing: '-0.02em' }}>
+                {status === 'correct' ? 'Barakalla!' : 'Siz xato qildingiz'}
               </h3>
               
-              <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '32px', fontSize: '16px' }}>
+              <p style={{ color: 'rgba(255,255,255,0.4)', marginBottom: status === 'correct' ? '40px' : '24px', fontSize: '17px', lineHeight: 1.6 }}>
                 {status === 'correct' 
-                  ? "Tabriklaymiz! Siz masalani to'g'ri hal qildingiz." 
-                  : "Afsuski, javobingiz noto'g'ri. Yana bir bor urinib ko'ring."}
+                  ? "Tabriklaymiz! Siz ushbu masalani muvaffaqiyatli hal qildingiz." 
+                  : "Xavotir olmang, harakat davomida bilim ortadi."}
               </p>
 
-              <button
-                onClick={handleCloseAlert}
-                style={{
-                  width: '100%',
-                  padding: '16px',
-                  borderRadius: '16px',
-                  background: status === 'correct' ? color : '#ef4444',
-                  border: 'none',
-                  color: '#000',
-                  fontSize: '18px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                }}
-              >
-                OK
-              </button>
+              {status === 'wrong' && (
+                <div style={{ marginBottom: '32px' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
+                    To'g'ri javob bu bo'ladi:
+                  </p>
+                  <div style={{
+                    background: 'rgba(74,222,128,0.1)',
+                    border: '1.5px solid rgba(74,222,128,0.2)',
+                    borderRadius: '16px',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    color: color,
+                  }}>
+                    <CheckCircle2 size={24} />
+                    <span style={{ fontSize: '18px', fontWeight: 700 }}>{problem.answer}</span>
+                  </div>
+                </div>
+              )}
+
+              {status === 'wrong' && (
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <span style={{ color: '#ff4d4d' }}>❤</span> Davom eting, siz zo'r natijalarga erishasiz!
+                </p>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                {status === 'wrong' ? (
+                  <>
+                    <button
+                      onClick={handleRetry}
+                      style={{
+                        flex: 1,
+                        padding: '18px',
+                        borderRadius: '16px',
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        color: 'rgba(255,255,255,0.8)',
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                      Qayta urinish
+                    </button>
+                    <button
+                      onClick={handleNext}
+                      style={{
+                        flex: 1.2,
+                        padding: '18px',
+                        borderRadius: '16px',
+                        background: '#22c55e',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: '16px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 8px 20px rgba(34,197,94,0.3)',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                      Keyingi savol
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleNext}
+                    style={{
+                      width: '100%',
+                      padding: '18px',
+                      borderRadius: '16px',
+                      background: color,
+                      border: 'none',
+                      color: '#000',
+                      fontSize: '18px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    Davom etish
+                  </button>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
     </div>
   );
 }
