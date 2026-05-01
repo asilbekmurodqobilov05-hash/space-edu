@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, Star, Sun, Moon, Rocket, Globe, Flame, Eye, Trophy, X, Bell, BellRing, ChevronRight, Clock, MapPin, Info, Loader } from 'lucide-react';
 import api from '@/lib/api';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const ICON_MAP = {
   launch:        Rocket,
@@ -52,24 +53,46 @@ function useCountdown(targetDate) {
 }
 
 export default function CalendarView() {
+  const { t, language } = useTranslation();
   const { trackedEvents, trackEvent } = useGamificationStore();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
+    const translateText = async (text, target) => {
+      if (!text || target === 'ENG') return text;
+      const langMap = { 'UZB': 'uz', 'RUS': 'ru' };
+      const targetLang = langMap[target] || 'en';
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURI(text)}`);
+        const data = await res.json();
+        return data[0].map(x => x[0]).join('');
+      } catch { return text; }
+    };
+
     api.get('/events/')
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         const list = Array.isArray(data) ? data : data.results || [];
         const today = new Date().toISOString().slice(0, 10);
         const upcoming = list
           .filter((e) => !e.is_historical && e.event_date >= today)
           .sort((a, b) => a.event_date.localeCompare(b.event_date));
-        setEvents(upcoming);
+        
+        // Translate upcoming events
+        const translated = await Promise.all(upcoming.map(async (e) => ({
+          ...e,
+          title: await translateText(e.title_en, language),
+          description: await translateText(e.description_en, language),
+          visibility: await translateText(e.visibility, language),
+          facts: e.facts ? await Promise.all(e.facts.map(f => translateText(f, language))) : []
+        })));
+
+        setEvents(translated);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [language]);
 
   const nextEvent = events[0] || null;
   const timeLeft = useCountdown(nextEvent?.event_date);
@@ -84,10 +107,10 @@ export default function CalendarView() {
         <div className="text-center mb-16">
           <motion.h1 initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
             className="text-[clamp(36px,6vw,56px)] font-[900] tracking-tight text-white mb-4">
-            Space <span className="text-glow-blue text-neon-blue">Calendar</span>
+            {t('calendar', 'title')} <span className="text-glow-blue text-neon-blue">{t('calendar', 'titleHighlight')}</span>
           </motion.h1>
           <p className="text-white/40 max-w-xl mx-auto text-[16px]">
-            Track upcoming astronomical events, meteor showers, and eclipses.
+            {t('calendar', 'subtitle')}
           </p>
         </div>
 
@@ -102,15 +125,15 @@ export default function CalendarView() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
               <div>
-                <p className="text-[11px] font-[800] tracking-[0.3em] uppercase text-neon-blue mb-2">Next Major Event</p>
-                <h3 className="text-2xl font-[900] text-white mb-2">{nextEvent.title_en}</h3>
+                <p className="text-[11px] font-[800] tracking-[0.3em] uppercase text-neon-blue mb-2">{t('calendar', 'nextEvent')}</p>
+                <h3 className="text-2xl font-[900] text-white mb-2">{nextEvent.title}</h3>
                 <p className="text-white/40 text-sm flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  {new Date(nextEvent.event_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {new Date(nextEvent.event_date).toLocaleDateString(language === 'UZB' ? 'uz-UZ' : language === 'RUS' ? 'ru-RU' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
               <div className="flex gap-3 text-center shrink-0">
-                {[['Days', timeLeft.days], ['Hours', timeLeft.hours], ['Min', timeLeft.minutes], ['Sec', timeLeft.seconds]].map(([label, val]) => (
+                {[[t('calendar', 'days'), timeLeft.days], [t('calendar', 'hours'), timeLeft.hours], [t('calendar', 'min'), timeLeft.minutes], [t('calendar', 'sec'), timeLeft.seconds]].map(([label, val]) => (
                   <div key={label} className="bg-black/30 border border-white/5 rounded-2xl p-3 w-[72px]">
                     <div className="text-2xl font-[900] text-white font-mono tabular-nums">{String(val).padStart(2, '0')}</div>
                     <div className="text-[9px] font-[800] uppercase tracking-widest text-white/30 mt-1">{label}</div>
@@ -124,17 +147,17 @@ export default function CalendarView() {
         {/* Event list */}
         <h2 className="text-xl font-[900] text-white mb-6 flex items-center gap-3">
           <Calendar className="w-5 h-5 text-violet-light" />
-          Upcoming Events 2026
+          {t('calendar', 'upcomingTitle')}
         </h2>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader className="w-8 h-8 text-violet-light animate-spin" />
-            <p className="text-[10px] font-[800] uppercase tracking-widest text-white/20">Syncing calendar...</p>
+            <p className="text-[10px] font-[800] uppercase tracking-widest text-white/20">{t('calendar', 'syncing')}</p>
           </div>
         ) : events.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-white/5 rounded-3xl">
-            <p className="text-white/20 font-bold italic">No upcoming events found.</p>
+            <p className="text-white/20 font-bold italic">{t('calendar', 'noEvents')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -159,12 +182,12 @@ export default function CalendarView() {
                       </div>
                       <div>
                         <h3 className="text-[17px] font-[800] text-white mb-1 group-hover:text-neon-blue transition-colors">
-                          {event.title_en}
+                          {event.title}
                         </h3>
                         <p className="text-white/30 text-[12px] flex items-center gap-4 font-[600]">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5" />
-                            {new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {new Date(event.event_date).toLocaleDateString(language === 'UZB' ? 'uz-UZ' : language === 'RUS' ? 'ru-RU' : 'en-US', { month: 'short', day: 'numeric' })}
                           </span>
                           {event.visibility && (
                             <span className="flex items-center gap-1.5 hidden md:flex">
@@ -177,7 +200,7 @@ export default function CalendarView() {
                     </div>
 
                     <div className="flex items-center gap-3 self-end md:self-auto">
-                      <button
+                       <button
                         onClick={(e) => { e.stopPropagation(); trackEvent(event.id); }}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-[800] uppercase tracking-wider transition-all ${
                           isTracked
@@ -186,7 +209,7 @@ export default function CalendarView() {
                         }`}
                       >
                         {isTracked ? <BellRing className="w-3.5 h-3.5" /> : <Bell className="w-3.5 h-3.5" />}
-                        {isTracked ? 'Tracking' : 'Track'}
+                        {isTracked ? t('calendar', 'tracking') : t('calendar', 'track')}
                       </button>
                       <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-white/60 transition-colors" />
                     </div>
@@ -224,16 +247,16 @@ export default function CalendarView() {
                 {(() => {
                   const Icon = ICON_MAP[selected.event_type] || Star;
                   const colorClass = COLOR_MAP[selected.event_type] || COLOR_MAP.observation;
-                  return (
+                   return (
                     <div className={`p-4 rounded-2xl border ${colorClass}`}>
                       <Icon className="w-7 h-7" />
                     </div>
                   );
                 })()}
                 <div>
-                  <h2 className="text-2xl font-[900] text-white">{selected.title_en}</h2>
+                  <h2 className="text-2xl font-[900] text-white">{selected.title}</h2>
                   <p className="text-[11px] font-[800] uppercase tracking-widest text-white/30 mt-1">
-                    {selected.event_type.replace('_', ' ')}
+                    {selected.event_type.replace(/_/g, ' ')}
                   </p>
                 </div>
               </div>
@@ -243,9 +266,9 @@ export default function CalendarView() {
                 <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex items-start gap-3">
                   <Calendar className="w-5 h-5 text-violet-light shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[10px] text-white/30 font-[700] uppercase tracking-wider mb-1">Date</p>
+                    <p className="text-[10px] text-white/30 font-[700] uppercase tracking-wider mb-1">{t('calendar', 'date')}</p>
                     <p className="text-white text-sm font-[700]">
-                      {new Date(selected.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      {new Date(selected.event_date).toLocaleDateString(language === 'UZB' ? 'uz-UZ' : language === 'RUS' ? 'ru-RU' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                   </div>
                 </div>
@@ -253,7 +276,7 @@ export default function CalendarView() {
                   <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex items-start gap-3">
                     <Clock className="w-5 h-5 text-neon-blue shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-[10px] text-white/30 font-[700] uppercase tracking-wider mb-1">Time</p>
+                      <p className="text-[10px] text-white/30 font-[700] uppercase tracking-wider mb-1">{t('calendar', 'time')}</p>
                       <p className="text-white text-sm font-[700]">{selected.event_time}</p>
                     </div>
                   </div>
@@ -262,7 +285,7 @@ export default function CalendarView() {
                   <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex items-start gap-3 sm:col-span-2">
                     <MapPin className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-[10px] text-white/30 font-[700] uppercase tracking-wider mb-1">Visibility</p>
+                      <p className="text-[10px] text-white/30 font-[700] uppercase tracking-wider mb-1">{t('calendar', 'visibility')}</p>
                       <p className="text-white text-sm font-[700]">{selected.visibility}</p>
                     </div>
                   </div>
@@ -273,15 +296,15 @@ export default function CalendarView() {
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-3">
                   <Info className="w-4 h-4 text-white/30" />
-                  <h3 className="text-sm font-[800] text-white uppercase tracking-wider">About this event</h3>
+                  <h3 className="text-sm font-[800] text-white uppercase tracking-wider">{t('calendar', 'aboutTitle')}</h3>
                 </div>
-                <p className="text-white/50 leading-relaxed text-[14px]">{selected.description_en}</p>
+                <p className="text-white/50 leading-relaxed text-[14px]">{selected.description}</p>
               </div>
 
               {/* Facts */}
               {selected.facts?.length > 0 && (
                 <div className="p-6 rounded-2xl bg-violet/5 border border-violet/15">
-                  <h3 className="text-[10px] font-[800] uppercase tracking-[0.2em] text-violet-light mb-4">Quick Facts</h3>
+                  <h3 className="text-[10px] font-[800] uppercase tracking-[0.2em] text-violet-light mb-4">{t('calendar', 'quickFacts')}</h3>
                   <ul className="space-y-3">
                     {selected.facts.map((fact, i) => (
                       <li key={i} className="flex items-start gap-3 text-white/50 text-[13px]">

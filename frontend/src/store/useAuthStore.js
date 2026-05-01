@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 import api, { setupApiAuth } from '@/lib/api';
 import { useGamificationStore } from './useGamificationStore';
 import { useLearningStore } from './useLearningStore';
+import { useUserStore } from './useUserStore';
+import useStarStore from './useStarStore';
+import { useProblemsStore } from './useProblemsStore';
 
 export const useAuthStore = create()(
   persist(
@@ -13,6 +16,7 @@ export const useAuthStore = create()(
       isAuthenticated: false,
 
       login: (user, accessToken, refreshToken) => {
+        _resetAllStores();
         set({ user, accessToken, refreshToken, isAuthenticated: true });
         _setupAuth(get);
       },
@@ -26,6 +30,7 @@ export const useAuthStore = create()(
         set((s) => ({ user: { ...s.user, ...data } })),
 
       logout: () => {
+        _resetAllStores();
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
         setupApiAuth(() => null, () => null, () => { window.location.href = '/login'; });
       },
@@ -55,6 +60,14 @@ export const useAuthStore = create()(
     { name: 'uz-cosmos-auth' }
   )
 );
+
+function _resetAllStores() {
+  useGamificationStore.getState().reset();
+  useLearningStore.getState().reset();
+  useUserStore.getState().resetProgress();
+  useStarStore.setState({ collection: [], points: 0, badges: [], starOfTheDay: null, lastDailyCheck: null });
+  useProblemsStore.getState().resetProblems();
+}
 
 function _setupAuth(get) {
   setupApiAuth(

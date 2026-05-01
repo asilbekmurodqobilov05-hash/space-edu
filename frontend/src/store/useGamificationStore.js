@@ -4,22 +4,28 @@ import api from '@/lib/api';
 
 const calcLevel = (xp) => Math.floor(Math.sqrt(xp / 100)) + 1;
 
+const initialState = {
+  xp: 0,
+  level: 1,
+  streak: 0,
+  fuel: 100,
+  lastPlayDate: null,
+  badges: [],
+  dailyChallengeCompleted: false,
+  completedCareers: [],
+  trackedEvents: [],
+  careerTrack: null,
+  skills: {},
+  portfolio: [],
+  inventory: [],
+};
+
 export const useGamificationStore = create()(
   persist(
     (set, get) => ({
-      xp: 0,
-      level: 1,
-      streak: 0,
-      fuel: 100,
-      lastPlayDate: null,
-      badges: [],
-      dailyChallengeCompleted: false,
-      completedCareers: [],
-      trackedEvents: [],
-      careerTrack: null,
-      skills: {},
-      portfolio: [],
-      inventory: [],
+      ...initialState,
+
+      reset: () => set(initialState),
 
       addXp: (amount) => {
         const newXp = get().xp + amount;
@@ -31,6 +37,17 @@ export const useGamificationStore = create()(
       addFuel: (amount) => {
         set((s) => ({ fuel: Math.min(1000, s.fuel + amount) }));
         api.post('/gamification/grant/', { fuel: amount }).catch(() => {});
+      },
+
+      addRewards: (xp, fuel) => {
+        const newXp = get().xp + xp;
+        set((s) => ({ 
+          xp: newXp, 
+          level: calcLevel(newXp),
+          fuel: Math.min(1000, s.fuel + fuel)
+        }));
+        get().checkBadges();
+        api.post('/gamification/grant/', { xp, fuel }).catch(() => {});
       },
 
       spendFuel: (amount) => {

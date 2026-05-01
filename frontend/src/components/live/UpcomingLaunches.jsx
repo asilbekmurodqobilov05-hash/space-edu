@@ -1,36 +1,85 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Rocket, Clock, MapPin, ExternalLink, AlertTriangle } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function UpcomingLaunches() {
   const [launches, setLaunches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { t, language } = useTranslation();
 
   useEffect(() => {
+    const translateText = async (text, target) => {
+      if (!text || target === 'ENG' || text === 'Unknown') return text;
+      const langMap = { 'UZB': 'uz', 'RUS': 'ru' };
+      const targetLang = langMap[target] || 'en';
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURI(text)}`);
+        const data = await res.json();
+        return data[0].map(x => x[0]).join('');
+      } catch { return text; }
+    };
+
     const fetchLaunches = async () => {
       try {
         const res = await fetch('https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=8&mode=list');
+        let results = [];
         if (res.ok) {
           const data = await res.json();
-          setLaunches(data.results || []);
+          results = data.results || [];
         } else {
           throw new Error('API limit');
         }
+
+        // Translate results
+        const translatedResults = await Promise.all(results.map(async (l) => ({
+          ...l,
+          name: await translateText(l.name, language),
+          launch_service_provider: { 
+            ...l.launch_service_provider, 
+            name: await translateText(l.launch_service_provider?.name, language) 
+          },
+          pad: { 
+            ...l.pad, 
+            location: { 
+              ...l.pad?.location, 
+              name: await translateText(l.pad?.location?.name, language) 
+            } 
+          }
+        })));
+        setLaunches(translatedResults);
+
       } catch {
         // Fallback mock data
-        setLaunches([
+        const mock = [
           { id: '1', name: 'Falcon 9 — Starlink Group 12-5', net: new Date(Date.now() + 86400000 * 2).toISOString(), pad: { location: { name: 'Cape Canaveral, FL' } }, launch_service_provider: { name: 'SpaceX' }, status: { abbrev: 'Go' } },
           { id: '2', name: 'Soyuz 2.1b — Progress MS-29', net: new Date(Date.now() + 86400000 * 5).toISOString(), pad: { location: { name: 'Baikonur Cosmodrome' } }, launch_service_provider: { name: 'Roscosmos' }, status: { abbrev: 'Go' } },
           { id: '3', name: 'PSLV-C60 — SPADEX', net: new Date(Date.now() + 86400000 * 7).toISOString(), pad: { location: { name: 'Satish Dhawan Space Centre' } }, launch_service_provider: { name: 'ISRO' }, status: { abbrev: 'TBD' } },
           { id: '4', name: 'Long March 5B — Wentian', net: new Date(Date.now() + 86400000 * 10).toISOString(), pad: { location: { name: 'Wenchang Space Launch Site' } }, launch_service_provider: { name: 'CASC' }, status: { abbrev: 'Go' } },
           { id: '5', name: 'Electron — NROL-199', net: new Date(Date.now() + 86400000 * 12).toISOString(), pad: { location: { name: 'Mahia Peninsula, NZ' } }, launch_service_provider: { name: 'Rocket Lab' }, status: { abbrev: 'TBC' } },
-        ]);
+        ];
+        const translatedMock = await Promise.all(mock.map(async (l) => ({
+          ...l,
+          name: await translateText(l.name, language),
+          launch_service_provider: { 
+            ...l.launch_service_provider, 
+            name: await translateText(l.launch_service_provider?.name, language) 
+          },
+          pad: { 
+            ...l.pad, 
+            location: { 
+              ...l.pad?.location, 
+              name: await translateText(l.pad?.location?.name, language) 
+            } 
+          }
+        })));
+        setLaunches(translatedMock);
       } finally {
         setLoading(false);
       }
     };
     fetchLaunches();
-  }, []);
+  }, [language]);
 
   const getStatusColor = (abbrev) => {
     if (abbrev === 'Go') return '#4ade80';
@@ -40,18 +89,18 @@ export default function UpcomingLaunches() {
 
   const formatCountdown = (dateStr) => {
     const diff = new Date(dateStr) - Date.now();
-    if (diff < 0) return 'Launched';
+    if (diff < 0) return t('live', 'launched');
     const d = Math.floor(diff / 86400000);
     const h = Math.floor((diff % 86400000) / 3600000);
-    if (d > 0) return `${d}d ${h}h`;
+    if (d > 0) return `${d}${t('live', 'days_short')} ${h}${t('live', 'hours_short')}`;
     const m = Math.floor((diff % 3600000) / 60000);
-    return `${h}h ${m}m`;
+    return `${h}${t('live', 'hours_short')} ${m}${t('live', 'minutes_short')}`;
   };
 
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>
-        <div style={{ animation: 'pulse 1.5s infinite', fontSize: '14px' }}>Loading launches...</div>
+        <div style={{ animation: 'pulse 1.5s infinite', fontSize: '14px' }}>{t('live', 'loadingLaunches')}</div>
       </div>
     );
   }
@@ -59,10 +108,18 @@ export default function UpcomingLaunches() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {launches.map((launch, i) => {
-        const status = launch.status?.abbrev || 'TBD';
-        const statusColor = getStatusColor(status);
-        const provider = launch.launch_service_provider?.name || 'Unknown';
-        const location = launch.pad?.location?.name || 'Unknown';
+        const abbrev = launch.status?.abbrev || 'TBD';
+        const statusColor = getStatusColor(abbrev);
+        const provider = launch.launch_service_provider?.name || t('common', 'unknown');
+        const location = launch.pad?.location?.name || t('common', 'unknown');
+        const name = launch.name || '';
+
+        const localizedStatus = 
+          abbrev === 'Go' ? t('live', 'statusGo') :
+          abbrev === 'TBC' ? t('live', 'statusTbc') :
+          abbrev === 'TBD' ? t('live', 'statusTbd') :
+          abbrev === 'Success' ? t('live', 'statusSuccess') :
+          abbrev;
 
         return (
           <motion.div
@@ -106,7 +163,7 @@ export default function UpcomingLaunches() {
             {/* Info */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {launch.name}
+                {name}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -124,7 +181,7 @@ export default function UpcomingLaunches() {
               color: statusColor, background: `${statusColor}18`, border: `1px solid ${statusColor}30`,
               whiteSpace: 'nowrap',
             }}>
-              {status}
+              {localizedStatus}
             </div>
           </motion.div>
         );
