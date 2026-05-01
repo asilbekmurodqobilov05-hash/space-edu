@@ -289,7 +289,7 @@ export default function Navigation() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-bold transition-all duration-200 whitespace-nowrap bg-violet/20 border border-violet/30 text-violet-pale hover:bg-violet/30 hover:scale-105"
             >
               <User className="w-3.5 h-3.5" strokeWidth={2.5} />
-              Log in
+              {t("auth", "login")}
             </Link>
           ) : (
             <Dropdown label="My Profile" icon={User} isActive={profileHasActive}>
@@ -308,7 +308,7 @@ export default function Navigation() {
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                   >
                     <X className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
-                    Log out
+                    {t("auth", "logOut")}
                   </button>
                 </>
               )}
@@ -336,7 +336,7 @@ export default function Navigation() {
               to="/login"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet/20 border border-violet/30 text-violet-pale"
             >
-              Log in
+              {t("auth", "login")}
             </Link>
           ) : (
             <Link

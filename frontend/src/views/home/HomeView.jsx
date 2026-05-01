@@ -453,12 +453,12 @@ export default function HomeView() {
       <section className="relative z-10 max-w-7xl mx-auto px-4 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[
-            { to: '/3d-solar-system', Icon: Globe, color: '#818cf8', label: '3D Solar System', desc: 'Explore planets in realtime 3D' },
-            { to: '/leaderboard', Icon: Star, color: '#c4b5fd', label: 'Leaderboard', desc: 'Compete with explorers worldwide' },
-            { to: '/star-finder', Icon: Telescope, color: '#a78bfa', label: 'Star Finder', desc: 'Locate stars and constellations' },
-            { to: '/lab', Icon: FlaskConical, color: '#6366f1', label: 'Lab', desc: 'Experiment with physics and space' },
-            { to: '/live', Icon: Play, color: '#8b5cf6', label: 'Live', desc: 'Watch live NASA and SpaceX events' },
-            { to: '/space-game', Icon: Gamepad2, color: '#7c3aed', label: 'Space Run', desc: 'High-speed mission through debris' },
+            { to: '/3d-solar-system', Icon: Globe, color: '#818cf8', label: t("home", "highlightSolarSystemTitle"), desc: t("home", "highlightSolarSystemDesc") },
+            { to: '/leaderboard', Icon: Star, color: '#c4b5fd', label: t("home", "highlightLeaderboardTitle"), desc: t("home", "highlightLeaderboardDesc") },
+            { to: '/star-finder', Icon: Telescope, color: '#a78bfa', label: t("home", "highlightStarFinderTitle"), desc: t("home", "highlightStarFinderDesc") },
+            { to: '/lab', Icon: FlaskConical, color: '#6366f1', label: t("home", "highlightLabTitle"), desc: t("home", "highlightLabDesc") },
+            { to: '/live', Icon: Play, color: '#8b5cf6', label: t("home", "highlightLiveTitle"), desc: t("home", "highlightLiveDesc") },
+            { to: '/space-game', Icon: Gamepad2, color: '#7c3aed', label: t("home", "highlightSpaceRunTitle"), desc: t("home", "highlightSpaceRunDesc") },
           ].map(({ to, Icon, color, label, desc }, i) => (
             <motion.div
               key={to}

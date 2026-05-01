@@ -5,8 +5,10 @@ import {
   Rocket, Globe, BookOpen, Star, Mail, Map, Shield, Info, ExternalLink, 
   Send, Instagram, Twitter, Youtube 
 } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const Footer = () => {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
   const lastUpdated = new Date().toLocaleDateString('en-US', {
     month: 'long',
@@ -23,35 +25,35 @@ const Footer = () => {
 
   const sections = [
     {
-      title: "Navigation",
+      title: t('footer', 'navigation'),
       links: [
-        { label: "Home", path: "/" },
-        { label: "Learn", path: "/learn" },
-        { label: "News", path: "/news" },
-        { label: "Market", path: "/market" },
-        { label: "Features", path: "/learn" },
-        { label: "Profile", path: "/portfolio" },
+        { label: t('nav', 'home'), path: "/" },
+        { label: t('nav', 'learn'), path: "/learn" },
+        { label: t('nav', 'news'), path: "/news" },
+        { label: t('nav', 'market'), path: "/market" },
+        { label: t('footer', 'features'), path: "/learn" },
+        { label: t('footer', 'profile'), path: "/portfolio" },
       ]
     },
     {
-      title: "Explore",
+      title: t('footer', 'explore'),
       links: [
-        { label: "3D Solar System", path: "/3d-solar-system" },
-        { label: "Daily Challenge", path: "/daily" },
-        { label: "Leaderboard", path: "/leaderboard" },
-        { label: "Star Finder", path: "/star-finder" },
-        { label: "Lab", path: "/lab" },
-        { label: "Live", path: "/live" },
-        { label: "Calendar", path: "/calendar" },
-        { label: "Cosmos", path: "/learn" },
-        { label: "History", path: "/history" },
+        { label: t('footer', '3dSolarSystem'), path: "/3d-solar-system" },
+        { label: t('footer', 'dailyChallenge'), path: "/daily" },
+        { label: t('footer', 'leaderboard'), path: "/leaderboard" },
+        { label: t('nav', 'starFinder'), path: "/star-finder" },
+        { label: t('nav', 'lab'), path: "/lab" },
+        { label: t('nav', 'live'), path: "/live" },
+        { label: t('nav', 'calendar'), path: "/calendar" },
+        { label: t('footer', 'cosmos'), path: "/learn" },
+        { label: t('nav', 'history'), path: "/history" },
       ]
     },
     {
-      title: "Special Programs",
+      title: t('footer', 'specialPrograms'),
       links: [
-        { label: "Space Run", path: "/space-game" },
-        { label: "Quiz & TEST", path: "/quiz" },
+        { label: t('nav', 'spaceGame'), path: "/space-game" },
+        { label: t('footer', 'quizTest'), path: "/quiz" },
       ]
     }
   ];
@@ -77,7 +79,7 @@ const Footer = () => {
               </span>
             </Link>
             <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-xs">
-              Empowering the next generation of space explorers through immersive education and interactive science.
+              {t('footer', 'description')}
             </p>
             <div className="flex items-center gap-4">
               <motion.a whileHover={{ y: -2 }} href="#" className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center hover:bg-violet-600/20 hover:text-violet-400 transition-colors">
@@ -113,7 +115,7 @@ const Footer = () => {
           {/* Social Icons Section (Replaced CTA) */}
           <div className="col-span-2 md:col-span-1">
             <h3 className="text-white font-bold text-sm uppercase tracking-widest mb-6 border-l-2 border-violet-500 pl-3">
-              Connect
+              {t('footer', 'connect')}
             </h3>
             <div className="flex flex-col gap-3">
               {socialLinks.map((social) => (
@@ -142,28 +144,28 @@ const Footer = () => {
             {/* Metadata Info */}
             <div className="space-y-2">
               <div className="flex flex-wrap gap-x-6 gap-y-2">
-                <p>Page Last Updated: <span className="text-white/50">{lastUpdated}</span></p>
-                <p>Page Editor: <span className="text-white/50">Space Edu Operations</span></p>
+                <p>{t('footer', 'pageLastUpdated')} <span className="text-white/50">{lastUpdated}</span></p>
+                <p>{t('footer', 'pageEditor')} <span className="text-white/50">{t('footer', 'operations')}</span></p>
               </div>
-              <p>Responsible Official: <span className="text-white/50">Chief Education Officer</span></p>
+              <p>{t('footer', 'responsibleOfficial')} <span className="text-white/50">{t('footer', 'officer')}</span></p>
             </div>
 
             {/* Legal Links */}
             <div className="flex flex-wrap lg:justify-end gap-x-6 gap-y-2">
-              <Link to="#" className="hover:text-violet-400 transition-colors">Privacy Policy</Link>
-              <Link to="#" className="hover:text-violet-400 transition-colors">Terms of Use</Link>
-              <Link to="#" className="hover:text-violet-400 transition-colors">Sitemap</Link>
-              <Link to="#" className="hover:text-violet-400 transition-colors">Contact Us</Link>
-              <Link to="#" className="hover:text-violet-400 transition-colors">Accessibility</Link>
+              <Link to="#" className="hover:text-violet-400 transition-colors">{t('footer', 'privacyPolicy')}</Link>
+              <Link to="#" className="hover:text-violet-400 transition-colors">{t('footer', 'termsOfUse')}</Link>
+              <Link to="#" className="hover:text-violet-400 transition-colors">{t('footer', 'sitemap')}</Link>
+              <Link to="#" className="hover:text-violet-400 transition-colors">{t('footer', 'contactUs')}</Link>
+              <Link to="#" className="hover:text-violet-400 transition-colors">{t('footer', 'accessibility')}</Link>
             </div>
           </div>
 
           <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 opacity-40">
             <p className="text-[10px] text-white/40">
-              © {currentYear} Space Edu — All rights reserved. Managed by NASA-Inspired Learning Systems.
+              © {currentYear} {t('footer', 'allRightsReserved')}
             </p>
             <div className="flex items-center gap-2 text-[10px] text-white/40 italic">
-              Made with passion for the Cosmos <Star className="w-3 h-3 text-violet-400 fill-violet-400" />
+              {t('footer', 'madeWithPassion')} <Star className="w-3 h-3 text-violet-400 fill-violet-400" />
             </div>
           </div>
         </div>
