@@ -19,12 +19,12 @@ const ICON_MAP = {
 
 const COLOR_MAP = {
   launch:        'text-violet-400 bg-violet/10 border-violet/30',
-  mission:       'text-neon-blue bg-neon-blue/10 border-neon-blue/30',
+  mission:       'text-sky-400 bg-sky-400/10 border-sky-400/30',
   discovery:     'text-yellow-400 bg-yellow-400/10 border-yellow-400/30',
   milestone:     'text-green-400 bg-green-400/10 border-green-400/30',
   anniversary:   'text-pink-400 bg-pink-400/10 border-pink-400/30',
   observation:   'text-white/50 bg-white/5 border-white/10',
-  meteor_shower: 'text-neon-blue bg-neon-blue/10 border-neon-blue/30',
+  meteor_shower: 'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/30',
   solar_eclipse: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30',
   lunar_eclipse: 'text-red-400 bg-red-400/10 border-red-400/30',
 };
@@ -181,7 +181,7 @@ export default function CalendarView() {
                         <Icon className="w-5 h-5" />
                       </div>
                       <div>
-                        <h3 className="text-[17px] font-[800] text-white mb-1 group-hover:text-neon-blue transition-colors">
+                        <h3 className="text-[17px] font-[800] text-white mb-1 group-hover:text-violet-400 transition-colors">
                           {event.title}
                         </h3>
                         <p className="text-white/30 text-[12px] flex items-center gap-4 font-[600]">
