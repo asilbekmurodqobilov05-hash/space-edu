@@ -145,7 +145,7 @@ function LangDropdown() {
   const cur = LANG_META[language];
 
   return (
-    <Dropdown label={`${cur.flag} ${language}`} icon={Globe}>
+    <Dropdown label={language} icon={Globe}>
       {(close) => Object.entries(LANG_META).map(([code, { flag, label }]) => (
         <button
           key={code}
@@ -158,7 +158,6 @@ function LangDropdown() {
           onMouseEnter={e => { if (language !== code) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)'; } }}
           onMouseLeave={e => { if (language !== code) { e.currentTarget.style.color = 'rgba(255,255,255,0.60)'; e.currentTarget.style.background = 'transparent'; } }}
         >
-          <span className="text-base leading-none">{flag}</span>
           <span>{label}</span>
           {language === code && (
             <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"

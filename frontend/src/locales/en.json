@@ -91,7 +91,6 @@
     "missionProgress": "Mission Progress",
     "activities": "Activities"
   },
-
   "portfolio": {
     "title": "Astronaut",
     "titleHighlight": "Dossier",
@@ -453,7 +452,6 @@
     "proFeat4": "Fuel lasts 3.5x longer",
     "proFeat5": "Special care by admin"
   },
-<<<<<<< HEAD
   "liveMap": {
     "simBlurb": "WebGL constellation preview with mock TLE propagation. For official ephemeris see CelesTrak / Space-Track.",
     "menuSolar": "3D Solar System",
@@ -468,7 +466,7 @@
     "socialYoutube": "YouTube",
     "collisionTitle": "Collision check",
     "collisionNominal": "System nominal"
-=======
+  },
   "leaderboard": {
     "title": "Galactic",
     "titleHighlight": "Ranks",
@@ -690,7 +688,6 @@
       "ram": "RAM",
       "accuracy": "Accuracy"
     }
->>>>>>> 46bf3a3e66e7a739beb78836551f839af4bbce7e
   },
   "common": {
     "loading": "Loading...",
