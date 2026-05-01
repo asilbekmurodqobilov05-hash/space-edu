@@ -42,7 +42,11 @@ export default function RegisterView() {
       login(data.user, data.access, data.refresh);
       navigate('/');
     } catch (err) {
-      setErrors(err.response?.data || { detail: 'Registration failed.' });
+      const errorData = err.response?.data || {};
+      if (errorData.non_field_errors && !errorData.detail) {
+        errorData.detail = errorData.non_field_errors[0];
+      }
+      setErrors(errorData.detail ? errorData : { ...errorData, detail: errorData.detail || 'Registration failed.' });
     } finally {
       setLoading(false);
     }

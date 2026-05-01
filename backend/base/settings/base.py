@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'apps.news',
     'apps.events',
     'apps.challenges',
+    'apps.admin_api',
 ]
 
 MIDDLEWARE = [
