@@ -59,7 +59,7 @@
     "highlightLiveDesc": "Смотрите прямые трансляции NASA и SpaceX",
     "highlightSpaceRunTitle": "Космический Забег",
     "highlightSpaceRunDesc": "Скоростная миссия сквозь обломки",
-    "platformBadge": "Space edu — изучайте космос ясно и по шагам",
+    "62": "Space edu — изучайте космос ясно и по шагам",
     "discoverMore": "УЗНАТЬ БОЛЬШЕ"
   },
   "learn": {
@@ -413,6 +413,21 @@
     "3dSolarSystem": "3D Солнечная Система",
     "leaderboard": "Таблица Лидеров"
   },
+  "liveMap": {
+    "simBlurb": "Предпросмотр созвездий в WebGL с имитацией TLE. Для официальных эфемерид — CelesTrak / Space-Track.",
+    "menuSolar": "3D Солнечная Система",
+    "menuDaily": "Ежедневное задание",
+    "menuLeader": "Таблица Лидеров",
+    "footerUpdated": "Данные страницы",
+    "footerEditor": "Редактор",
+    "footerCopyright": "Space Edu · симуляция",
+    "socialTelegram": "Telegram",
+    "socialInstagram": "Instagram",
+    "socialX": "X",
+    "socialYoutube": "YouTube",
+    "collisionTitle": "Проверка столкновений",
+    "collisionNominal": "Система в норме"
+  },
   "daily": {
     "challengeCompleted": "Задание выполнено!",
     "alreadyCompleted": "Вы уже выполнили сегодняшнее задание. Возвращайтесь завтра за новым опытом!",
@@ -577,7 +592,6 @@
     "resume": "Продолжить",
     "gameOver": "Игра окончена",
     "distance": "Дистанция",
-    "speed": "Скорость",
     "playAgain": "Играть снова",
     "menu": "Меню",
     "shipSkins": "Облики корабля",

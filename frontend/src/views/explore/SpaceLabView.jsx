@@ -7,6 +7,7 @@ import { EffectComposer, Bloom, Vignette, Noise, ChromaticAberration } from '@re
 import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useGamificationStore } from '@/store/useGamificationStore';
 
 // --- Realistic Earth Component ---
 const RealisticEarth = ({ radius = 5, position = [0, 0, 0] }) => {
@@ -52,10 +53,15 @@ const RealisticEarth = ({ radius = 5, position = [0, 0, 0] }) => {
 
 const RocketEngineeringLab = () => {
   const { t } = useTranslation();
+  const trackEvent = useGamificationStore((s) => s.trackEvent);
   const [activePart, setActivePart] = useState(null);
   const [showInternals, setShowInternals] = useState(false);
   const [payloadType, setPayloadType] = useState('fairing');
   const [stage1Type, setStage1Type] = useState('standard');
+
+  useEffect(() => {
+    if (activePart) trackEvent('lab_rocket_engineering');
+  }, [activePart, trackEvent]);
 
   const parts = [
     { id: 'payload', name: t('lab', 'payload'), desc: t('lab', 'payloadDesc'), color: '#ffffff' },
@@ -336,6 +342,7 @@ const LaunchAnimator = ({ launchState, rocketRef, stage1Ref, speed }) => {
 
 const RocketLaunchSimulator = () => {
   const { t } = useTranslation();
+  const trackEvent = useGamificationStore((s) => s.trackEvent);
   const [launchState, setLaunchState] = useState('idle');
   const [countdown, setCountdown] = useState(3);
   const [speed, setSpeed] = useState(1);
@@ -344,6 +351,7 @@ const RocketLaunchSimulator = () => {
 
   const handleLaunch = () => {
     if (launchState === 'idle') {
+      trackEvent('lab_rocket_launch');
       setLaunchState('countdown');
       let count = 3;
       setCountdown(count);
@@ -567,9 +575,14 @@ const MeteorShower = ({ intensity }) => {
 
 const PlanetaryProcessesLab = () => {
   const { t } = useTranslation();
+  const trackEvent = useGamificationStore((s) => s.trackEvent);
   const [activeEvent, setActiveEvent] = useState('none');
   const [intensity, setIntensity] = useState(50);
   const [timeOfDay, setTimeOfDay] = useState(12);
+
+  useEffect(() => {
+    if (activeEvent !== 'none') trackEvent('lab_planetary_processes');
+  }, [activeEvent, trackEvent]);
 
   const [bumpMap] = useLoader(THREE.TextureLoader, [
     'https://unpkg.com/three-globe/example/img/earth-topology.png'
@@ -739,7 +752,12 @@ const ParticleSystem = ({ count, color, size, radius }) => {
 
 const UniverseChangesSimulator = () => {
   const { t } = useTranslation();
+  const trackEvent = useGamificationStore((s) => s.trackEvent);
   const [stage, setStage] = useState('nebula');
+
+  useEffect(() => {
+    trackEvent('lab_universe_evolution_' + stage);
+  }, [stage, trackEvent]);
 
   return (
     <div className="flex flex-col md:flex-row h-full gap-6">
@@ -838,11 +856,16 @@ const UniverseChangesSimulator = () => {
 
 const SatelliteControlSimulator = () => {
   const { t } = useTranslation();
+  const trackEvent = useGamificationStore((s) => s.trackEvent);
   const [altitude, setAltitude] = useState(400); // km
   const [inclination, setInclination] = useState(51.6); // degrees
   const [solarPanelsDeployed, setSolarPanelsDeployed] = useState(true);
   const [power, setPower] = useState(100);
   const [satelliteType, setSatelliteType] = useState('iss');
+
+  useEffect(() => {
+    trackEvent('lab_satellite_' + satelliteType);
+  }, [satelliteType, trackEvent]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1071,6 +1094,20 @@ const SatelliteControlSimulator = () => {
   );
 };
 
+// --- Falcon 9 AI Tracker ---
+const FalconTrackerLab = () => {
+  return (
+    <div className="w-full h-full bg-space-900/50 rounded-3xl border border-white/10 overflow-hidden relative min-h-[600px] flex">
+      <iframe
+        src="/falcon9-simulator/index.html"
+        className="w-full h-full border-0 flex-1"
+        allow="camera; microphone; fullscreen"
+        title="Falcon 9 AI Tracker"
+      />
+    </div>
+  );
+};
+
 // --- Main View ---
 
 export default function SpaceLabView() {
@@ -1079,6 +1116,7 @@ export default function SpaceLabView() {
 
   const modules = [
     { id: 'rocket', name: t('lab', 'rocketEngineering'), icon: Rocket, color: 'text-neon-blue', bg: 'bg-neon-blue/10' },
+    { id: 'falcon', name: 'Falcon 9 AI Tracker', icon: Satellite, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
     { id: 'launch', name: t('lab', 'launchSimulator'), icon: Flame, color: 'text-orange-500', bg: 'bg-orange-500/10' },
     { id: 'satellite', name: t('lab', 'satelliteControl'), icon: Globe2, color: 'text-blue-400', bg: 'bg-blue-400/10' },
     { id: 'planet', name: t('lab', 'planetaryProcesses'), icon: Globe2, color: 'text-green-400', bg: 'bg-green-400/10' },
@@ -1135,6 +1173,7 @@ export default function SpaceLabView() {
               className="h-full"
             >
               {activeModule === 'rocket' && <RocketEngineeringLab />}
+              {activeModule === 'falcon' && <FalconTrackerLab />}
               {activeModule === 'launch' && <RocketLaunchSimulator />}
               {activeModule === 'satellite' && <SatelliteControlSimulator />}
               {activeModule === 'planet' && <PlanetaryProcessesLab />}

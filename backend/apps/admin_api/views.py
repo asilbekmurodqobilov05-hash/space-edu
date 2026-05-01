@@ -4,7 +4,7 @@ All views require `is_staff` or `is_superuser`.
 """
 from datetime import timedelta
 
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Sum, Q, Max
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
@@ -309,7 +309,7 @@ class QuestionDetailView(APIView):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  COURSES (Spheres / Topics / Lessons) — read + limited edit
+#  COURSES (Spheres / Topics / Lessons)
 # ═══════════════════════════════════════════════════════════════════
 class SpheresListView(APIView):
     permission_classes = [IsAdminUser]
@@ -325,6 +325,169 @@ class SpheresListView(APIView):
             })
         return Response(data)
 
+    def post(self, request):
+        d = request.data
+        order = d.get('order')
+        if order is None or str(order).strip() == '':
+            max_order = Sphere.objects.aggregate(Max('order'))['order__max']
+            order = (max_order or 0) + 1
+        else:
+            order = int(order)
+            
+        s = Sphere.objects.create(
+            slug=d.get('slug', ''), title=d.get('title', ''), title_en=d.get('title_en', ''),
+            title_ru=d.get('title_ru', ''), description=d.get('description', ''), description_en=d.get('description_en', ''),
+            color=d.get('color', '#a78bfa'), icon=d.get('icon', 'BookOpen'), link=d.get('link', ''),
+            order=order, is_active=d.get('is_active', True)
+        )
+        return Response({'id': s.id, 'slug': s.slug, 'title': s.title, 'title_en': s.title_en, 'is_active': s.is_active, 'order': s.order, 'color': s.color}, status=201)
+
+class SphereDetailView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def patch(self, request, pk):
+        try:
+            s = Sphere.objects.get(pk=pk)
+        except Sphere.DoesNotExist:
+            return Response(status=404)
+        for f in ['slug', 'title', 'title_en', 'title_ru', 'description', 'description_en', 'color', 'icon', 'link', 'order', 'is_active']:
+            if f in request.data: setattr(s, f, request.data[f])
+        s.save()
+        return Response({'id': s.id, 'slug': s.slug, 'title': s.title, 'title_en': s.title_en, 'is_active': s.is_active, 'order': s.order, 'color': s.color})
+
+    def delete(self, request, pk):
+        Sphere.objects.filter(pk=pk).delete()
+        return Response(status=204)
+
+class TopicListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        qs = Topic.objects.all()
+        sphere_id = request.query_params.get('sphere_id')
+        if sphere_id: qs = qs.filter(sphere_id=sphere_id)
+        return Response([{'id': t.id, 'sphere_id': t.sphere_id, 'title': t.title, 'title_en': t.title_en, 'order': t.order, 'color': t.color} for t in qs])
+
+    def post(self, request):
+        d = request.data
+        order = d.get('order')
+        if order is None or str(order).strip() == '':
+            max_order = Topic.objects.filter(sphere_id=d.get('sphere_id')).aggregate(Max('order'))['order__max']
+            order = (max_order or 0) + 1
+        else:
+            order = int(order)
+            
+        t = Topic.objects.create(
+            sphere_id=d.get('sphere_id'), title=d.get('title', ''), title_en=d.get('title_en', ''),
+            title_ru=d.get('title_ru', ''), color=d.get('color', ''), description=d.get('description', ''),
+            order=order
+        )
+        return Response({'id': t.id, 'sphere_id': t.sphere_id, 'title': t.title, 'title_en': t.title_en, 'order': t.order, 'color': t.color}, status=201)
+
+class TopicDetailView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def patch(self, request, pk):
+        try:
+            t = Topic.objects.get(pk=pk)
+        except Topic.DoesNotExist:
+            return Response(status=404)
+        for f in ['sphere_id', 'title', 'title_en', 'title_ru', 'color', 'description', 'order']:
+            if f in request.data: setattr(t, f, request.data[f])
+        t.save()
+        return Response({'id': t.id, 'sphere_id': t.sphere_id, 'title': t.title, 'title_en': t.title_en, 'order': t.order, 'color': t.color})
+
+    def delete(self, request, pk):
+        Topic.objects.filter(pk=pk).delete()
+        return Response(status=204)
+
+class TopicLessonListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        qs = TopicLesson.objects.all()
+        topic_id = request.query_params.get('topic_id')
+        if topic_id: qs = qs.filter(topic_id=topic_id)
+        return Response([{'id': l.id, 'topic_id': l.topic_id, 'name': l.name, 'name_en': l.name_en, 'order': l.order, 'video_url': l.video_url} for l in qs])
+
+    def post(self, request):
+        d = request.data
+        order = d.get('order')
+        if order is None or str(order).strip() == '':
+            max_order = TopicLesson.objects.filter(topic_id=d.get('topic_id')).aggregate(Max('order'))['order__max']
+            order = (max_order or 0) + 1
+        else:
+            order = int(order)
+            
+        l = TopicLesson.objects.create(
+            topic_id=d.get('topic_id'), name=d.get('name', ''), name_en=d.get('name_en', ''),
+            name_ru=d.get('name_ru', ''), video_url=d.get('video_url', ''), content=d.get('content', ''),
+            order=order
+        )
+        return Response({'id': l.id, 'topic_id': l.topic_id, 'name': l.name, 'name_en': l.name_en, 'order': l.order, 'video_url': l.video_url}, status=201)
+
+class TopicLessonDetailView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def patch(self, request, pk):
+        try:
+            l = TopicLesson.objects.get(pk=pk)
+        except TopicLesson.DoesNotExist:
+            return Response(status=404)
+        for f in ['topic_id', 'name', 'name_en', 'name_ru', 'video_url', 'content', 'order']:
+            if f in request.data: setattr(l, f, request.data[f])
+        l.save()
+        return Response({'id': l.id, 'topic_id': l.topic_id, 'name': l.name, 'name_en': l.name_en, 'order': l.order, 'video_url': l.video_url})
+
+    def delete(self, request, pk):
+        TopicLesson.objects.filter(pk=pk).delete()
+        return Response(status=204)
+
+# ═══════════════════════════════════════════════════════════════════
+#  MARKET ITEMS CRUD
+# ═══════════════════════════════════════════════════════════════════
+def _serialize_market_item(m):
+    return {
+        'id': m.id, 'slug': m.slug, 'title_en': m.title_en, 'title_uz': m.title_uz,
+        'item_type': m.item_type, 'price': m.price, 'cost_fuel': m.cost_fuel,
+        'stock': m.stock, 'is_active': m.is_active, 'is_bestseller': m.is_bestseller
+    }
+
+class MarketItemListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        return Response([_serialize_market_item(m) for m in MarketItem.objects.all()[:100]])
+
+    def post(self, request):
+        d = request.data
+        m = MarketItem.objects.create(
+            slug=d.get('slug', ''), title_en=d.get('title_en', ''), title_uz=d.get('title_uz', ''),
+            title_ru=d.get('title_ru', ''), description_en=d.get('description_en', ''),
+            description_uz=d.get('description_uz', ''), description_ru=d.get('description_ru', ''),
+            item_type=d.get('item_type', 'other'), price=int(d.get('price') or 0), cost_fuel=int(d.get('cost_fuel') or 0),
+            stock=int(d.get('stock') or 0), is_active=d.get('is_active', True), is_bestseller=d.get('is_bestseller', False)
+        )
+        return Response(_serialize_market_item(m), status=201)
+
+class MarketItemDetailView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def patch(self, request, pk):
+        try:
+            m = MarketItem.objects.get(pk=pk)
+        except MarketItem.DoesNotExist:
+            return Response(status=404)
+        fields = ['slug', 'title_en', 'title_uz', 'title_ru', 'description_en', 'description_uz', 'description_ru',
+                  'item_type', 'price', 'cost_fuel', 'stock', 'is_active', 'is_bestseller']
+        for f in fields:
+            if f in request.data: setattr(m, f, request.data[f])
+        m.save()
+        return Response(_serialize_market_item(m))
+
+    def delete(self, request, pk):
+        MarketItem.objects.filter(pk=pk).delete()
+        return Response(status=204)
 
 class ChatRoomsView(APIView):
     permission_classes = [IsAdminUser]
