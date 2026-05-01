@@ -25,7 +25,6 @@ import HomeView from '@/views/home/HomeView';
 import LearnView from '@/views/learn/LearnView';
 import PhysicsView from '@/views/learn/PhysicsView';
 import PhysicsTopicView from '@/views/learn/PhysicsTopicView';
-import PhysicsLessonView from '@/views/learn/PhysicsLessonView';
 import AstronomyView from '@/views/learn/AstronomyView';
 import AstronomyTopicView from '@/views/learn/AstronomyTopicView';
 import CreativityView from '@/views/learn/CreativityView';
@@ -108,7 +107,6 @@ export default function App() {
           <Route path="/learn" element={<PT><LearnView /></PT>} />
           <Route path="/learn/physics" element={<PT><PhysicsView /></PT>} />
           <Route path="/learn/physics/:topicId" element={<PT><PhysicsTopicView /></PT>} />
-          <Route path="/learn/physics/:topicId/lesson/:lessonIdx" element={<PT><PhysicsLessonView /></PT>} />
           <Route path="/learn/astronomy" element={<PT><AstronomyView /></PT>} />
           <Route path="/learn/astronomy/:topicId" element={<PT><AstronomyTopicView /></PT>} />
 
@@ -122,6 +120,7 @@ export default function App() {
           <Route path="/learn/:subject/:topicId/sub/:subIdx" element={<PT><SubTopicView /></PT>} />
           <Route path="/learn/:subject/:topicId/sub/:subIdx/lesson/:lessonIdx" element={<PT><UniversalLessonView /></PT>} />
           <Route path="/learn/:subject/:topicId/lesson/:lessonIdx/part/:partIdx" element={<PT><UniversalLessonView /></PT>} />
+          <Route path="/learn/:subject/:topicId/lesson/:lessonIdx" element={<PT><UniversalLessonView /></PT>} />
 
           <Route path="/learn/problems" element={<PT><ProblemsView /></PT>} />
           <Route path="/learn/problems/:id" element={<PT><ProblemDetailView /></PT>} />

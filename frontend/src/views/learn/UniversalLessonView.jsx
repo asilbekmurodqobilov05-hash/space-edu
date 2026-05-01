@@ -5,18 +5,23 @@ import { astronomyTopicsData } from '@/data/astronomyTopicsData';
 import { interviewsTopicsData } from '@/data/interviewsTopicsData';
 import { creativityTopicsData } from '@/data/creativityTopicsData';
 import { physicsTopicsData } from '@/data/physicsTopicsData';
-import { Play, Info, CheckCircle2, Trophy, Coins } from 'lucide-react';
+import { Play, Info, CheckCircle2, Trophy, Coins, Heart } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import { useLikesStore } from '@/store/useLikesStore';
 import confetti from 'canvas-confetti';
 
 export default function UniversalLessonView() {
   const { subject, topicId, subIdx, lessonIdx, partIdx } = useParams();
   const navigate = useNavigate();
   const addRewards = useGamificationStore(s => s.addRewards);
+  const { likeLesson, unlikeLesson, isLiked } = useLikesStore();
   
   const [completed, setCompleted] = useState(false);
   const [showRewardModal, setShowRewardModal] = useState(false);
+
+  const lessonUniqueId = `${subject}-${topicId}-${subIdx || ''}-${lessonIdx || ''}-${partIdx || ''}`;
+  const liked = isLiked(lessonUniqueId);
 
   // Determine data source
   let dataSource = null;
@@ -25,7 +30,7 @@ export default function UniversalLessonView() {
   if (subject === 'astronomy') { dataSource = astronomyTopicsData; backPath = `/learn/astronomy/${topicId}/sub/${subIdx}`; }
   else if (subject === 'interviews') { dataSource = interviewsTopicsData; backPath = `/learn/interviews/${topicId}/sub/${subIdx}`; }
   else if (subject === 'creativity') { dataSource = creativityTopicsData; backPath = `/learn/creativity/${topicId}/sub/${subIdx}`; }
-  else if (subject === 'physics') { dataSource = physicsTopicsData; backPath = `/learn/physics/${topicId}/lesson/${lessonIdx}`; }
+  else if (subject === 'physics') { dataSource = physicsTopicsData; backPath = `/learn/physics/${topicId}`; }
 
   const topic = dataSource ? dataSource[topicId] : null;
   
@@ -33,15 +38,18 @@ export default function UniversalLessonView() {
   let lesson = null;
   if (topic) {
     let parentItem = null;
+    const pIdx = subIdx !== undefined ? subIdx : lessonIdx;
+    
     if (topic.sections) {
       const allItems = topic.sections.flatMap(s => s.lessons);
-      parentItem = allItems[parseInt(subIdx)];
+      parentItem = allItems[parseInt(pIdx)];
     } else {
-      parentItem = topic.lessons[parseInt(subIdx)];
+      parentItem = topic.lessons[parseInt(pIdx)];
     }
 
     if (parentItem && parentItem.subLessons) {
-      lesson = parentItem.subLessons[parseInt(lessonIdx)];
+      const sIdx = partIdx !== undefined ? partIdx : (subIdx !== undefined ? lessonIdx : 0);
+      lesson = parentItem.subLessons[parseInt(sIdx)];
     } else if (parentItem) {
       lesson = parentItem;
     }
@@ -90,6 +98,19 @@ export default function UniversalLessonView() {
       origin: { y: 0.6 },
       colors: [color, '#ffffff', '#ffd700']
     });
+  };
+
+  const handleToggleLike = () => {
+    if (liked) {
+      unlikeLesson(lessonUniqueId);
+    } else {
+      likeLesson({
+        id: lessonUniqueId,
+        title: displayTitle,
+        subject: subject,
+        url: window.location.pathname
+      });
+    }
   };
 
   return (
@@ -217,6 +238,43 @@ export default function UniversalLessonView() {
             >
               {completed ? <CheckCircle2 /> : <Play />}
               {completed ? 'Yakunlandi' : 'Darsni tugatish'}
+            </button>
+
+            <button
+              onClick={handleToggleLike}
+              style={{
+                width: '100%',
+                padding: '20px',
+                marginTop: '16px',
+                borderRadius: '20px',
+                background: liked ? 'rgba(244, 63, 94, 0.1)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${liked ? 'rgba(244, 63, 94, 0.3)' : 'rgba(255,255,255,0.1)'}`,
+                color: liked ? '#f43f5e' : '#fff',
+                fontSize: '16px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+              }}
+              onMouseEnter={(e) => {
+                if (!liked) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!liked) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                }
+              }}
+            >
+              <Heart 
+                fill={liked ? '#f43f5e' : 'none'} 
+                color={liked ? '#f43f5e' : 'currentColor'} 
+              />
+              {liked ? 'Yoqtirildi (Liked)' : 'Yoqtirish (Like)'}
             </button>
 
             <div style={{ marginTop: '24px', textAlign: 'center' }}>
