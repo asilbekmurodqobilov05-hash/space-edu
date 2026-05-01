@@ -72,7 +72,7 @@ export default function App() {
   const location = useLocation();
   const isGame = location.pathname === GAME_PATH;
   const isAuth = ['/login', '/register'].includes(location.pathname);
-  const hideFooterRoutes = ['/history'];
+  const hideFooterRoutes = ['/history', '/live'];
   const shouldHideFooter = hideFooterRoutes.includes(location.pathname);
 
   return (

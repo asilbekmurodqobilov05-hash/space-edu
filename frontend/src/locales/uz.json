@@ -472,6 +472,21 @@
     "proFeat4": "Yoqilg'i 3.5 barobar uzoqroq yetadi",
     "proFeat5": "Admin tomonidan maxsus e'tibor"
   },
+  "liveMap": {
+    "simBlurb": "WebGL yulduzlararo ko‘rinish va TLE simulyatsiyasi. Rasmiy efemeridalar uchun CelesTrak / Space-Track.",
+    "menuSolar": "3D Quyosh tizimi",
+    "menuDaily": "Kundalik topshiriq",
+    "menuLeader": "Liderlar jadvali",
+    "footerUpdated": "Sahifa ma’lumoti",
+    "footerEditor": "Tahrirchi",
+    "footerCopyright": "Space Edu · simulyatsiya",
+    "socialTelegram": "Telegram",
+    "socialInstagram": "Instagram",
+    "socialX": "X",
+    "socialYoutube": "YouTube",
+    "collisionTitle": "To‘qnashuv tekshiruvi",
+    "collisionNominal": "Tizim normal"
+  },
   "common": {
     "loading": "Yuklanmoqda...",
     "error": "Xatolik yuz berdi",

@@ -430,6 +430,21 @@
     "3dSolarSystem": "3D Солнечная Система",
     "leaderboard": "Таблица Лидеров"
   },
+  "liveMap": {
+    "simBlurb": "Предпросмотр созвездий в WebGL с имитацией TLE. Для официальных эфемерид — CelesTrak / Space-Track.",
+    "menuSolar": "3D Солнечная Система",
+    "menuDaily": "Ежедневное задание",
+    "menuLeader": "Таблица Лидеров",
+    "footerUpdated": "Данные страницы",
+    "footerEditor": "Редактор",
+    "footerCopyright": "Space Edu · симуляция",
+    "socialTelegram": "Telegram",
+    "socialInstagram": "Instagram",
+    "socialX": "X",
+    "socialYoutube": "YouTube",
+    "collisionTitle": "Проверка столкновений",
+    "collisionNominal": "Система в норме"
+  },
   "common": {
     "loading": "Загрузка...",
     "error": "Произошла ошибка",

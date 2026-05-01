@@ -472,6 +472,21 @@
     "proFeat4": "Fuel lasts 3.5x longer",
     "proFeat5": "Special care by admin"
   },
+  "liveMap": {
+    "simBlurb": "WebGL constellation preview with mock TLE propagation. For official ephemeris see CelesTrak / Space-Track.",
+    "menuSolar": "3D Solar System",
+    "menuDaily": "Daily mission",
+    "menuLeader": "Leaderboard",
+    "footerUpdated": "Page data",
+    "footerEditor": "Editor",
+    "footerCopyright": "Space Edu · simulation",
+    "socialTelegram": "Telegram",
+    "socialInstagram": "Instagram",
+    "socialX": "X",
+    "socialYoutube": "YouTube",
+    "collisionTitle": "Collision check",
+    "collisionNominal": "System nominal"
+  },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
