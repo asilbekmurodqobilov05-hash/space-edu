@@ -5,11 +5,13 @@ import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrbitControls, Stars, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import UpcomingLaunches from '@/components/live/UpcomingLaunches';
 import NasaApod from '@/components/live/NasaApod';
 
 // --- 3D Earth & Satellites Component ---
 const EarthAndSatellites = ({ issLat, issLng }) => {
+  const { t } = useTranslation();
   const earthRef = useRef(null);
   const issGroupRef = useRef(null);
   const tiangongGroupRef = useRef(null);
@@ -89,7 +91,7 @@ const EarthAndSatellites = ({ issLat, issLng }) => {
         </mesh>
         <Html distanceFactor={15} position={[0, 0.15, 0]} center>
           <div className="bg-space-900/80 backdrop-blur-md border border-neon-blue/50 px-2 py-1 rounded text-xs font-bold text-white flex items-center gap-1 whitespace-nowrap">
-            <Satellite className="w-3 h-3 text-neon-blue" /> ISS
+            <Satellite className="w-3 h-3 text-neon-blue" /> {t('live', 'iss')}
           </div>
         </Html>
       </group>
@@ -106,7 +108,7 @@ const EarthAndSatellites = ({ issLat, issLng }) => {
         </mesh>
         <Html distanceFactor={15} position={[0, 0.15, 0]} center>
           <div className="bg-space-900/80 backdrop-blur-md border border-neon-purple/50 px-2 py-1 rounded text-xs font-bold text-white flex items-center gap-1 whitespace-nowrap">
-            <Satellite className="w-3 h-3 text-neon-purple" /> Tiangong
+            <Satellite className="w-3 h-3 text-neon-purple" /> {t('live', 'tiangong')}
           </div>
         </Html>
       </group>
@@ -121,6 +123,7 @@ const EarthAndSatellites = ({ issLat, issLng }) => {
 
 export default function LiveSpaceView() {
   const { addXp, badges } = useGamificationStore();
+  const { t } = useTranslation();
   const [issData, setIssData] = useState(null);
   const [astronauts, setAstronauts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -180,10 +183,10 @@ export default function LiveSpaceView() {
           animate={{ opacity: 1, y: 0 }}
           className="text-4xl md:text-5xl font-bold mb-4"
         >
-          Live <span className="text-glow-purple text-neon-purple">Space</span> Data
+          {t('live', 'title')} <span className="text-glow-purple text-neon-purple">{t('live', 'titleHighlight')}</span> {t('live', 'data')}
         </motion.h1>
         <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-          Track the International Space Station in real-time and see who is currently orbiting Earth.
+          {t('live', 'subtitle')}
         </p>
       </div>
 
@@ -196,29 +199,29 @@ export default function LiveSpaceView() {
         >
           <div className="absolute top-4 left-4 z-10 bg-space-900/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl">
             <h3 className="text-white font-bold flex items-center gap-2 mb-2">
-              <Satellite className="w-5 h-5 text-neon-blue" /> ISS Live Telemetry
+              <Satellite className="w-5 h-5 text-neon-blue" /> {t('live', 'telemetry')}
             </h3>
             {issData ? (
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2 text-gray-300">
                   <MapPin className="w-4 h-4 text-neon-purple" />
-                  <span>Lat: {issData.latitude.toFixed(4)}°</span>
+                  <span>{t('live', 'lat')}: {issData.latitude.toFixed(4)}°</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-300">
                   <MapPin className="w-4 h-4 text-neon-purple" />
-                  <span>Lng: {issData.longitude.toFixed(4)}°</span>
+                  <span>{t('live', 'lng')}: {issData.longitude.toFixed(4)}°</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-300">
                   <NavIcon className="w-4 h-4 text-yellow-400" />
-                  <span>Alt: {issData.altitude.toFixed(2)} km</span>
+                  <span>{t('live', 'alt')}: {issData.altitude.toFixed(2)} km</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-300">
                   <Gauge className="w-4 h-4 text-red-400" />
-                  <span>Vel: {issData.velocity.toFixed(2)} km/h</span>
+                  <span>{t('live', 'vel')}: {issData.velocity.toFixed(2)} km/h</span>
                 </div>
               </div>
             ) : (
-              <div className="text-gray-400 text-sm animate-pulse">Acquiring signal...</div>
+              <div className="text-gray-400 text-sm animate-pulse">{t('live', 'acquiring')}</div>
             )}
           </div>
 
@@ -241,7 +244,7 @@ export default function LiveSpaceView() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Users className="w-6 h-6 text-neon-purple" />
-              Humans in Space
+              {t('live', 'humans')}
             </h2>
             <div className="bg-neon-purple/20 text-neon-purple px-3 py-1 rounded-full font-bold">
               {astronauts.length}
@@ -250,7 +253,7 @@ export default function LiveSpaceView() {
 
           <div className="flex-grow overflow-y-auto pr-2 space-y-3 custom-scrollbar">
             {loading ? (
-              <div className="text-center text-gray-400 py-8 animate-pulse">Establishing connection...</div>
+              <div className="text-center text-gray-400 py-8 animate-pulse">{t('live', 'connecting')}</div>
             ) : (
               astronauts.map((astro, idx) => (
                 <div key={idx} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between hover:bg-white/10 transition-colors">
@@ -261,7 +264,10 @@ export default function LiveSpaceView() {
                     <div>
                       <p className="text-white font-medium">{astro.name}</p>
                       <p className="text-xs text-gray-400 flex items-center gap-1">
-                        <Globe2 className="w-3 h-3" /> {astro.craft}
+                        <Globe2 className="w-3 h-3" /> 
+                        {astro.craft === 'ISS' ? t('live', 'iss') : 
+                         astro.craft === 'Tiangong' ? t('live', 'tiangong') : 
+                         astro.craft}
                       </p>
                     </div>
                   </div>
@@ -281,7 +287,7 @@ export default function LiveSpaceView() {
       >
         <h2 className="text-2xl font-bold flex items-center gap-2 mb-6">
           <Activity className="w-6 h-6 text-neon-blue" />
-          Live Video Feed
+          {t('live', 'videoFeed')}
         </h2>
         <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black">
           <iframe 
@@ -309,8 +315,8 @@ export default function LiveSpaceView() {
         >
           <h2 className="text-2xl font-bold flex items-center gap-2 mb-6">
             <Rocket className="w-6 h-6 text-neon-purple" />
-            Upcoming Launches
-            <span className="ml-auto text-xs font-medium text-white/30 uppercase tracking-widest">Live API</span>
+            {t('live', 'launches')}
+            <span className="ml-auto text-xs font-medium text-white/30 uppercase tracking-widest">{t('live', 'liveApi')}</span>
           </h2>
           <UpcomingLaunches />
         </motion.div>

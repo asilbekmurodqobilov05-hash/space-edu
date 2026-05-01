@@ -1,107 +1,109 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { Landmark, PlayCircle, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 
-const ERA_DATA = [
+const ORIGINAL_ERA_DATA = [
   {
     id: 'era-1',
-    title: "Qadimgi davr astronomiyasi",
-    period: "Mil. avv. 3000 - 100",
+    title: "Ancient Astronomy",
+    period: "3000 BC - 100 BC",
     summary:
-      "Misr, Bobil, Amerika va Yunon olimlari taqvim, tutilish hisobi va ilk kosmik g'oyalar uchun poydevor qo'yishgan.",
+      "Egyptian, Babylonian, American, and Greek scholars laid the foundation for calendars, eclipse calculations, and early cosmic ideas.",
     details:
-      "Mil. avv. 3000-2000 | Qadimgi Misr: yulduzlar kuzatilib, ilk 365 kunlik taqvim yaratildi. Quyosh soatlari (obelisklar) bilan vaqt va masofa o'lchash rivojlandi.\n\nMil. avv. 1000-500 | Bobil sivilizatsiyasi: sayyoralar xaritasi tuzildi, 12 ta zodiak burji shakllandi. Oy va Quyosh tutilishlarini oldindan aytish yo'lga qo'yildi.\n\nMil. avv. 500-200 | Qadimgi Amerika xalqlari: Mayya va Ink ajdodlari Quyosh hamda Venera harakatini aniq hisoblab, tosh rasadxonalar qurdilar.\n\nMil. avv. 300-100 | Qadimgi Yunoniston: Yer aylanasi deyarli aniq hisoblandi va geliosentrik g'oyaning dastlabki shakllari paydo bo'ldi.",
+      "3000-2000 BC | Ancient Egypt: Stars were observed, and the first 365-day calendar was created. Time and distance measurement developed with sundials (obelisks).\n\n1000-500 BC | Babylonian civilization: Planetary maps were drawn, and 12 zodiac signs were formed. Predicting lunar and solar eclipses was established.\n\n500-200 BC | Ancient American peoples: Maya and Inca ancestors accurately calculated the movements of the Sun and Venus and built stone observatories.\n\n300-100 BC | Ancient Greece: The Earth's circumference was calculated almost accurately, and the early forms of the heliocentric idea emerged.",
     media: [
-      { type: 'image', src: '/history-step1/ancient-obelisk.png', alt: 'Qadimgi Misrdagi obelisk va o‘lchov sahnasi' },
-      { type: 'image', src: '/history-step1/misr-olchovlari.png', alt: 'Qadimgi Misr o‘lchovlari' },
-      { type: 'image', src: '/history-step1/bobil-ink-rasadxona.png', alt: 'Bobil va Ink rasadxona tasviri' },
-      { type: 'image', src: '/history-step1/yunon-geosentrik.png', alt: 'Qadimgi Yunoniston geosentrik model tasviri' },
+      { type: 'image', src: '/history-step1/ancient-obelisk.png', alt: 'Ancient Egyptian obelisk and measurement scene' },
+      { type: 'image', src: '/history-step1/misr-olchovlari.png', alt: 'Ancient Egyptian measurements' },
+      { type: 'image', src: '/history-step1/bobil-ink-rasadxona.png', alt: 'Babylonian and Inca observatory illustration' },
+      { type: 'image', src: '/history-step1/yunon-geosentrik.png', alt: 'Ancient Greek geocentric model illustration' },
     ],
   },
   {
     id: 'era-2',
-    title: "Ilmiy inqilob va Teleskop",
-    period: "XVI - XVIII asrlar",
+    title: "Scientific Revolution and the Telescope",
+    period: "XVI - XVIII centuries",
     summary:
-      "Kopernikdan Nyutongacha bo'lgan olimlar teleskop va fizika qonunlari orqali zamonaviy astronomiyaga asos soldilar.",
+      "Scholars from Copernicus to Newton laid the foundation for modern astronomy through the telescope and laws of physics.",
     details:
-      "1500-yillar | Nikolay Kopernik: Koinotning markazida Yer emas, Quyosh turadi degan inqilobiy geliosentrik tizimni ishlab chiqdi.\n\n1608-yil | Hans Lippershey: Gollandiyalik usta uzoqdagi jismlarni yaqinlashtirib ko'rsatuvchi tarixiy birinchi teleskopni ixtiro qildi.\n\n1609-yil | Galileo Galiley: Teleskopni koinotga qaratgan ilk olim. U Oy kraterlari va Yupiterning 4 ta yo'ldoshini kashf etib, Kopernik g'oyalarini tasdiqladi.\n\n1611-yil | Iogann Kepler: Sayyoralar harakatining asosiy qonunlarini kashf etdi va koinotni kuzatish uchun ancha aniq bo'lgan astronomik teleskopni yaratdi.\n\nXVIII asr | Isaak Nyuton: Butun olam tortishish qonuni orqali sayyoralar nima uchun ma'lum bir orbitada harakatlanishini fizik jihatdan isbotlab berdi.",
+      "1500s | Nicolaus Copernicus: Developed a revolutionary heliocentric system where the Sun, not the Earth, is at the center of the universe.\n\n1608 | Hans Lippershey: A Dutch master invented the first historical telescope that brought distant objects closer.\n\n1609 | Galileo Galilei: The first scientist to point a telescope at the universe. He discovered lunar craters and 4 satellites of Jupiter, confirming Copernicus's ideas.\n\n1611 | Johannes Kepler: Discovered the basic laws of planetary motion and created a much more accurate astronomical telescope for observing the universe.\n\n1687 | Isaac Newton: Physically proved why planets move in a certain orbit through the law of universal gravitation.",
     media: [
-      { type: 'image', src: '/history-step1/hans-lipperhey.png', alt: 'Hans Lipperhey portreti' },
-      { type: 'image', src: '/history-step1/telescope-1608.png', alt: '1608-yildagi ilk teleskop ko‘rinishi' },
-      { type: 'image', src: '/history-step1/moon-sketches-bw.png', alt: 'Oy fazalari va kraterlarining tarixiy chizmasi' },
-      { type: 'image', src: '/history-step1/galileo-notes-moon.png', alt: 'Galileyning Oy kuzatuvlari sahifasi' },
+      { type: 'image', src: '/history-step1/hans-lipperhey.png', alt: 'Portrait of Hans Lipperhey' },
+      { type: 'image', src: '/history-step1/telescope-1608.png', alt: 'The first telescope from 1608' },
+      { type: 'image', src: '/history-step1/moon-sketches-bw.png', alt: 'Historical drawing of lunar phases and craters' },
+      { type: 'image', src: '/history-step1/galileo-notes-moon.png', alt: 'Galileo\'s lunar observation page' },
       { type: 'video', title: 'Scientific revolution explainer' },
     ],
   },
   {
     id: 'era-3',
-    title: "Koinot poygasi va Ilk qadamlar",
-    period: "1950-1960 yillar",
+    title: "Space Race and First Steps",
+    period: "1950-1960s",
     summary:
-      "Sputnikdan Apollon-11gacha bo'lgan davrda insoniyat koinotga chiqib, Oyga ilk qadamni qo'ydi.",
+      "In the period from Sputnik to Apollo 11, humanity went into space and took the first step on the Moon.",
     details:
-      "1957-yil | \"Sputnik-1\" va Layka: Insoniyat tarixidagi ilk sun'iy yo'ldosh orbitaga chiqarildi. Ko'p o'tmay, \"Sputnik-2\" kemasida Layka ismli it koinotga uchgan birinchi tirik mavjudotga aylandi.\n\n1959-yil | \"Luna-2\": Boshqa osmon jismi (Oy) yuzasiga yetib borgan tarixdagi birinchi kosmik apparat bo'ldi.\n\n1961-yil 12-aprel | Yuriy Gagarin: \"Vostok-1\" kemasida koinotga uchgan ilk inson. Bu butun insoniyat uchun ulkan tarixiy qadam edi.\n\n1963 va 1965-yillar | Yangi rekordlar: Valentina Tereshkova koinotga chiqqan ilk ayolga aylandi. Aleksey Leonov esa tarixda birinchi marta kema bortidan tashqariga - ochiq koinotga chiqdi (12 daqiqa).\n\n1969-yil 20-iyul | \"Apollon-11\": Neil Armstrong va Buzz Aldrin Oy yuzasiga ilk bor qadam qo'yishdi. Armstrong o'zining mashhur \"Bu inson uchun kichik bir qadam, insoniyat uchun ulkan sakrash\" degan tarixiy iborasini aytdi.",
+      "1957 | \"Sputnik-1\" and Laika: The first artificial satellite in human history was launched into orbit. Soon after, a dog named Laika became the first living creature to fly into space on the \"Sputnik-2\" ship.\n\n1959 | \"Luna-2\": Became the first spacecraft in history to reach the surface of another celestial body (the Moon).\n\nApril 12, 1961 | Yuri Gagarin: The first person to fly into space on the \"Vostok-1\" ship. This was a huge historical step for all of humanity.\n\n1963 and 1965 | New records: Valentina Tereshkova became the first woman in space. Alexei Leonov became the first person in history to go outside the ship - into open space (12 minutes).\n\nJuly 20, 1969 | \"Apollo-11\": Neil Armstrong and Buzz Aldrin set foot on the lunar surface for the first time. Armstrong said his famous historical phrase \"That's one small step for man, one giant leap for mankind.\"",
     media: [
-      { type: 'image', src: '/history-step1/sputnik-1.png', alt: 'Sputnik-1 sun’iy yo‘ldoshi' },
-      { type: 'image', src: '/history-step1/laika-dog.png', alt: 'Laika kosmosga uchirilgan ilk itlardan biri' },
-      { type: 'image', src: '/history-step1/gagarin-flight.png', alt: 'Yuriy Gagarin parvozidan lavha' },
-      { type: 'image', src: '/history-step1/luna-spacecraft.png', alt: 'Sovet Oy apparati tasviri' },
-      { type: 'image', src: '/history-step1/valentina-tereshkova.png', alt: 'Valentina Tereshkova portreti' },
+      { type: 'image', src: '/history-step1/sputnik-1.png', alt: 'Sputnik-1 satellite' },
+      { type: 'image', src: '/history-step1/laika-dog.png', alt: 'Laika, one of the first dogs to fly into space' },
+      { type: 'image', src: '/history-step1/gagarin-flight.png', alt: 'Footage from Yuri Gagarin\'s flight' },
+      { type: 'image', src: '/history-step1/luna-spacecraft.png', alt: 'Soviet lunar spacecraft illustration' },
+      { type: 'image', src: '/history-step1/valentina-tereshkova.png', alt: 'Portrait of Valentina Tereshkova' },
       { type: 'video', title: 'Moon landing footage' },
     ],
   },
   {
     id: 'era-4',
-    title: "Sayyoralarni zabt etish",
-    period: "1970-1990 yillar",
+    title: "Conquering the Planets",
+    period: "1970-1990s",
     summary:
-      "Venera va Marsga qo'nishlardan tortib Voyager, Shuttle, Mir va Hubblegacha bo'lgan yirik sakrashlar shu davrda amalga oshdi.",
+      "From landings on Venus and Mars to major leaps like Voyager, Shuttle, Mir, and Hubble, this period saw significant advancements.",
     details:
-      "1970-1971 yillar | Qizil va Qaynoq sayyoralar: \"Venera-7\" apparati Veneraning o'ta issiq va bosimli muhitiga dosh berib, yuzaga qo'ngan ilk apparat bo'ldi. Bir yil o'tib esa \"Mars-3\" qizil sayyora yuzasiga muvaffaqiyatli qo'ndi.\n\n1973-1976 yillar | Ilk aniq tasvirlar: \"Pioneer-10\" apparati Yupiter sayyorasini yaqindan suratga olgan ilk missiya bo'ldi. \"Viking-1\" esa Mars yuzasidan ilk bor aniq va rangli manzaralarni Yerga yubordi.\n\n1977-yil | \"Voyager\" missiyasi: Koinot sarhadlarini o'rganish uchun \"Voyager-1\" va \"Voyager-2\" uchirildi. Ular hozirda Quyosh tizimidan tashqariga chiqqan insoniyatning eng uzoqdagi obyektlari hisoblanadi.\n\n1981-1986 yillar | Yangi texnologiyalar va \"Mir\": Ko'p marta ishlatiladigan \"Space Shuttle\" kemasi ilk bor parvoz qildi. Koinotda uzoq muddatli tadqiqotlar o'tkazish uchun birinchi doimiy modulli stansiya - \"Mir\" ishga tushirildi.\n\n1990-1997 yillar | Chuqur koinot va Saturn: \"Xabbl\" (Hubble) teleskopi orbitaga chiqarilib, insoniyatning koinot haqidagi tasavvurini tubdan o'zgartirdi. 1997-yilda esa Saturn va uning yo'ldoshlarini (ayniqsa Titanni) o'rganish uchun murakkab \"Cassini-Huygens\" missiyasi yuborildi.",
+      "1970-1971 | Red and Hot Planets: \"Venera-7\" was the first spacecraft to land on the surface of Venus, surviving its extreme heat and pressure. A year later, \"Mars-3\" successfully landed on the red planet's surface.\n\n1973-1976 | First clear images: \"Pioneer-10\" was the first mission to take close-up photos of Jupiter. \"Viking-1\" sent the first clear and color landscapes from the surface of Mars to Earth.\n\n1977 | \"Voyager\" mission: \"Voyager-1\" and \"Voyager-2\" were launched to explore the frontiers of space. They are currently humanity's most distant objects outside the solar system.\n\n1981-1986 | New technologies and \"Mir\": The reusable \"Space Shuttle\" made its first flight. The first permanent modular station, \"Mir\", was launched for long-term research in space.\n\n1990-1997 | Deep Space and Saturn: The \"Hubble\" telescope was launched into orbit, fundamentally changing humanity's perception of space. In 1997, the complex \"Cassini-Huygens\" mission was sent to study Saturn and its moons (especially Titan).",
     media: [
-      { type: 'image', src: '/history-step1/apollo11-moonwalk.png', alt: 'Apollo missiyasidan Oy yuzasida astronavt' },
-      { type: 'image', src: '/history-step1/venus-lander-model.png', alt: 'Venera apparatining tarixiy moduli' },
-      { type: 'image', src: '/history-step1/voyager-artwork.png', alt: 'Voyager apparati kosmosda (illyustratsiya)' },
-      { type: 'image', src: '/history-step1/venera-lander.png', alt: 'Venera qo‘nish apparati yuzada' },
-      { type: 'image', src: '/history-step1/mars-rover-lab.png', alt: 'Mars missiyasi apparati laboratoriyada' },
-      { type: 'image', src: '/history-step1/shuttle-launch.png', alt: 'Space Shuttle uchirilishi' },
-      { type: 'image', src: '/history-step1/iss-orbit.png', alt: 'Xalqaro kosmik stansiya orbitada' },
-      { type: 'image', src: '/history-step1/hubble-space.png', alt: 'Hubble teleskopi orbitada' },
-      { type: 'image', src: '/history-step1/ariane-launch.png', alt: 'Ariane raketasi uchirilishi' },
+      { type: 'image', src: '/history-step1/apollo11-moonwalk.png', alt: 'Astronaut on the lunar surface from the Apollo mission' },
+      { type: 'image', src: '/history-step1/venus-lander-model.png', alt: 'Historical module of the Venera spacecraft' },
+      { type: 'image', src: '/history-step1/voyager-artwork.png', alt: 'Voyager spacecraft in space (illustration)' },
+      { type: 'image', src: '/history-step1/venera-lander.png', alt: 'Venera lander on the surface' },
+      { type: 'image', src: '/history-step1/mars-rover-lab.png', alt: 'Mars mission spacecraft in the lab' },
+      { type: 'image', src: '/history-step1/shuttle-launch.png', alt: 'Space Shuttle launch' },
+      { type: 'image', src: '/history-step1/iss-orbit.png', alt: 'International Space Station in orbit' },
+      { type: 'image', src: '/history-step1/hubble-space.png', alt: 'Hubble telescope in orbit' },
+      { type: 'image', src: '/history-step1/ariane-launch.png', alt: 'Ariane rocket launch' },
     ],
   },
   {
     id: 'era-5',
-    title: "Xalqaro hamkorlik va Tijorat koinoti",
-    period: "2000-2020 yillar",
+    title: "International Cooperation and Commercial Space",
+    period: "2000-2020s",
     summary:
-      "XKS, xususiy raketalar, Mars va Pluton missiyalari hamda qora tuynuk surati bu davrni yangi bosqichga olib chiqdi.",
+      "ISS, private rockets, Mars and Pluto missions, and the first image of a black hole took this era to a new level.",
     details:
-      "2000-yil | Xalqaro koinot stansiyasi (XKS): Koinotda insonlarning doimiy yashashi va ishlashi boshlandi. XKS o'zining ilk ekipajini qabul qilib, davlatlararo tinchlik va ilmiy hamkorlikning eng yirik ramziga aylandi.\n\n2008-yil | Xususiy koinot davri: Elon Muskning \"SpaceX\" kompaniyasi tarixda ilk bor to'liq xususiy mablag'lar hisobiga yaratilgan \"Falcon 1\" raketasini orbitaga muvaffaqiyatli olib chiqdi va tijorat parvozlari erasini boshlab berdi.\n\n2012-2015 yillar | Marsdan Plutongacha: \"Curiosity\" roveri Mars yuzasiga qo'nib, qadimiy hayot asoratlarini qidirishni boshladi. 2014-yilda insoniyat tarixida ilk bor kometaga (67P) apparat qo'ndirildi. 2015-yilda esa \"New Horizons\" apparati mitti sayyora - Plutonning ilk aniq suratlarini Yerga yubordi.\n\n2019-yil | Koinotning eng katta siri: Butun dunyo olimlarining hamkorligi natijasida tarixda ilk marotaba Qora tuynukning (M87 galaktikasi markazidagi) haqiqiy fotosurati olindi. Bu Eynshteynning nisbiylik nazariyasini yana bir bor isbotladi.",
+      "2000 | International Space Station (ISS): Permanent human living and working in space began. The ISS received its first crew and became the largest symbol of international peace and scientific cooperation.\n\n2008 | Era of Private Space: Elon Musk's \"SpaceX\" successfully launched the \"Falcon 1\" rocket, the first private spacecraft in history to reach orbit, starting the era of commercial flights.\n\n2012-2015 | From Mars to Pluto: The \"Curiosity\" rover landed on Mars and began searching for signs of ancient life. In 2014, for the first time in history, a spacecraft landed on a comet (67P). In 2015, the \"New Horizons\" spacecraft sent the first clear images of the dwarf planet Pluto to Earth.\n\n2019 | The Universe's Greatest Secret: As a result of international cooperation, the first actual photo of a black hole (in the center of the M87 galaxy) was taken. This once again proved Einstein's theory of relativity.",
     media: [
-      { type: 'image', src: '/history-step1/spacex-falcon1-rocket.png', alt: 'Falcon 1 raketasi' },
-      { type: 'image', title: 'XKS stansiyasi' },
+      { type: 'image', src: '/history-step1/spacex-falcon1-rocket.png', alt: 'Falcon 1 rocket' },
+      { type: 'image', title: 'ISS Station' },
       { type: 'video', title: 'SpaceX Falcon landing' },
     ],
   },
   {
     id: 'era-6',
-    title: "Yangi ufqlar va Kelajak",
-    period: "2021-2026 yillar",
+    title: "New Horizons and the Future",
+    period: "2021-2026",
     summary:
-      "James Webb, DART, Chandrayaan-3 va Starship sinovlari bilan insoniyat Oy va Mars davriga faol kirib bormoqda.",
+      "With James Webb, DART, Chandrayaan-3 and Starship tests, humanity is actively entering the Moon and Mars era.",
     details:
-      "2021-2022 yillar | Jeyms Uebb va DART missiyasi: Koinotning eng qadimiy galaktikalarini o'rganuvchi tarixdagi eng kuchli \"James Webb\" infraqizil teleskopi ishga tushdi. \"DART\" missiyasi orqali esa insoniyat ilk bor asteroidga zarba berib, uning harakat yo'nalishini o'zgartira oldi (Yerni himoya qilish sinovi).\n\n2023-2024 yillar | Oy janubi va \"Starship\" raketasi: Hindistonning \"Chandrayaan-3\" apparati tarixda birinchi bo'lib Oyning janubiy qutbiga muvaffaqiyatli qo'ndi. Shu bilan birga, SpaceX kompaniyasi insonlarni Marsga olib borishga mo'ljallangan, dunyodagi eng ulkan va quvvatli \"Starship\" raketasining faol sinovlarini boshlab yubordi.\n\n2025-yil | \"Artemis\" va Toza orbitaga qadam: \"Artemis II\" missiyasi doirasida astronavtlar yarim asrlik tanaffusdan so'ng yana Oy atrofida aylanib o'tishdi. Shuningdek, orbitadagi xavfli kosmik chiqindilarni tozalash bo'yicha ilk amaliy loyihalar sinovdan o'tkazildi.\n\n2026-yil (Hozirgi vaqt) | Oy bazasi va Mars namunalari: Insoniyat yana Oy yuzasiga qadam qo'yishga (\"Artemis III\") va u yerda doimiy baza qurishga tayyorgarlik ko'rmoqda. Marsdan tuproq namunalarini Yerga olib kelish (Mars Sample Return) va uzoq ekzosayyoralarni qidirish (\"Nancy Grace Roman\" teleskopi) ishlari jadal sur'atlarda olib borilmoqda.",
+      "2021-2022 | James Webb and DART mission: The most powerful \"James Webb\" infrared telescope in history was launched to study the universe's oldest galaxies. Through the \"DART\" mission, humanity for the first time struck an asteroid and changed its direction (a test for Earth defense).\n\n2023-2024 | South Pole of the Moon and \"Starship\": India's \"Chandrayaan-3\" successfully landed on the Moon's south pole for the first time. Meanwhile, SpaceX began active testing of the world's largest and most powerful \"Starship\" rocket, designed to take humans to Mars.\n\n2025 | \"Artemis\" and Steps to a Clean Orbit: As part of the \"Artemis II\" mission, astronauts orbited the Moon again after a half-century break. Also, the first practical projects for cleaning dangerous space debris from orbit were tested.\n\n2026 (Present Time) | Moon Base and Mars Samples: Humanity is preparing to set foot on the lunar surface again (\"Artemis III\") and build a permanent base there. Work on bringing soil samples from Mars to Earth (Mars Sample Return) and searching for distant exoplanets (\"Nancy Grace Roman\" telescope) is proceeding at a fast pace.",
     media: [
-      { type: 'image', title: 'James Webb oynalari' },
-      { type: 'image', title: 'Starship raketasi' },
+      { type: 'image', title: 'James Webb mirrors' },
+      { type: 'image', title: 'Starship rocket' },
       { type: 'video', title: 'Mars colony concept' },
     ],
   },
 ];
 
 function EraCard({ era, onOpen }) {
+  const { t } = useTranslation();
   return (
     <motion.button
       type="button"
@@ -121,7 +123,7 @@ function EraCard({ era, onOpen }) {
         <h2 className="mt-4 text-xl md:text-2xl font-[900] text-white">{era.title}</h2>
         <p className="mt-3 text-white/70 leading-relaxed line-clamp-3">{era.summary}</p>
         <span className="mt-auto inline-flex text-xs font-[800] uppercase tracking-wider text-violet-light/90">
-          Batafsil ko'rish
+          {t('history', 'viewMore')}
         </span>
       </div>
     </motion.button>
@@ -153,16 +155,17 @@ function TimelineRow({ era, index, onOpen }) {
 }
 
 function MediaItem({ item, onImageOpen }) {
+  const { t } = useTranslation();
   if (item.type === 'image' && item.src) {
     return (
       <button
         type="button"
-        onClick={() => onImageOpen({ src: item.src, alt: item.alt || item.title || 'Tarixiy rasm' })}
+        onClick={() => onImageOpen({ src: item.src, alt: item.alt || item.title || t('history', 'historicalImage') })}
         className="group h-56 w-full overflow-hidden rounded-2xl border border-white/15 bg-black/20 p-1 shadow-[0_0_20px_rgba(56,189,248,0.2)] transition hover:border-cyan-300/50 md:h-64"
       >
         <img
           src={item.src}
-          alt={item.alt || item.title || 'Tarixiy rasm'}
+          alt={item.alt || item.title || t('history', 'historicalImage')}
           className="h-full w-full object-contain transition duration-200 group-hover:scale-[1.01]"
           loading="lazy"
           decoding="async"
@@ -176,8 +179,8 @@ function MediaItem({ item, onImageOpen }) {
       <div className="h-52 w-full rounded-2xl border border-violet/30 bg-violet/10 p-5 flex items-center gap-3 shadow-[0_0_22px_rgba(139,92,246,0.18)]">
         <PlayCircle className="h-10 w-10 text-violet-light shrink-0" />
         <div>
-          <p className="font-[800] text-white/90">{item.title || 'Video blok'}</p>
-          <p className="text-sm text-white/50">Video joyi (iframe uchun tayyor placeholder)</p>
+          <p className="font-[800] text-white/90">{item.title || t('history', 'videoBlock')}</p>
+          <p className="text-sm text-white/50">{t('history', 'videoPlaceholder')}</p>
         </div>
       </div>
     );
@@ -185,14 +188,52 @@ function MediaItem({ item, onImageOpen }) {
 
   return (
     <div className="h-52 w-full rounded-2xl border border-cyan-300/20 bg-white/5 p-5 flex items-center justify-center text-center text-white/60">
-      {item.title || 'Image placeholder'}
+      {item.title || t('history', 'imagePlaceholder')}
     </div>
   );
 }
 
 export default function HistoryView() {
+  const { t, language } = useTranslation();
   const [activeEra, setActiveEra] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [eras, setEras] = useState(ORIGINAL_ERA_DATA);
+
+  useEffect(() => {
+    const translateText = async (text, target) => {
+      if (!text || target === 'ENG') return text;
+      const langMap = { 'UZB': 'uz', 'RUS': 'ru' };
+      const targetLang = langMap[target] || 'en';
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURI(text)}`);
+        const data = await res.json();
+        return data[0].map(x => x[0]).join('');
+      } catch { return text; }
+    };
+
+    const translateEras = async () => {
+      if (language === 'ENG') {
+        setEras(ORIGINAL_ERA_DATA);
+        return;
+      }
+
+      const translated = await Promise.all(ORIGINAL_ERA_DATA.map(async (era) => ({
+        ...era,
+        title: await translateText(era.title, language),
+        period: await translateText(era.period, language),
+        summary: await translateText(era.summary, language),
+        details: await translateText(era.details, language),
+        media: await Promise.all(era.media.map(async (m) => ({
+          ...m,
+          title: m.title ? await translateText(m.title, language) : m.title,
+          alt: m.alt ? await translateText(m.alt, language) : m.alt
+        })))
+      })));
+      setEras(translated);
+    };
+
+    translateEras();
+  }, [language]);
 
   return (
     <div className="relative min-h-screen overflow-hidden px-4 pt-32 pb-24">
@@ -217,16 +258,16 @@ export default function HistoryView() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-4 text-[clamp(36px,6vw,56px)] font-[900] tracking-tight text-white"
           >
-            Space <span className="text-glow-purple text-violet">History</span>
+            {t('history', 'title')} <span className="text-glow-purple text-violet">{t('history', 'titleHighlight')}</span>
           </motion.h1>
           <p className="mx-auto max-w-3xl text-lg text-white/40">
-            Kartani bosing - to'liq tarixiy ma'lumot, rasm va video bloklari bilan katta oynada ko'rasiz.
+            {t('history', 'subtitle')}
           </p>
         </div>
 
         <div className="relative space-y-6 md:space-y-8">
           <div className="absolute top-0 bottom-0 left-2 w-1 rounded-full bg-gradient-to-b from-neon-blue/20 via-violet/60 to-neon-blue/20 shadow-[0_0_20px_rgba(56,189,248,0.45)] md:left-1/2 md:-translate-x-1/2" />
-          {ERA_DATA.map((era, index) => (
+          {eras.map((era, index) => (
             <TimelineRow key={era.id} era={era} index={index} onOpen={setActiveEra} />
           ))}
         </div>
@@ -248,7 +289,7 @@ export default function HistoryView() {
               }}
               className="fixed top-4 left-4 md:top-6 md:left-8 z-10 inline-flex items-center gap-2 rounded-full border border-cyan-300/35 bg-black/50 px-4 py-2 text-sm font-[800] text-cyan-200 hover:bg-black/70"
             >
-              <span>⬅ Back to History</span>
+              <span>{t('history', 'backBtn')}</span>
             </button>
 
             <motion.div
