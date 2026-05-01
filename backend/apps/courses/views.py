@@ -4,20 +4,128 @@ from rest_framework.response import Response
 
 from apps.permissions import AdminWriteOrReadOnly
 
-from .models import Lesson, LessonSection, Level, QuizQuestion, Unit
+from .models import (
+    Sphere, Topic, TopicLesson, SubLesson, Problem,
+    Level, Unit, Lesson, LessonSection, QuizQuestion,
+)
 from .serializers import (
-    LessonDetailSerializer,
-    LessonListSerializer,
-    LessonWriteSerializer,
-    LevelSerializer,
-    LevelWriteSerializer,
-    QuizQuestionSerializer,
-    SectionSerializer,
-    UnitDetailSerializer,
-    UnitListSerializer,
-    UnitWriteSerializer,
+    # New sphere-based
+    SphereListSerializer, SphereDetailSerializer, SphereWriteSerializer,
+    TopicListSerializer, TopicDetailSerializer, TopicWriteSerializer,
+    TopicLessonSerializer, TopicLessonWriteSerializer,
+    SubLessonSerializer, SubLessonWriteSerializer,
+    ProblemSerializer, ProblemWriteSerializer,
+    # Legacy
+    LevelSerializer, LevelWriteSerializer,
+    UnitListSerializer, UnitDetailSerializer, UnitWriteSerializer,
+    LessonListSerializer, LessonDetailSerializer, LessonWriteSerializer,
+    SectionSerializer, QuizQuestionSerializer,
 )
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  NEW SPHERE-BASED VIEWSETS
+# ══════════════════════════════════════════════════════════════════════════════
+
+class SphereViewSet(viewsets.ModelViewSet):
+    queryset = Sphere.objects.filter(is_active=True)
+    permission_classes = [AdminWriteOrReadOnly]
+    lookup_field = 'slug'
+
+    def get_serializer_class(self):
+        if self.request.method in ('POST', 'PUT', 'PATCH'):
+            return SphereWriteSerializer
+        if self.action == 'retrieve':
+            return SphereDetailSerializer
+        return SphereListSerializer
+
+    @action(detail=True, methods=['get'])
+    def topics(self, request, slug=None):
+        sphere = self.get_object()
+        return Response(TopicListSerializer(sphere.topics.all(), many=True).data)
+
+    @action(detail=True, methods=['get'])
+    def problems(self, request, slug=None):
+        sphere = self.get_object()
+        return Response(ProblemSerializer(sphere.problems.all(), many=True).data)
+
+
+class TopicViewSet(viewsets.ModelViewSet):
+    queryset = Topic.objects.all()
+    permission_classes = [AdminWriteOrReadOnly]
+
+    def get_queryset(self):
+        qs = Topic.objects.all()
+        sphere = self.request.query_params.get('sphere')
+        if sphere:
+            qs = qs.filter(sphere__slug=sphere)
+        return qs
+
+    def get_serializer_class(self):
+        if self.request.method in ('POST', 'PUT', 'PATCH'):
+            return TopicWriteSerializer
+        if self.action == 'retrieve':
+            return TopicDetailSerializer
+        return TopicListSerializer
+
+
+class TopicLessonViewSet(viewsets.ModelViewSet):
+    queryset = TopicLesson.objects.all()
+    permission_classes = [AdminWriteOrReadOnly]
+
+    def get_queryset(self):
+        qs = TopicLesson.objects.all()
+        topic = self.request.query_params.get('topic')
+        if topic:
+            qs = qs.filter(topic_id=topic)
+        return qs
+
+    def get_serializer_class(self):
+        if self.request.method in ('POST', 'PUT', 'PATCH'):
+            return TopicLessonWriteSerializer
+        return TopicLessonSerializer
+
+
+class SubLessonViewSet(viewsets.ModelViewSet):
+    queryset = SubLesson.objects.all()
+    permission_classes = [AdminWriteOrReadOnly]
+
+    def get_queryset(self):
+        qs = SubLesson.objects.all()
+        parent = self.request.query_params.get('parent')
+        if parent:
+            qs = qs.filter(parent_lesson_id=parent)
+        return qs
+
+    def get_serializer_class(self):
+        if self.request.method in ('POST', 'PUT', 'PATCH'):
+            return SubLessonWriteSerializer
+        return SubLessonSerializer
+
+
+class ProblemViewSet(viewsets.ModelViewSet):
+    queryset = Problem.objects.all()
+    permission_classes = [AdminWriteOrReadOnly]
+
+    def get_queryset(self):
+        qs = Problem.objects.all()
+        sphere = self.request.query_params.get('sphere')
+        if sphere:
+            qs = qs.filter(sphere__slug=sphere)
+        difficulty = self.request.query_params.get('difficulty')
+        if difficulty:
+            qs = qs.filter(difficulty=difficulty)
+        return qs
+
+    def get_serializer_class(self):
+        if self.request.method in ('POST', 'PUT', 'PATCH'):
+            return ProblemWriteSerializer
+        return ProblemSerializer
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  LEGACY VIEWSETS
+# ══════════════════════════════════════════════════════════════════════════════
 
 class LevelViewSet(viewsets.ModelViewSet):
     queryset = Level.objects.all()

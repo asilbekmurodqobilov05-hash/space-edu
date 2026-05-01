@@ -48,6 +48,7 @@ import PortfolioView      from '@/views/profile/PortfolioView';
 import ProfileView        from '@/views/profile/ProfileView';
 import HistoryView        from '@/views/misc/HistoryView';
 import MarketView         from '@/views/misc/MarketView';
+import RewardsStoreView   from '@/views/store/RewardsStoreView';
 import ChatView           from '@/views/chat/ChatView';
 import QuizHubView        from "@/views/quiz/QuizHubView";
 import QuizSessionView    from "@/views/quiz/QuizSessionView";
@@ -87,6 +88,7 @@ export default function App() {
             <Route path="/leaderboard"   element={<PT><LeaderboardView /></PT>} />
             <Route path="/history"       element={<PT><HistoryView /></PT>} />
             <Route path="/market"        element={<PT><MarketView /></PT>} />
+            <Route path="/store"         element={<PT><RewardsStoreView /></PT>} />
             <Route path="/portfolio"     element={<PT><PortfolioView /></PT>} />
             <Route path="/daily"         element={<PT><DailyChallengeView /></PT>} />
             <Route path="/space-game"    element={<Lazy><PT><SpaceRunView /></PT></Lazy>} />

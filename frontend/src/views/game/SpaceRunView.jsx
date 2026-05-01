@@ -138,13 +138,25 @@ export default function SpaceRunView() {
     const t = e.touches[0];
     const dx = t.clientX - touchRef.current.x;
     const dy = t.clientY - touchRef.current.y;
-    touchRef.current.x = t.clientX;
-    touchRef.current.y = t.clientY;
-    const th = 14;
-    inputRef.current.left = dx < -th;
-    inputRef.current.right = dx > th;
-    inputRef.current.up = dy < -th;
-    inputRef.current.down = dy > th;
+    const th = 6; // reduced from 14 for better sensitivity
+    
+    if (Math.abs(dx) > th) {
+      inputRef.current.left = dx < 0;
+      inputRef.current.right = dx > 0;
+      touchRef.current.x = t.clientX;
+    } else {
+      inputRef.current.left = false;
+      inputRef.current.right = false;
+    }
+
+    if (Math.abs(dy) > th) {
+      inputRef.current.up = dy < 0;
+      inputRef.current.down = dy > 0;
+      touchRef.current.y = t.clientY;
+    } else {
+      inputRef.current.up = false;
+      inputRef.current.down = false;
+    }
   };
 
   const onTouchEnd = () => {

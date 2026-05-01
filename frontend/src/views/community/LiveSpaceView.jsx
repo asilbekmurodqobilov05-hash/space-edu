@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { Users, Activity, Navigation as NavIcon, Satellite, Globe2, MapPin, Gauge } from 'lucide-react';
+import { Users, Activity, Navigation as NavIcon, Satellite, Globe2, MapPin, Gauge, Rocket, Calendar } from 'lucide-react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrbitControls, Stars, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import UpcomingLaunches from '@/components/live/UpcomingLaunches';
+import NasaApod from '@/components/live/NasaApod';
 
 // --- 3D Earth & Satellites Component ---
 const EarthAndSatellites = ({ issLat, issLng }) => {
@@ -294,6 +296,35 @@ export default function LiveSpaceView() {
           ></iframe>
         </div>
       </motion.div>
+
+      {/* ── MISSION TRACKER SECTION ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+
+        {/* Upcoming Launches */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="lg:col-span-2 glass p-6 rounded-3xl border border-white/10"
+        >
+          <h2 className="text-2xl font-bold flex items-center gap-2 mb-6">
+            <Rocket className="w-6 h-6 text-neon-purple" />
+            Upcoming Launches
+            <span className="ml-auto text-xs font-medium text-white/30 uppercase tracking-widest">Live API</span>
+          </h2>
+          <UpcomingLaunches />
+        </motion.div>
+
+        {/* NASA APOD */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="glass p-6 rounded-3xl border border-white/10"
+        >
+          <NasaApod />
+        </motion.div>
+      </div>
     </div>
   );
 }

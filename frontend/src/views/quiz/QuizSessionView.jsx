@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Home, ArrowRight, Hourglass, Trophy, Star, Target, Zap } from "lucide-react";
 import { quizData } from "@/data/quizData";
+import { useGamificationStore } from "@/store/useGamificationStore";
 
 // Helper to get time in seconds from difficulty (1 = 1m, 2 = 2m, 3 = 3m)
 const getTimeForDifficulty = (diff) => (diff || 1) * 60;
@@ -61,6 +62,18 @@ export default function QuizSessionView() {
       setIsCompleted(true);
     }
   };
+
+  // Grant XP once when completed
+  const hasGrantedRef = useRef(false);
+  useEffect(() => {
+    if (isCompleted && !hasGrantedRef.current) {
+      hasGrantedRef.current = true;
+      const xpEarned = score * 50; // 50 XP per correct answer
+      if (xpEarned > 0) {
+        useGamificationStore.getState().addXp(xpEarned);
+      }
+    }
+  }, [isCompleted, score]);
 
   // If invalid category
   if (!quizData[category] || questions.length === 0) {

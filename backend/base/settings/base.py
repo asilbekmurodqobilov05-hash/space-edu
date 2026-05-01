@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'apps.chat',
     'apps.news',
     'apps.events',
+    'apps.challenges',
 ]
 
 MIDDLEWARE = [

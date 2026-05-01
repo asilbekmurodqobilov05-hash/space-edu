@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Rocket, ArrowRight, BookOpen, Target, Award, Zap, Globe, Star, ChevronDown, Telescope, FlaskConical, Play, Gamepad2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
+import Earth3D from "@/components/3d/Earth3D";
 
 
 // ── MILKY WAY STARFIELD ───────────────────────────────────────────────────────
@@ -368,22 +369,16 @@ export default function HomeView() {
 
           </div>
 
-          {/* Image column */}
+          {/* 3D Earth column */}
           <div className="order-1 lg:order-2 flex items-center justify-center">
             <div ref={nebulaWrapRef} style={{ transition: 'transform 0.8s cubic-bezier(0.23,1,0.32,1)' }}>
               <motion.div
-                initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                className="relative"
+                initial={{ opacity: 0, scale: 0.82 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+                style={{ cursor: 'grab' }}
               >
-                <motion.img
-                  src="/earth_glow.png"
-                  alt="Earth"
-                  className="relative z-10 w-[900px] h-[900px] md:w-[900px] md:h-[900px] object-contain select-none pointer-events-none"
-                  animate={{ y: [0, -15, 0] }}
-                  transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-                />
+                <Earth3D size={520} />
               </motion.div>
             </div>
           </div>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D Earth — Pro</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { overflow: hidden; background: #000; cursor: grab; }
+    body:active { cursor: grabbing; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+
+// ===== SAHNA =====
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000);
+camera.position.z = 2.8;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.appendChild(renderer.domElement);
+
+// ===== YULDUZLAR =====
+const starGeo = new THREE.BufferGeometry();
+const starCount = 8000;
+const starPos = new Float32Array(starCount * 3);
+const starSizes = new Float32Array(starCount);
+for (let i = 0; i < starCount; i++) {
+  starPos[i * 3] = (Math.random() - 0.5) * 800;
+  starPos[i * 3 + 1] = (Math.random() - 0.5) * 800;
+  starPos[i * 3 + 2] = (Math.random() - 0.5) * 800;
+  starSizes[i] = Math.random() * 1.5 + 0.3;
+}
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, sizeAttenuation: true });
+scene.add(new THREE.Points(starGeo, starMat));
+
+// ===== TEKSTURALAR =====
+const loader = new THREE.TextureLoader();
+const earthMap = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg');
+const earthBump = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_normal_1024.jpg');
+const earthSpec = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_specular_2048.jpg');
+const earthNight = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_lights_2048.png');
+const cloudMap = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png');
+
+// ===== YER SHARI =====
+const earthGeo = new THREE.SphereGeometry(1, 128, 128);
+
+// Kunduzgi material
+const earthMat = new THREE.MeshPhongMaterial({
+  map: earthMap,
+  bumpMap: earthBump,
+  bumpScale: 0.03,
+  specularMap: earthSpec,
+  specular: new THREE.Color(0x446688),
+  shininess: 25
+});
+const earth = new THREE.Mesh(earthGeo, earthMat);
+earth.rotation.x = 0.41;
+scene.add(earth);
+
+// ===== TUNGI YORUG'LIK (Shahar chiroqlari) =====
+const nightMat = new THREE.ShaderMaterial({
+  uniforms: {
+    nightTexture: { value: earthNight },
+    sunDirection: { value: new THREE.Vector3(1, 0.3, 0.5).normalize() }
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    varying vec3 vWorldPos;
+    void main() {
+      vUv = uv;
+      vNormal = normalize(normalMatrix * normal);
+      vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position * 1.002, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D nightTexture;
+    uniform vec3 sunDirection;
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    void main() {
+      float sunDot = dot(vNormal, sunDirection);
+      float nightFactor = smoothstep(-0.1, -0.3, sunDot);
+      vec4 nightColor = texture2D(nightTexture, vUv);
+      gl_FragColor = vec4(nightColor.rgb * nightFactor * 1.8, nightFactor * nightColor.r);
+    }
+  `,
+  transparent: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
+});
+const nightMesh = new THREE.Mesh(earthGeo, nightMat);
+nightMesh.rotation.x = 0.41;
+scene.add(nightMesh);
+
+// ===== BULUTLAR =====
+const cloudMat = new THREE.MeshPhongMaterial({
+  map: cloudMap,
+  transparent: true,
+  opacity: 0.35,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+const clouds = new THREE.Mesh(new THREE.SphereGeometry(1.008, 128, 128), cloudMat);
+clouds.rotation.x = 0.41;
+scene.add(clouds);
+
+// ===== ATMOSFERA GLOW =====
+const atmosMat = new THREE.ShaderMaterial({
+  vertexShader: `
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+    void main() {
+      float intensity = pow(0.72 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 5.0);
+      vec3 color = mix(vec3(0.3, 0.6, 1.0), vec3(0.4, 0.2, 0.8), intensity);
+      gl_FragColor = vec4(color, 1.0) * intensity * 1.5;
+    }
+  `,
+  blending: THREE.AdditiveBlending,
+  side: THREE.BackSide,
+  transparent: true,
+  depthWrite: false
+});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.2, 64, 64), atmosMat));
+
+// ===== YORUG'LIK =====
+const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.8);
+sunLight.position.set(5, 1.5, 2.5);
+scene.add(sunLight);
+scene.add(new THREE.AmbientLight(0x111122, 0.15));
+
+// Qorong'i tomonni yoritish — ko'k rangdagi yumshoq svet
+const fillLight = new THREE.DirectionalLight(0x334466, 0.3);
+fillLight.position.set(-5, -1, -3);
+scene.add(fillLight);
+
+// Rim light — chekkalarni ajratish
+const rimLight = new THREE.DirectionalLight(0x6644aa, 0.4);
+rimLight.position.set(-3, 2, -4);
+scene.add(rimLight);
+
+// ===== MISHKA BOSHQARUVI =====
+let isDragging = false;
+let prevMouse = { x: 0, y: 0 };
+let rotVelocity = { x: 0, y: 0 };
+let targetRot = { x: 0.41, y: 0 };
+
+renderer.domElement.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  prevMouse.x = e.clientX;
+  prevMouse.y = e.clientY;
+  rotVelocity.x = 0;
+  rotVelocity.y = 0;
+});
+
+window.addEventListener('mouseup', () => { isDragging = false; });
+
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - prevMouse.x;
+  const dy = e.clientY - prevMouse.y;
+  rotVelocity.x = dy * 0.003;
+  rotVelocity.y = dx * 0.003;
+  targetRot.x += rotVelocity.x;
+  targetRot.y += rotVelocity.y;
+  // Tepaga-pastga cheklash
+  targetRot.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, targetRot.x));
+  prevMouse.x = e.clientX;
+  prevMouse.y = e.clientY;
+});
+
+// Telefon uchun touch
+renderer.domElement.addEventListener('touchstart', (e) => {
+  isDragging = true;
+  prevMouse.x = e.touches[0].clientX;
+  prevMouse.y = e.touches[0].clientY;
+}, { passive: true });
+
+window.addEventListener('touchend', () => { isDragging = false; });
+
+window.addEventListener('touchmove', (e) => {
+  if (!isDragging) return;
+  const dx = e.touches[0].clientX - prevMouse.x;
+  const dy = e.touches[0].clientY - prevMouse.y;
+  targetRot.x += dy * 0.003;
+  targetRot.y += dx * 0.003;
+  targetRot.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, targetRot.x));
+  prevMouse.x = e.touches[0].clientX;
+  prevMouse.y = e.touches[0].clientY;
+}, { passive: true });
+
+// Zoom
+renderer.domElement.addEventListener('wheel', (e) => {
+  camera.position.z += e.deltaY * 0.002;
+  camera.position.z = Math.max(1.8, Math.min(6, camera.position.z));
+}, { passive: true });
+
+// ===== ANIMATSIYA =====
+const autoRotateSpeed = 0.00008;
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  // Avtomatik sekin aylanish
+  if (!isDragging) {
+    targetRot.y += autoRotateSpeed * 16;
+    // Inertia — qo'yib yuborganda davom etadi
+    rotVelocity.x *= 0.95;
+    rotVelocity.y *= 0.95;
+    targetRot.x += rotVelocity.x;
+    targetRot.y += rotVelocity.y;
+    targetRot.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, targetRot.x));
+  }
+
+  // Smooth lerp
+  earth.rotation.x += (targetRot.x - earth.rotation.x) * 0.08;
+  earth.rotation.y += (targetRot.y - earth.rotation.y) * 0.08;
+
+  nightMesh.rotation.x = earth.rotation.x;
+  nightMesh.rotation.y = earth.rotation.y;
+
+  clouds.rotation.x = earth.rotation.x;
+  clouds.rotation.y = earth.rotation.y + 0.0003 * Date.now() * 0.01;
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+// ===== RESIZE =====
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+</script>
+</body>
+</html>

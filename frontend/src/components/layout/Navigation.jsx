@@ -6,12 +6,13 @@ import {
   ChevronDown, Menu, X, Globe,
   Zap, Trophy,
   FlaskConical, Activity, Calendar, History,
-  Gamepad2, FolderGit2, User, Star, LayoutGrid, Brain,
+  Gamepad2, FolderGit2, User, Star, LayoutGrid, Brain, Coins,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useUserStore } from "@/store/useUserStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useGamificationStore } from "@/store/useGamificationStore";
 
 const LANG_META = {
   ENG: { flag: '🇬🇧', label: 'English' },
@@ -40,8 +41,8 @@ const FEATURES = (t) => [
 ];
 
 const PROFILE_ITEMS = [
-  { path: "/portfolio", label: "Portfolio", icon: FolderGit2 },
   { path: "/profile", label: "My Profile", icon: User },
+  { path: "/portfolio", label: "Portfolio", icon: FolderGit2 },
 ];
 
 // ── shared button styles ──────────────────────────────────────────────────────
@@ -176,6 +177,12 @@ export default function Navigation() {
   const { isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
 
+  const { xp, level, fuel } = useGamificationStore();
+  const currentLevel = level || 1;
+  const xpBase = Math.pow(currentLevel - 1, 2) * 100;
+  const nextXpBase = Math.pow(currentLevel, 2) * 100;
+  const xpProgress = Math.max(0, Math.min(100, (((xp || 0) - xpBase) / (nextXpBase - xpBase)) * 100));
+
   const mainNav = MAIN_NAV(t);
   const features = FEATURES(t);
 
@@ -245,23 +252,37 @@ export default function Navigation() {
             {(close) => features.map((f) => <DropLink key={f.path} {...f} close={() => close(false)} />)}
           </Dropdown>
 
-          {isAuthenticated && (
-            <Link
-              to="/profile"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-200 whitespace-nowrap"
-              {...btnProps(isActive('/profile'))}
-            >
-              <User className="w-3.5 h-3.5" strokeWidth={2} />
-              My Profile
-            </Link>
-          )}
+
 
           <LangDropdown />
         </div>
 
-        {/* Right — login only for guests */}
-        <div className="flex items-center flex-shrink-0">
-          {!isAuthenticated && (
+        {/* Right — auth area */}
+        <div className="flex items-center flex-shrink-0 pl-3 gap-3" style={{ borderLeft: '1px solid rgba(139,92,246,0.15)' }}>
+          {isAuthenticated && (
+            <div className="hidden lg:flex items-center gap-4 bg-black/30 rounded-xl px-4 py-1.5 border border-white/5 shadow-inner mr-2">
+              {/* Level & XP */}
+              <div className="flex flex-col items-end justify-center w-28">
+                <div className="flex items-center justify-between w-full gap-2">
+                  <span className="text-[10px] font-black text-violet-300 uppercase tracking-widest leading-none">Lvl {currentLevel}</span>
+                  <span className="text-[10px] font-bold text-white/50 leading-none">{(xp || 0).toLocaleString()} XP</span>
+                </div>
+                <div className="w-full h-1.5 mt-1.5 bg-black/60 rounded-full overflow-hidden border border-white/10 shadow-inner">
+                  <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 shadow-[0_0_10px_rgba(167,139,250,0.5)] transition-all duration-1000" style={{ width: `${xpProgress}%` }} />
+                </div>
+              </div>
+              
+              <div className="w-px h-6 bg-white/10" />
+              
+              {/* Fuel */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-black text-yellow-400 drop-shadow-sm tracking-wide">{(fuel || 0).toLocaleString()}</span>
+                <Coins className="w-4 h-4 text-yellow-400 drop-shadow-md" />
+              </div>
+            </div>
+          )}
+
+          {!isAuthenticated ? (
             <Link
               to="/login"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-bold transition-all duration-200 whitespace-nowrap bg-violet/20 border border-violet/30 text-violet-pale hover:bg-violet/30 hover:scale-105"
@@ -269,6 +290,28 @@ export default function Navigation() {
               <User className="w-3.5 h-3.5" strokeWidth={2.5} />
               Log in
             </Link>
+          ) : (
+            <Dropdown label="My Profile" icon={User} isActive={profileHasActive}>
+              {(close) => (
+                <>
+                  {PROFILE_ITEMS.map((p) => <DropLink key={p.path} {...p} close={() => close(false)} />)}
+                  <div className="h-px w-full my-1" style={{ background: 'rgba(139,92,246,0.15)' }} />
+                  <button
+                    onClick={() => {
+                      useAuthStore.getState().logout();
+                      close(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150"
+                    style={{ color: '#ef4444' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <X className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
+                    Log out
+                  </button>
+                </>
+              )}
+            </Dropdown>
           )}
         </div>
       </div>
@@ -287,12 +330,20 @@ export default function Navigation() {
         </Link>
 
         <div className="flex items-center gap-2">
-          {!isAuthenticated && (
+          {!isAuthenticated ? (
             <Link
               to="/login"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet/20 border border-violet/30 text-violet-pale"
             >
               Log in
+            </Link>
+          ) : (
+            <Link
+              to="/profile"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider text-[#c4b5fd] border border-[#a78bfa]/30"
+              style={{ background: 'rgba(139,92,246,0.15)' }}
+            >
+              Profile
             </Link>
           )}
           <button

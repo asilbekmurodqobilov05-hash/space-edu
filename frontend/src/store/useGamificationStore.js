@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import api from '@/lib/api';
 
 const calcLevel = (xp) => Math.floor(Math.sqrt(xp / 100)) + 1;
 
@@ -24,15 +25,19 @@ export const useGamificationStore = create()(
         const newXp = get().xp + amount;
         set({ xp: newXp, level: calcLevel(newXp) });
         get().checkBadges();
+        api.post('/gamification/grant/', { xp: amount }).catch(() => {});
       },
 
-      addFuel: (amount) =>
-        set((s) => ({ fuel: Math.min(1000, s.fuel + amount) })),
+      addFuel: (amount) => {
+        set((s) => ({ fuel: Math.min(1000, s.fuel + amount) }));
+        api.post('/gamification/grant/', { fuel: amount }).catch(() => {});
+      },
 
       spendFuel: (amount) => {
         const cur = get().fuel;
         if (cur < amount) return false;
         set({ fuel: cur - amount });
+        // NOTE: Negative fuel not supported by grant yet, but could be added later
         return true;
       },
 
@@ -113,9 +118,16 @@ export const useGamificationStore = create()(
         get().checkBadges();
       },
 
-      // Sync state from backend API response
+      // Sync state from backend API response but preserve local progression if it's higher
       syncFromAPI: ({ xp, level, fuel, streak, last_play_date, skills }) =>
-        set({ xp, level, fuel, streak, lastPlayDate: last_play_date ?? null, skills: skills ?? {} }),
+        set((s) => ({
+          xp: Math.max(s.xp || 0, xp || 0),
+          level: Math.max(s.level || 1, level || 1),
+          fuel: Math.max(s.fuel || 0, fuel || 0),
+          streak: streak ?? s.streak,
+          lastPlayDate: last_play_date ?? s.lastPlayDate,
+          skills: skills ?? s.skills,
+        })),
 
       // Apply lesson complete response from API
       applyLessonResult: ({ xp_earned, fuel_earned, new_level, new_badges }) => {

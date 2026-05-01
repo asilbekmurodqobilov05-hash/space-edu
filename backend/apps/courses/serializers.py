@@ -1,9 +1,114 @@
 from rest_framework import serializers
 
-from .models import Lesson, LessonSection, Level, QuizQuestion, Unit
+from .models import (
+    Sphere, Topic, TopicLesson, SubLesson, Problem,
+    Level, Unit, Lesson, LessonSection, QuizQuestion,
+)
 
 
-# ── Write serializers (admin CRUD) ────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+#  NEW SPHERE-BASED SERIALIZERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── SubLesson ──
+class SubLessonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubLesson
+        fields = ('id', 'order', 'name', 'name_en', 'name_ru', 'video_url', 'content')
+
+
+class SubLessonWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubLesson
+        fields = ('id', 'parent_lesson', 'order', 'name', 'name_en', 'name_ru', 'video_url', 'content')
+
+
+# ── TopicLesson ──
+class TopicLessonSerializer(serializers.ModelSerializer):
+    sub_lessons = SubLessonSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = TopicLesson
+        fields = ('id', 'order', 'name', 'name_en', 'name_ru', 'video_url', 'content', 'sub_lessons')
+
+
+class TopicLessonWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TopicLesson
+        fields = ('id', 'topic', 'order', 'name', 'name_en', 'name_ru', 'video_url', 'content')
+
+
+# ── Topic ──
+class TopicListSerializer(serializers.ModelSerializer):
+    lesson_count = serializers.IntegerField(source='lessons.count', read_only=True)
+
+    class Meta:
+        model = Topic
+        fields = ('id', 'order', 'title', 'title_en', 'title_ru', 'color', 'description', 'lesson_count')
+
+
+class TopicDetailSerializer(serializers.ModelSerializer):
+    lessons = TopicLessonSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Topic
+        fields = ('id', 'order', 'title', 'title_en', 'title_ru', 'color', 'description', 'lessons')
+
+
+class TopicWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Topic
+        fields = ('id', 'sphere', 'order', 'title', 'title_en', 'title_ru', 'color', 'description')
+
+
+# ── Problem ──
+class ProblemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Problem
+        fields = ('id', 'number', 'question', 'question_en', 'question_ru',
+                  'answer', 'explanation', 'explanation_en', 'difficulty')
+
+
+class ProblemWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Problem
+        fields = ('id', 'sphere', 'number', 'question', 'question_en', 'question_ru',
+                  'answer', 'explanation', 'explanation_en', 'difficulty')
+
+
+# ── Sphere ──
+class SphereListSerializer(serializers.ModelSerializer):
+    topic_count = serializers.IntegerField(source='topics.count', read_only=True)
+    problem_count = serializers.IntegerField(source='problems.count', read_only=True)
+
+    class Meta:
+        model = Sphere
+        fields = ('id', 'slug', 'order', 'title', 'title_en', 'title_ru',
+                  'description', 'description_en', 'color', 'icon', 'link',
+                  'lessons_count', 'is_active', 'topic_count', 'problem_count')
+
+
+class SphereDetailSerializer(serializers.ModelSerializer):
+    topics = TopicListSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Sphere
+        fields = ('id', 'slug', 'order', 'title', 'title_en', 'title_ru',
+                  'description', 'description_en', 'color', 'icon', 'link',
+                  'lessons_count', 'is_active', 'topics')
+
+
+class SphereWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sphere
+        fields = ('id', 'slug', 'order', 'title', 'title_en', 'title_ru',
+                  'description', 'description_en', 'color', 'icon', 'link',
+                  'lessons_count', 'is_active')
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  LEGACY SERIALIZERS (kept for backwards compat)
+# ══════════════════════════════════════════════════════════════════════════════
 
 class LevelWriteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -40,8 +145,6 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
                   'options', 'correct_answer',
                   'explanation_en', 'explanation_uz', 'explanation_ru')
 
-
-# ── Read serializers (public API) ─────────────────────────────────────────────
 
 class LessonListSerializer(serializers.ModelSerializer):
     class Meta:

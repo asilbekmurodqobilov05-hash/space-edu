@@ -44,9 +44,9 @@ const PLANET_DRIFT_U_S = PLANET_ORBITAL_KM_S / BACKDROP_KM_PER_SCENE_UNIT;
 /** Ship is visually larger, keep collision radius roughly matched. */
 const SHIP_RADIUS = 0.36 * 1.3;
 const SHIP_Z_HALF = 0.52 * 1.3;
-const SHIP_ACCEL = 180;
-const SHIP_MAX_SPEED = 38;
-const SHIP_DRAG = 6.2;
+const SHIP_ACCEL = 110;
+const SHIP_MAX_SPEED = 28;
+const SHIP_DRAG = 4.5;
 const BOOST_DRAIN = 34;
 const BOOST_RECHARGE = 11;
 const BOOST_SPEED_MUL = 2.45;
@@ -535,11 +535,17 @@ function loadTextureCached(path, isColor = false) {
 }
 
 function firstMeshGeometry(root) {
-  let found = null;
+  const geoms = [];
+  root.updateMatrixWorld(true);
   root?.traverse?.((obj) => {
-    if (!found && obj?.isMesh && obj.geometry) found = obj.geometry;
+    if (obj?.isMesh && obj.geometry && obj.geometry.attributes.position) {
+      const geom = obj.geometry.clone();
+      geom.applyMatrix4(obj.matrixWorld);
+      geoms.push(geom);
+    }
   });
-  return found;
+  if (geoms.length > 0) return mergeGeometries(geoms, false);
+  return null;
 }
 
 const nebulaSkyVertexShader = `
@@ -1025,176 +1031,52 @@ function DeepSpaceHighlights() {
 }
 
 function CinematicPlanets() {
-  const marsMap = useMemo(() => createCraterCanvasTexture(1), []);
-  const earthMap = useMemo(() => createEarthCanvasTexture(), []);
-  const gasGreenMap = useMemo(() => createGasGiantGreenTexture(), []);
-  const cloudMap = useMemo(() => createCloudCanvasTexture(), []);
-  const sunMap = useMemo(() => createCraterCanvasTexture(3), []);
-  const marsRough = useMemo(() => createProceduralRoughnessTexture(11), []);
-  const marsNormal = useMemo(() => createProceduralNormalTexture(12), []);
-  const gasRough = useMemo(() => createProceduralRoughnessTexture(21), []);
-  const gasNormal = useMemo(() => createProceduralNormalTexture(22), []);
-  const earthRough = useMemo(() => createProceduralRoughnessTexture(31), []);
-  const earthNormal = useMemo(() => createProceduralNormalTexture(32), []);
-  const sunRough = useMemo(() => createProceduralRoughnessTexture(41), []);
-  const sunNormal = useMemo(() => createProceduralNormalTexture(42), []);
-  const nsSun = useMemo(() => new THREE.Vector2(0.3, 0.3), []);
-  const nsMars = useMemo(() => new THREE.Vector2(0.35, 0.35), []);
-  const nsSaturn = useMemo(() => new THREE.Vector2(0.2, 0.2), []);
-  const nsGas = useMemo(() => new THREE.Vector2(0.2, 0.2), []);
-  const nsEarth = useMemo(() => new THREE.Vector2(0.28, 0.28), []);
-  const sunRef = useRef(null);
-  const saturnRef = useRef(null);
-  const earthRef = useRef(null);
-  const cloudRef = useRef(null);
-  const gasRef = useRef(null);
-  const marsG = useRef(null);
-  const ringG = useRef(null);
-  const gasG = useRef(null);
-  const earthG = useRef(null);
+  const [models, setModels] = useState({});
+  
+  useEffect(() => {
+    let cancelled = false;
+    const loader = new GLTFLoader(TEXTURE_LOADING_MANAGER);
+    const loadSafe = (path, key) => {
+      loader.load(path, (gltf) => {
+        if (!cancelled) setModels((m) => ({ ...m, [key]: gltf.scene }));
+      });
+    };
+    loadSafe("/models/space-run/jupiter_1_142984.glb", "jupiter");
+    loadSafe("/models/space-run/planet_mars_-_nasa_mars_landing_2021.glb", "mars");
+    loadSafe("/models/space-run/enceladus.glb", "enceladus");
+    loadSafe("/models/space-run/moon.glb", "moon");
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  useFrame((state) => {
-    const t = state.clock.elapsedTime;
-    const dt = finiteDelta(state.clock.getDelta());
-    const v = PLANET_DRIFT_U_S;
+  const jRef = useRef(null);
+  const mRef = useRef(null);
+  const eRef = useRef(null);
+  const moRef = useRef(null);
 
-    if (sunRef.current) sunRef.current.rotation.y += dt * 0.03;
-    if (earthRef.current) earthRef.current.rotation.y += dt * 0.055;
-    if (gasRef.current) gasRef.current.rotation.y += dt * 0.038;
-    if (saturnRef.current) saturnRef.current.rotation.y += dt * 0.02;
-    if (cloudRef.current) {
-      cloudRef.current.rotation.y += dt * 0.08;
-      if (cloudRef.current.material.map) {
-        cloudRef.current.material.map.offset.x = t * 0.012;
-      }
-    }
-
-    const baseX = -74;
-    const baseY = 2;
-    const baseZ = -178;
-    const wM = v / 12;
-    const wG = v / 9;
-    const wE = v / 8;
-    const wRing = v / 11;
-
-    if (marsG.current) {
-      marsG.current.position.set(
-        baseX + Math.sin(t * wM + 0.3) * 16,
-        baseY + 8 + Math.cos(t * wM * 0.82 + 1.1) * 4.8,
-        baseZ + Math.cos(t * wM * 0.55) * 15
-      );
-      marsG.current.rotation.y += dt * 0.022;
-    }
-    if (ringG.current) {
-      ringG.current.position.set(
-        baseX + 22 + Math.sin(t * wRing + 2.2) * 18,
-        baseY + 12 + Math.cos(t * wRing * 0.76) * 4.2,
-        baseZ + 9 + Math.sin(t * wRing * 0.4) * 16
-      );
-      ringG.current.rotation.z = 0.55 + Math.sin(t * wRing * 0.5) * 0.06;
-    }
-    if (gasG.current) {
-      gasG.current.position.set(
-        baseX + 42 + Math.sin(t * wG + 4.1) * 24,
-        baseY + 3 + Math.cos(t * wG * 0.88 + 0.4) * 5,
-        baseZ + 26 + Math.cos(t * wG * 0.48) * 20
-      );
-    }
-    if (earthG.current) {
-      earthG.current.position.set(
-        baseX + 8 + Math.sin(t * wE + 1.7) * 15,
-        baseY - 4 + Math.cos(t * wE * 0.85 + 3.3) * 4.1,
-        baseZ + 18 + Math.cos(t * wE * 0.5) * 14
-      );
-      earthG.current.rotation.y += dt * 0.018;
-    }
+  useFrame((state, delta) => {
+    const dt = finiteDelta(delta);
+    if (jRef.current) jRef.current.rotation.y += dt * 0.05;
+    if (mRef.current) mRef.current.rotation.y += dt * 0.08;
+    if (eRef.current) eRef.current.rotation.y += dt * 0.04;
+    if (moRef.current) moRef.current.rotation.y += dt * 0.06;
   });
-
-  const cloudMat = useMemo(() => {
-    const m = new THREE.MeshStandardMaterial({
-      map: cloudMap,
-      transparent: true,
-      opacity: 0.45,
-      depthWrite: false,
-      roughness: 1,
-      metalness: 0,
-      emissive: "#ffffff",
-      emissiveIntensity: 0.08,
-      blending: THREE.NormalBlending,
-    });
-    return m;
-  }, [cloudMap]);
 
   return (
     <group>
-      <group position={[-74, 3, -178]}>
-        <mesh ref={sunRef} scale={68}>
-          <sphereGeometry args={[1, 96, 72]} />
-          <meshPhongMaterial map={sunMap} normalMap={sunNormal ?? undefined} normalScale={nsSun} color="#ffd776" emissive="#ff8a00" emissiveIntensity={1.95} specular="#fef3c7" shininess={22} />
-        </mesh>
-        <mesh scale={76}>
-          <sphereGeometry args={[1, 64, 48]} />
-          <meshBasicMaterial color="#ffb347" transparent opacity={0.26} blending={THREE.AdditiveBlending} side={THREE.BackSide} depthWrite={false} />
-        </mesh>
-      </group>
-
-      <group ref={marsG} scale={14.4}>
-        <mesh>
-          <sphereGeometry args={[1, 64, 48]} />
-          <meshPhongMaterial map={marsMap} normalMap={marsNormal ?? undefined} normalScale={nsMars} shininess={10} specular="#6b4a3b" emissive="#d4622a" emissiveIntensity={0.1} />
-        </mesh>
-        <mesh scale={1.03}>
-          <sphereGeometry args={[1, 32, 24]} />
-          <meshBasicMaterial color="#ff8a5c" transparent opacity={0.18} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.BackSide} />
-        </mesh>
-        <mesh scale={1.08}>
-          <sphereGeometry args={[1, 32, 24]} />
-          <meshBasicMaterial color="#fca5a5" transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.BackSide} />
-        </mesh>
-      </group>
-
-      <group ref={ringG} rotation={[0.25, 0.1, -0.1]}>
-        <group ref={saturnRef} scale={13.2}>
-          <mesh>
-            <sphereGeometry args={[1, 64, 48]} />
-            <meshPhongMaterial map={gasGreenMap} normalMap={gasNormal ?? undefined} normalScale={nsSaturn} shininess={14} specular="#c9d8a6" emissive="#6b8f3a" emissiveIntensity={0.06} />
-          </mesh>
-          <mesh rotation={[Math.PI / 2.65, 0, 0]}>
-            <ringGeometry args={[1.35, 2.75, 128]} />
-            <meshStandardMaterial color="#dccca7" transparent opacity={0.72} side={THREE.DoubleSide} roughness={0.34} metalness={0.18} />
-          </mesh>
-          <mesh rotation={[Math.PI / 2.65, 0, 0]}>
-            <ringGeometry args={[2.78, 3.18, 128]} />
-            <meshBasicMaterial color="#f5deb3" transparent opacity={0.22} side={THREE.DoubleSide} depthWrite={false} />
-          </mesh>
-        </group>
-      </group>
-
-      <group ref={gasG} scale={11.2}>
-        <mesh ref={gasRef}>
-          <sphereGeometry args={[1, 64, 48]} />
-          <meshPhongMaterial map={gasGreenMap} normalMap={gasNormal ?? undefined} normalScale={nsGas} shininess={16} specular="#9bd5d1" emissive="#355e5a" emissiveIntensity={0.04} />
-        </mesh>
-        <mesh scale={1.025}>
-          <sphereGeometry args={[1, 40, 32]} />
-          <meshBasicMaterial color="#86efac" transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.BackSide} />
-        </mesh>
-      </group>
-
-      <group ref={earthG} scale={8.6}>
-        <mesh ref={earthRef}>
-          <sphereGeometry args={[1, 64, 48]} />
-          <meshPhongMaterial map={earthMap} normalMap={earthNormal ?? undefined} normalScale={nsEarth} shininess={28} specular="#cbd5e1" emissive="#1e3a5f" emissiveIntensity={0.04} />
-        </mesh>
-        <mesh ref={cloudRef} scale={1.018}>
-          <sphereGeometry args={[1, 48, 40]} />
-          <primitive object={cloudMat} attach="material" />
-        </mesh>
-        <mesh scale={1.06}>
-          <sphereGeometry args={[1, 48, 40]} />
-          <meshBasicMaterial color="#93c5fd" transparent opacity={0.14} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.BackSide} />
-        </mesh>
-      </group>
+      {models.jupiter && (
+        <primitive ref={jRef} object={models.jupiter} position={[-250, 40, -450]} scale={0.5} />
+      )}
+      {models.mars && (
+        <primitive ref={mRef} object={models.mars} position={[180, -30, -350]} scale={0.4} />
+      )}
+      {models.enceladus && (
+        <primitive ref={eRef} object={models.enceladus} position={[300, 120, -500]} scale={0.3} />
+      )}
+      {models.moon && (
+        <primitive ref={moRef} object={models.moon} position={[-150, -80, -250]} scale={0.2} />
+      )}
     </group>
   );
 }
@@ -1234,24 +1116,19 @@ function EnemyScoutShip({ speedRef }) {
 }
 
 /** Shuttle stack: orbiter + rust ET + twin SRBs. Y-flipped so bow faces −Z (ahead into the lane). */
-function PlayerShipDetailed({ hullColor, boostingRef, shipVxRef, shipVyRef, healthRef }) {
+function PlayerShipDetailed({ rocketScene, hullColor, boostingRef, shipVxRef, shipVyRef, healthRef }) {
   const rootRef = useRef(null);
   const glowRef = useRef(null);
   const thrL = useRef(null);
   const thrR = useRef(null);
-  const thrC = useRef(null);
-  const hullMap = useMemo(() => createShipHullPanelTexture(), []);
-  useEffect(() => {
-    return () => {
-      hullMap?.dispose?.();
-    };
-  }, [hullMap]);
+  const _powerCol = useMemo(() => new THREE.Color(), []);
+
   useFrame((state, delta) => {
     const dt = finiteDelta(delta);
     const b = boostingRef?.current ? 1.45 : 1;
     const pulse = 0.82 + Math.sin(performance.now() * 0.014) * 0.18 * b;
     const op = THREE.MathUtils.clamp(0.5 * pulse * b, 0.32, 0.92);
-    for (const ref of [thrL, thrR, thrC]) {
+    for (const ref of [thrL, thrR]) {
       const m = ref.current?.material;
       if (m) m.opacity = op;
     }
@@ -1316,91 +1193,41 @@ function PlayerShipDetailed({ hullColor, boostingRef, shipVxRef, shipVyRef, heal
   return (
     <group ref={rootRef} scale={2.35}>
       <group rotation={[0, Math.PI, 0]}>
-      {/* External tank — central rust column */}
-      <mesh position={[0, 0, -0.28]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.11, 0.14, 0.95, 20]} />
-        <meshStandardMaterial map={hullMap ?? undefined} color={etRust} roughness={0.62} metalness={0.22} emissive={etFoam} emissiveIntensity={0.04} />
-      </mesh>
-      <mesh position={[0, 0, 0.22]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.14, 0.22, 12, 1]} />
-        <meshStandardMaterial color={etRust} roughness={0.68} metalness={0.1} />
-      </mesh>
-
-      {/* SRBs */}
-      {[-1, 1].map((side) => (
-        <group key={side} position={[side * 0.26, 0, -0.2]}>
-          <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[0.065, 0.065, 0.88, 14]} />
-            <meshStandardMaterial color={srbWhite} roughness={0.38} metalness={0.55} />
-          </mesh>
-          {[0.32, 0.02, -0.28].map((z, i) => (
-            <mesh key={i} position={[0, 0, z]}>
-              <torusGeometry args={[0.066, 0.012, 6, 20]} />
-              <meshStandardMaterial color={srbRing} roughness={0.55} metalness={0.35} />
+        {rocketScene ? (
+          <primitive object={rocketScene} />
+        ) : (
+          <group>
+            {/* Fallback Fuselage */}
+            <mesh position={[0, 0, 0.1]}>
+              <boxGeometry args={[0.3, 0.12, 0.8]} />
+              <meshStandardMaterial color={hullColor} roughness={0.4} metalness={0.8} />
             </mesh>
-          ))}
-          <mesh position={[0, 0, -0.52]} rotation={[Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[0.065, 0.12, 10, 1]} />
-            <meshStandardMaterial color="#f8fafc" roughness={0.35} metalness={0.5} />
-          </mesh>
-        </group>
-      ))}
+            
+            {/* Cockpit */}
+            <mesh position={[0, 0.08, 0.2]}>
+              <boxGeometry args={[0.2, 0.08, 0.3]} />
+              <meshStandardMaterial color="#020617" roughness={0.1} metalness={0.9} />
+            </mesh>
 
-      {/* Orbiter — delta wing, white / black tiles */}
-      <group position={[0, 0, 0.38]}>
-        <mesh>
-          <boxGeometry args={[0.36, 0.12, 0.52]} />
-          <meshStandardMaterial map={hullMap ?? undefined} color={orbiterWhite} roughness={0.3} metalness={0.72} />
-        </mesh>
-        <mesh position={[0, -0.055, 0]}>
-          <boxGeometry args={[0.34, 0.04, 0.48]} />
-          <meshStandardMaterial color={tileBlack} roughness={0.75} metalness={0.25} />
-        </mesh>
-        <mesh position={[0, 0.04, 0.12]} rotation={[0.12, 0, 0]}>
-          <boxGeometry args={[0.22, 0.06, 0.2]} />
-          <meshStandardMaterial color={tileBlack} roughness={0.5} metalness={0.4} />
-        </mesh>
-        <mesh position={[0.42, 0, -0.02]} rotation={[0, 0, -0.42]}>
-          <boxGeometry args={[0.38, 0.04, 0.28]} />
-          <meshStandardMaterial color={orbiterWhite} roughness={0.4} metalness={0.6} />
-        </mesh>
-        <mesh position={[-0.42, 0, -0.02]} rotation={[0, 0, 0.42]}>
-          <boxGeometry args={[0.38, 0.04, 0.28]} />
-          <meshStandardMaterial color={orbiterWhite} roughness={0.4} metalness={0.6} />
-        </mesh>
-        <mesh position={[0, 0.06, 0.26]} rotation={[0.25, 0, 0]}>
-          <boxGeometry args={[0.08, 0.05, 0.14]} />
-          <meshStandardMaterial color="#0ea5e9" roughness={0.25} metalness={0.5} emissive={accent} emissiveIntensity={0.35} />
-        </mesh>
-        <mesh position={[0, 0, 0.32]}>
-          <boxGeometry args={[0.14, 0.1, 0.08]} />
-          <meshStandardMaterial color={orbiterWhite} roughness={0.32} metalness={0.7} />
-        </mesh>
-        <mesh position={[0, 0.02, 0.34]}>
-          <boxGeometry args={[0.12, 0.04, 0.06]} />
-          <meshStandardMaterial color="#020617" roughness={0.45} metalness={0.2} />
-        </mesh>
-      </group>
+            {/* Swept Wings */}
+            <mesh position={[0, -0.02, -0.05]}>
+              <boxGeometry args={[1.2, 0.04, 0.4]} />
+              <meshStandardMaterial color={hullColor} roughness={0.4} metalness={0.8} />
+            </mesh>
+            
+            {/* Wing tip blasters */}
+            <mesh position={[0.58, 0.04, -0.15]} rotation={[0, 0, -0.1]}>
+              <boxGeometry args={[0.06, 0.16, 0.3]} />
+              <meshStandardMaterial color="#0ea5e9" roughness={0.3} metalness={0.8} emissive="#0284c7" emissiveIntensity={0.5} />
+            </mesh>
+            <mesh position={[-0.58, 0.04, -0.15]} rotation={[0, 0, 0.1]}>
+              <boxGeometry args={[0.06, 0.16, 0.3]} />
+              <meshStandardMaterial color="#0ea5e9" roughness={0.3} metalness={0.8} emissive="#0284c7" emissiveIntensity={0.5} />
+            </mesh>
+          </group>
+        )}
 
-      {/* Health glow ring */}
-      <mesh ref={glowRef} position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.48, 0.66, 64]} />
-        <meshBasicMaterial color="#22c55e" transparent opacity={0.25} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-
-      {/* Main engine plumes (SRB + SSME) */}
-      <mesh ref={thrL} position={[-0.26, 0, -0.68]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.15, 1.15, 14, 1, true]} />
-        <meshBasicMaterial color="#fef9c3" transparent opacity={0.68} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
-      </mesh>
-      <mesh ref={thrR} position={[0.26, 0, -0.68]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.15, 1.15, 14, 1, true]} />
-        <meshBasicMaterial color="#fef08a" transparent opacity={0.68} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
-      </mesh>
-      <mesh ref={thrC} position={[0, 0, -0.72]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.18, 1.35, 16, 1, true]} />
-        <meshBasicMaterial color="#fffbeb" transparent opacity={0.72} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
-      </mesh>
+      {/* Removed Health glow ring and Thruster cylinders as requested */}
       </group>
     </group>
   );
@@ -1584,6 +1411,7 @@ export function SpaceRunScene({ inputRef, runningRef }) {
   const slowIM = useRef(null);
   const magnetIM = useRef(null);
   const [modelGeometries, setModelGeometries] = useState(null);
+  const [rocketScene, setRocketScene] = useState(null);
 
   const meteorFallbackGeom = useMemo(() => createRockAsteroidGeometry(), []);
   const coinFallbackGeom = useMemo(() => new THREE.CylinderGeometry(0.42, 0.42, 0.12, 48), []);
@@ -1734,10 +1562,20 @@ export function SpaceRunScene({ inputRef, runningRef }) {
   useEffect(() => {
     let cancelled = false;
     const loader = new GLTFLoader(TEXTURE_LOADING_MANAGER);
+
+    // Load Rocket (complex scene, not just geometry)
+    loader.load("/models/space-run/rocket.glb", (gltf) => {
+      if (cancelled) return;
+      const scene = gltf.scene;
+      scene.rotation.y = Math.PI; // Face forward
+      scene.scale.set(0.18, 0.18, 0.18); // Made much bigger as requested
+      setRocketScene(scene);
+    });
+
     const modelDefs = [
-      ["meteor", "/models/space-run/asteroid/asteroid.glb", meteorFallbackGeom, 0.65],
-      ["coin", "/models/space-run/coin/coin.glb", coinFallbackGeom, 0.58],
-      ["specCoin", "/models/space-run/coin-special/coin-special.glb", specCoinFallbackGeom, 0.62],
+      ["meteor", "/models/space-run/meteorite.glb", meteorFallbackGeom, 0.65],
+      ["coin", "/models/space-run/gold_coin.glb", coinFallbackGeom, 0.48],
+      ["specCoin", "/models/space-run/gold_coin.glb", specCoinFallbackGeom, 0.55],
       ["shield", "/models/space-run/powerup-shield/powerup-shield.glb", crystalFallbackGeom, 0.55],
       ["slow", "/models/space-run/powerup-slow/powerup-slow.glb", slowFallbackGeom, 0.55],
       ["magnet", "/models/space-run/powerup-magnet/powerup-magnet.glb", magnetFallbackGeom, 0.55],
@@ -2191,7 +2029,7 @@ export function SpaceRunScene({ inputRef, runningRef }) {
   return (
     <>
       <RendererSetup />
-      <CosmicSkyDome speedRef={speedRef} />
+      {/* Removed wind dots and cosmic sky dome for a realistic space look */}
       <CameraRig shipX={shipX} shipY={shipY} shake={shakeRef} speedRef={speedRef} />
       <CinematicLensFlares />
       <DistantGalaxyPlanes />
@@ -2200,22 +2038,21 @@ export function SpaceRunScene({ inputRef, runningRef }) {
       <LeftAsteroidCluster />
       <DistantFleet speedRef={speedRef} />
       <BlackHoleAnomaly speedRef={speedRef} />
-      <StarMotionLines speedRef={speedRef} />
       <EnemyScoutShip speedRef={speedRef} />
 
-      <color attach="background" args={["#030510"]} />
-      <fogExp2 attach="fog" args={["#030510", 0.012]} />
-      <hemisphereLight intensity={0.18} color="#8ea7d3" groundColor="#09040f" />
-      <ambientLight intensity={0.08} />
-      <directionalLight position={[-74, 20, -168]} intensity={1.55} color="#ffe7b3" castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
-      <pointLight position={[-74, 3, -178]} intensity={3.2} color="#ffd089" distance={430} decay={1.55} />
-      <pointLight position={[98, 36, -150]} intensity={2.25} color="#f59e0b" distance={260} decay={1.45} />
+      <color attach="background" args={["#000000"]} />
+      <hemisphereLight intensity={0.12} color="#ffffff" groundColor="#000000" />
+      <ambientLight intensity={0.1} />
+      <directionalLight position={[-74, 20, -168]} intensity={1.8} color="#fffcf5" castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
+      <pointLight position={[-74, 3, -178]} intensity={3.5} color="#ffd089" distance={450} decay={1.5} />
+      <pointLight position={[98, 36, -150]} intensity={2.5} color="#f59e0b" distance={300} decay={1.5} />
 
-      <Stars radius={175} depth={150} count={4200} factor={1.25} saturation={0.03} fade speed={0.12} />
-      <Stars radius={195} depth={180} count={1200} factor={2.1} saturation={0.04} fade speed={0.06} />
+      <Stars radius={150} depth={150} count={6000} factor={1.0} saturation={0} fade speed={0.0} />
+      <Stars radius={200} depth={200} count={3000} factor={1.5} saturation={0} fade speed={0.0} />
 
       <group ref={groupRef}>
         <PlayerShipDetailed
+          rocketScene={rocketScene}
           hullColor={hullColor}
           boostingRef={boostingRef}
           shipVxRef={shipVx}
@@ -2224,7 +2061,7 @@ export function SpaceRunScene({ inputRef, runningRef }) {
         />
       </group>
 
-      <EngineParticles shipX={shipX} shipY={shipY} boostingRef={boostingRef} runningRef={runningRef} speedRef={speedRef} />
+      {/* Removed EngineParticles as requested */}
 
       <instancedMesh ref={meteorIM} args={[meteorGeom, meteorMat, MAX_METEOR_INSTANCES]} castShadow receiveShadow />
       <instancedMesh ref={coinIM} args={[coinGeom, coinMat, MAX_COIN_INSTANCES]} castShadow receiveShadow />

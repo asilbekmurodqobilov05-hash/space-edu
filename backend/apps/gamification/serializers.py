@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Badge, UserBadge, UserGamificationProfile
+from .models import Badge, UserBadge, UserGamificationProfile, RewardProduct, UserRewardPurchase
 
 
 class BadgeSerializer(serializers.ModelSerializer):
@@ -9,7 +9,7 @@ class BadgeSerializer(serializers.ModelSerializer):
         fields = (
             'slug', 'title_en', 'title_uz', 'title_ru',
             'description_en', 'description_uz', 'description_ru',
-            'icon', 'condition_type', 'condition_value',
+            'icon', 'rarity', 'condition_type', 'condition_value',
         )
 
 
@@ -43,3 +43,23 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
             return None
         request = self.context.get('request')
         return request.build_absolute_uri(obj.user.avatar.url) if request else obj.user.avatar.url
+
+
+class RewardProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RewardProduct
+        fields = (
+            'id', 'slug', 'title_en', 'title_uz', 'title_ru',
+            'description_en', 'description_uz', 'description_ru',
+            'icon', 'tier', 'category', 'cost', 'features',
+            'is_active', 'order',
+        )
+
+
+class UserRewardPurchaseSerializer(serializers.ModelSerializer):
+    product = RewardProductSerializer()
+
+    class Meta:
+        model = UserRewardPurchase
+        fields = ('id', 'product', 'purchased_at')
+

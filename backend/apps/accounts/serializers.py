@@ -49,7 +49,18 @@ class RegisterSerializer(serializers.ModelSerializer):
             username = f'{base}{counter}'
             counter += 1
         validated_data['username'] = username
-        return User.objects.create_user(**validated_data)
+        user = User.objects.create_user(**validated_data)
+
+        # Auto-create related profiles
+        from apps.gamification.models import UserGamificationProfile
+        UserGamificationProfile.objects.get_or_create(user=user)
+        try:
+            from apps.challenges.models import UserStreak
+            UserStreak.objects.get_or_create(user=user)
+        except Exception:
+            pass
+
+        return user
 
 
 class UserSerializer(serializers.ModelSerializer):

@@ -20,14 +20,16 @@ export default function LeaderboardView() {
 
   useEffect(() => {
     api.get('/gamification/leaderboard/')
-      .then(({ data }) => setEntries(data))
+      .then(({ data }) => {
+        setEntries(Array.isArray(data) ? data : (data.results || data.leaderboard || []));
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const all = entries.map((e) => ({
+  const all = (Array.isArray(entries) ? entries : []).map((e) => ({
     id: e.username,
-    name: `${e.first_name} ${e.last_name}`.trim() || e.username,
+    name: `${e.first_name || ''} ${e.last_name || ''}`.trim() || e.username,
     username: e.username,
     xp: e.xp,
     level: e.level,
