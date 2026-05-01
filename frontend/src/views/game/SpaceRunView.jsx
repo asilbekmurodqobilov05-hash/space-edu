@@ -31,6 +31,54 @@ export default function SpaceRunView() {
   const inputRef = useRef({ left: false, right: false, up: false, down: false, boost: false });
   const touchRef = useRef({ x: 0, y: 0, active: false });
   const bonusGiven = useRef(false);
+  const starCanvasRef = useRef(null);
+
+  // Animated starfield canvas
+  useEffect(() => {
+    if (started) return;
+    const canvas = starCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let raf;
+    const stars = Array.from({ length: 220 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      r: Math.random() * 1.8 + 0.3,
+      speed: Math.random() * 0.4 + 0.15,
+      phase: Math.random() * Math.PI * 2,
+      hue: Math.random() > 0.7 ? 200 + Math.random() * 60 : 0,
+      sat: Math.random() > 0.7 ? 60 : 0,
+    }));
+    const resize = () => {
+      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    const draw = (t) => {
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      ctx.clearRect(0, 0, w, h);
+      for (const s of stars) {
+        const alpha = 0.35 + 0.65 * ((Math.sin(t * 0.001 * s.speed + s.phase) + 1) / 2);
+        if (s.hue) {
+          ctx.fillStyle = `hsla(${s.hue}, ${s.sat}%, 85%, ${alpha})`;
+        } else {
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        }
+        ctx.beginPath();
+        ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', resize);
+    };
+  }, [started]);
 
   const { score, survivalSec, distance, coinsCollected, health, shield, boost, gameOver, paused, difficulty, activePower, setHud, reset } =
     useSpaceRunHud();
@@ -198,7 +246,7 @@ export default function SpaceRunView() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/20 group-hover:bg-cyan-500/25">
                   <ArrowLeft className="w-4 h-4" strokeWidth={2.25} />
                 </span>
-                <span className="hidden min-[380px]:inline">{t('common', 'home')}</span>
+                <span className="hidden min-[380px]:inline">Home</span>
               </Link>
               <div className="hidden sm:flex items-center gap-2 min-w-0 ml-2 border-l border-white/10 pl-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-600/30 to-cyan-500/25 ring-1 ring-white/10">
@@ -315,17 +363,35 @@ export default function SpaceRunView() {
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-            <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2">
-              <div className="flex justify-between text-[10px] uppercase tracking-wider text-rose-100/80 font-bold"><span>{t('game', 'health')}</span><span>{Math.round(health)}%</span></div>
-              <div className="mt-1.5 h-1.5 rounded-full bg-black/25 overflow-hidden"><div className="h-full bg-rose-400 transition-[width]" style={{ width: `${health}%` }} /></div>
+            {/* Health HUD Bar */}
+            <div className="sr-hud-bar" style={{ borderColor: 'rgba(251,113,133,0.35)', boxShadow: '0 0 18px rgba(251,113,133,0.08), inset 0 0 12px rgba(251,113,133,0.04)' }}>
+              <div className="flex justify-between text-[10px] uppercase tracking-wider font-bold mb-2">
+                <span className="text-rose-200" style={{ textShadow: '0 0 8px rgba(251,113,133,0.6)' }}>Health</span>
+                <span className="text-rose-300 tabular-nums" style={{ textShadow: '0 0 6px rgba(251,113,133,0.5)' }}>{Math.round(health)}%</span>
+              </div>
+              <div className="h-[6px] rounded-[3px] bg-black/40 overflow-hidden" style={{ boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.5)' }}>
+                <div className="sr-hud-bar-fill h-full" style={{ width: `${health}%`, background: 'linear-gradient(90deg, #fb7185, #f43f5e, #e11d48)', boxShadow: '0 0 10px rgba(251,113,133,0.6), 0 0 20px rgba(251,113,133,0.25)' }} />
+              </div>
             </div>
-            <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2">
-              <div className="flex justify-between text-[10px] uppercase tracking-wider text-cyan-100/80 font-bold"><span>{t('game', 'shield')}</span><span>{Math.round(shield)}%</span></div>
-              <div className="mt-1.5 h-1.5 rounded-full bg-black/25 overflow-hidden"><div className="h-full bg-cyan-300 transition-[width]" style={{ width: `${Math.min(100, shield)}%` }} /></div>
+            {/* Shield HUD Bar */}
+            <div className="sr-hud-bar" style={{ borderColor: 'rgba(34,211,238,0.35)', boxShadow: '0 0 18px rgba(34,211,238,0.08), inset 0 0 12px rgba(34,211,238,0.04)' }}>
+              <div className="flex justify-between text-[10px] uppercase tracking-wider font-bold mb-2">
+                <span className="text-cyan-200" style={{ textShadow: '0 0 8px rgba(34,211,238,0.6)' }}>Shield</span>
+                <span className="text-cyan-300 tabular-nums" style={{ textShadow: '0 0 6px rgba(34,211,238,0.5)' }}>{Math.round(shield)}%</span>
+              </div>
+              <div className="h-[6px] rounded-[3px] bg-black/40 overflow-hidden" style={{ boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.5)' }}>
+                <div className="sr-hud-bar-fill h-full" style={{ width: `${Math.min(100, shield)}%`, background: 'linear-gradient(90deg, #22d3ee, #06b6d4, #0891b2)', boxShadow: '0 0 10px rgba(34,211,238,0.6), 0 0 20px rgba(34,211,238,0.25)' }} />
+              </div>
             </div>
-            <div className="rounded-xl border border-fuchsia-400/20 bg-fuchsia-500/10 px-3 py-2">
-              <div className="flex justify-between text-[10px] uppercase tracking-wider text-fuchsia-100/80 font-bold"><span>{t('game', 'boost')}</span><span>{Math.round(boost)}%</span></div>
-              <div className="mt-1.5 h-1.5 rounded-full bg-black/25 overflow-hidden"><div className="h-full bg-fuchsia-300 transition-[width]" style={{ width: `${boost}%` }} /></div>
+            {/* Boost HUD Bar */}
+            <div className="sr-hud-bar" style={{ borderColor: 'rgba(217,70,239,0.35)', boxShadow: '0 0 18px rgba(217,70,239,0.08), inset 0 0 12px rgba(217,70,239,0.04)' }}>
+              <div className="flex justify-between text-[10px] uppercase tracking-wider font-bold mb-2">
+                <span className="text-fuchsia-200" style={{ textShadow: '0 0 8px rgba(217,70,239,0.6)' }}>Boost</span>
+                <span className="text-fuchsia-300 tabular-nums" style={{ textShadow: '0 0 6px rgba(217,70,239,0.5)' }}>{Math.round(boost)}%</span>
+              </div>
+              <div className="h-[6px] rounded-[3px] bg-black/40 overflow-hidden" style={{ boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.5)' }}>
+                <div className="sr-hud-bar-fill h-full" style={{ width: `${boost}%`, background: 'linear-gradient(90deg, #e879f9, #d946ef, #a21caf)', boxShadow: '0 0 10px rgba(217,70,239,0.6), 0 0 20px rgba(217,70,239,0.25)' }} />
+              </div>
             </div>
           </div>
         </div>
@@ -359,20 +425,159 @@ export default function SpaceRunView() {
         </Canvas>
 
         {!started && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 backdrop-blur-sm px-6 text-center">
-            <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-fuchsia-300 to-amber-300 mb-3">
-              {t('game', 'title')}
-            </h1>
-            <p className="text-white/75 max-w-md mb-6 text-sm sm:text-base leading-relaxed">
-              {t('game', 'introDesc')}
-            </p>
-            <button
-              type="button"
-              onClick={() => void handleStart()}
-              className="px-8 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black text-lg shadow-lg shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98] transition-transform"
-            >
-              {t('game', 'play')}
-            </button>
+          <div className="absolute inset-0 z-[15] overflow-hidden" style={{ animation: 'entry-fade-in 0.8s ease-out both' }}>
+            {/* === DEEP SPACE BACKGROUND === */}
+            {/* Base dark overlay */}
+            <div className="absolute inset-0 bg-[#020010]" />
+
+            {/* Starfield canvas */}
+            <canvas
+              ref={starCanvasRef}
+              className="absolute inset-0 w-full h-full"
+              style={{ opacity: 0.9 }}
+            />
+
+            {/* Nebula layer 1 — blue, upper-left */}
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                top: '-10%', left: '-15%',
+                width: '70%', height: '75%',
+                background: 'radial-gradient(ellipse at 40% 35%, rgba(14, 165, 233, 0.18) 0%, rgba(59, 130, 246, 0.08) 35%, transparent 70%)',
+                animation: 'nebula-drift 25s ease-in-out infinite',
+                filter: 'blur(40px)',
+              }}
+            />
+            {/* Nebula layer 2 — purple, center-right */}
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                top: '10%', right: '-10%',
+                width: '65%', height: '70%',
+                background: 'radial-gradient(ellipse at 60% 50%, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.08) 40%, transparent 70%)',
+                animation: 'nebula-drift 30s ease-in-out infinite reverse',
+                filter: 'blur(50px)',
+              }}
+            />
+            {/* Nebula layer 3 — deep blue stardust, bottom */}
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                bottom: '-5%', left: '20%',
+                width: '60%', height: '50%',
+                background: 'radial-gradient(ellipse at 50% 80%, rgba(30, 64, 175, 0.15) 0%, rgba(37, 99, 235, 0.06) 40%, transparent 65%)',
+                animation: 'nebula-drift 35s ease-in-out infinite',
+                filter: 'blur(35px)',
+              }}
+            />
+
+            {/* Jupiter planet — lower right */}
+            <div
+              className="sr-planet-jupiter"
+              style={{ bottom: '5%', right: '-4%' }}
+            />
+
+            {/* Faint secondary planet — upper left, tiny */}
+            <div
+              className="absolute rounded-full pointer-events-none"
+              style={{
+                top: '12%', left: '8%',
+                width: '45px', height: '45px',
+                background: 'radial-gradient(circle at 40% 35%, #6e7b91 0%, #3b4252 60%, #1e2333 100%)',
+                boxShadow: 'inset -6px -3px 10px rgba(0,0,0,0.5), 0 0 15px 3px rgba(100,120,180,0.06)',
+                opacity: 0.5,
+              }}
+            />
+
+            {/* Vignette overlay */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: 'radial-gradient(ellipse at center, transparent 30%, rgba(2,0,16,0.7) 100%)',
+              }}
+            />
+
+            {/* === CONTENT LAYER === */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center z-10">
+
+              {/* Portal ring container */}
+              <div className="relative flex items-center justify-center mb-8" style={{ width: '310px', height: '310px' }}>
+                {/* Outer diffused halo */}
+                <div
+                  className="absolute rounded-full pointer-events-none"
+                  style={{
+                    top: '50%', left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '340px', height: '340px',
+                    background: 'radial-gradient(circle, rgba(0,229,255,0.06) 40%, rgba(139,92,246,0.04) 60%, transparent 75%)',
+                    filter: 'blur(15px)',
+                  }}
+                />
+
+                {/* Rotating conic-gradient ring */}
+                <div className="sr-portal-ring" />
+
+                {/* Glow halo with breathing animation */}
+                <div className="sr-portal-glow" />
+
+                {/* Orbiting particles */}
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="absolute pointer-events-none"
+                    style={{
+                      top: '50%', left: '50%',
+                      width: '4px', height: '4px',
+                      marginTop: '-2px', marginLeft: '-2px',
+                      animation: `orbit-particle ${3 + i * 0.7}s linear infinite`,
+                      animationDelay: `${i * -0.6}s`,
+                    }}
+                  >
+                    <div
+                      className="w-full h-full rounded-full"
+                      style={{
+                        background: i % 2 === 0 ? '#00e5ff' : '#a78bfa',
+                        boxShadow: `0 0 6px 2px ${i % 2 === 0 ? 'rgba(0,229,255,0.7)' : 'rgba(167,139,250,0.7)'}`,
+                      }}
+                    />
+                  </div>
+                ))}
+
+                {/* Title inside portal */}
+                <div className="relative z-10 flex flex-col items-center">
+                  <h1 className="sr-neon-title font-display leading-none">
+                    Space Run
+                  </h1>
+                  <p className="text-cyan-200/60 text-xs tracking-[0.3em] uppercase mt-2 font-semibold">
+                    Arcade · Dodge · Collect
+                  </p>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <p className="text-white/60 max-w-md mb-8 text-sm sm:text-base leading-relaxed"
+                style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+                Survive the asteroid field, collect glowing energy cores, and push distance.
+                <span className="hidden sm:inline"> Arrows or WASD to steer. Hold Shift or Space for boost.</span>
+              </p>
+
+              {/* Play button */}
+              <button
+                type="button"
+                onClick={() => void handleStart()}
+                className="sr-play-btn"
+                id="space-run-play-button"
+              >
+                <Play className="w-6 h-6" strokeWidth={2.5} />
+                Play
+              </button>
+
+              {/* Game controller icon — psychological trigger */}
+              <div className="mt-5 flex flex-col items-center gap-1.5 sr-controller-icon">
+                <Gamepad2 className="w-9 h-9 text-cyan-300" strokeWidth={1.5} />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-cyan-300/50 font-bold">Press to Play</span>
+              </div>
+            </div>
           </div>
         )}
 
