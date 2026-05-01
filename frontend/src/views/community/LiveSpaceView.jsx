@@ -1,330 +1,488 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { motion } from 'motion/react';
-import { Users, Activity, Navigation as NavIcon, Satellite, Globe2, MapPin, Gauge, Rocket, Calendar } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Satellite, Globe2, Gauge, Crosshair, Search, ShieldAlert, Activity, Database } from 'lucide-react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
-import { OrbitControls, Stars, Html } from '@react-three/drei';
+import { OrbitControls, Stars, Line } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { useGamificationStore } from '@/store/useGamificationStore';
-import UpcomingLaunches from '@/components/live/UpcomingLaunches';
-import NasaApod from '@/components/live/NasaApod';
 
-// --- 3D Earth & Satellites Component ---
-const EarthAndSatellites = ({ issLat, issLng }) => {
+// --- MOCK DATA GENERATOR (API-less Simulation) ---
+const generateMockSatellites = () => {
+  const sats = [];
+  const TOTAL = 8000;
+  
+  // ISS Base Station
+  sats.push({
+    id: 'iss-zarya',
+    name: 'ISS (Zarya)',
+    type: 'ISS',
+    r: 2.06,
+    i: 0.9,
+    omega: 0,
+    theta: 0,
+    speed: 0.002,
+    color: new THREE.Color('#ff0055')
+  });
+
+  // Starlink constellations (trains)
+  for(let train=0; train<40; train++) {
+    const r = 2.08 + Math.random() * 0.03;
+    const i = (Math.random() * Math.PI) / 1.2;
+    const omega = Math.random() * Math.PI * 2;
+    for(let j=0; j<60; j++) {
+      sats.push({
+        id: `starlink-${train}-${j}`,
+        name: `STARLINK-${train * 60 + j}`,
+        type: 'Starlink',
+        r, i, omega,
+        theta: (j * 0.015), 
+        speed: 0.0015 + (Math.random() * 0.0001),
+        color: new THREE.Color('#00ffff')
+      });
+    }
+  }
+
+  // Other Random Satellites (LEO, MEO, GEO)
+  while(sats.length < TOTAL) {
+    const isMEO = Math.random() > 0.85;
+    const isGEO = Math.random() > 0.95;
+    const r = isGEO ? 6 : isMEO ? 3 + Math.random()*1.5 : 2.1 + Math.random() * 0.3;
+    sats.push({
+      id: `sat-${sats.length}`,
+      name: isGEO ? `GEO-COM-${sats.length}` : `LEO-SAT-${sats.length}`,
+      type: isGEO ? 'GEO' : isMEO ? 'MEO' : 'LEO',
+      r,
+      i: Math.random() * Math.PI,
+      omega: Math.random() * Math.PI * 2,
+      theta: Math.random() * Math.PI * 2,
+      speed: (0.0005 + Math.random() * 0.001) * (2 / r),
+      color: new THREE.Color(isGEO ? '#ffaa00' : isMEO ? '#bbbbbb' : '#1e3a8a')
+    });
+  }
+  return sats;
+}
+
+// --- 3D Components ---
+
+const EarthAndSatellites = ({ activeSatellites, selectedSatId }) => {
   const earthRef = useRef(null);
-  const issGroupRef = useRef(null);
-  const tiangongGroupRef = useRef(null);
-
-  // Load realistic Earth textures
-  const [colorMap, bumpMap, specularMap] = useLoader(THREE.TextureLoader, [
-    'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
-    'https://unpkg.com/three-globe/example/img/earth-topology.png',
-    'https://unpkg.com/three-globe/example/img/earth-water.png'
+  const pointsRef = useRef(null);
+  const glowPointsRef = useRef(null);
+  
+  // Textures for a sleek, dark mode Earth matching satellitemap.space aesthetics
+  const [colorMap, bumpMap] = useLoader(THREE.TextureLoader, [
+    'https://unpkg.com/three-globe/example/img/earth-dark.jpg',
+    'https://unpkg.com/three-globe/example/img/earth-topology.png'
   ]);
 
-  useFrame(({ clock }) => {
-    if (earthRef.current) {
-      earthRef.current.rotation.y += 0.0005; // Earth rotation
+  const positions = useMemo(() => new Float32Array(activeSatellites.length * 3), [activeSatellites]);
+  const colors = useMemo(() => {
+    const cols = new Float32Array(activeSatellites.length * 3);
+    for (let i = 0; i < activeSatellites.length; i++) {
+      cols[i * 3] = activeSatellites[i].color.r;
+      cols[i * 3 + 1] = activeSatellites[i].color.g;
+      cols[i * 3 + 2] = activeSatellites[i].color.b;
     }
-    if (tiangongGroupRef.current) {
-      // Mock Tiangong orbit (faster than Earth rotation)
-      const t = clock.getElapsedTime();
-      const tiangongLat = Math.sin(t * 0.5) * 41.5; // ~41.5 deg inclination
-      const tiangongLng = (t * 20) % 360 - 180;
+    return cols;
+  }, [activeSatellites]);
+
+  // High performance orbital calculation without external TLE propagation
+  useFrame(() => {
+    if (earthRef.current) {
+      earthRef.current.rotation.y += 0.0002; 
+    }
+    
+    if (activeSatellites.length > 0 && pointsRef.current) {
+      const positionsArray = pointsRef.current.geometry.attributes.position.array;
+      const glowArray = glowPointsRef.current?.geometry.attributes.position.array;
       
-      const phi = (90 - tiangongLat) * (Math.PI / 180);
-      const theta = (tiangongLng + 180) * (Math.PI / 180);
-      const radius = 2.45; // Slightly lower than ISS
-      
-      tiangongGroupRef.current.position.x = -(radius * Math.sin(phi) * Math.cos(theta));
-      tiangongGroupRef.current.position.z = (radius * Math.sin(phi) * Math.sin(theta));
-      tiangongGroupRef.current.position.y = (radius * Math.cos(phi));
+      for (let i = 0; i < activeSatellites.length; i++) {
+        const sat = activeSatellites[i];
+        sat.theta += sat.speed;
+        
+        // Spherical to Cartesian with inclination and RAAN
+        const x1 = sat.r * Math.cos(sat.theta);
+        const z1 = sat.r * Math.sin(sat.theta);
+        
+        const y2 = z1 * Math.sin(sat.i);
+        const z2 = z1 * Math.cos(sat.i);
+        const x2 = x1;
+
+        const x3 = x2 * Math.cos(sat.omega) + z2 * Math.sin(sat.omega);
+        const z3 = -x2 * Math.sin(sat.omega) + z2 * Math.cos(sat.omega);
+
+        positionsArray[i * 3] = x3;
+        positionsArray[i * 3 + 1] = y2;
+        positionsArray[i * 3 + 2] = z3;
+        
+        if (glowArray) {
+           glowArray[i * 3] = x3;
+           glowArray[i * 3 + 1] = y2;
+           glowArray[i * 3 + 2] = z3;
+        }
+      }
+      pointsRef.current.geometry.attributes.position.needsUpdate = true;
+      if(glowPointsRef.current) glowPointsRef.current.geometry.attributes.position.needsUpdate = true;
     }
   });
 
-  // Convert ISS lat/lng to 3D position
-  const phi = (90 - issLat) * (Math.PI / 180);
-  const theta = (issLng + 180) * (Math.PI / 180);
-  const radius = 2.5; // Earth radius (2) + Altitude (0.5)
-
-  const issX = -(radius * Math.sin(phi) * Math.cos(theta));
-  const issZ = (radius * Math.sin(phi) * Math.sin(theta));
-  const issY = (radius * Math.cos(phi));
+  const selectedSat = useMemo(() => activeSatellites.find(s => s.id === selectedSatId), [selectedSatId, activeSatellites]);
 
   return (
     <group>
-      {/* Realistic Earth */}
+      {/* Dark Earth */}
       <mesh ref={earthRef}>
         <sphereGeometry args={[2, 64, 64]} />
         <meshPhongMaterial 
           map={colorMap}
           bumpMap={bumpMap}
-          bumpScale={0.015}
-          specularMap={specularMap}
-          specular={new THREE.Color('grey')}
-          shininess={35}
+          bumpScale={0.05}
+          color="#aaaaaa"
+          emissive="#050505"
+          specular={new THREE.Color('#222222')}
+          shininess={15}
         />
       </mesh>
       
-      {/* Atmosphere Glow */}
+      {/* Atmospheric Glow */}
       <mesh>
-        <sphereGeometry args={[2.05, 64, 64]} />
+        <sphereGeometry args={[2.03, 64, 64]} />
         <meshPhongMaterial 
-          color="#4ca6ff" 
+          color="#0066ff" 
           transparent 
-          opacity={0.15} 
+          opacity={0.12} 
           blending={THREE.AdditiveBlending}
           side={THREE.BackSide}
+          depthWrite={false}
         />
       </mesh>
 
-      {/* ISS Marker */}
-      <group ref={issGroupRef} position={[issX, issY, issZ]}>
-        <mesh>
-          <sphereGeometry args={[0.04, 16, 16]} />
-          <meshBasicMaterial color="#00ffff" />
-        </mesh>
-        <mesh>
-          <sphereGeometry args={[0.08, 16, 16]} />
-          <meshBasicMaterial color="#00ffff" transparent opacity={0.4} blending={THREE.AdditiveBlending} />
-        </mesh>
-        <Html distanceFactor={15} position={[0, 0.15, 0]} center>
-          <div className="bg-space-900/80 backdrop-blur-md border border-neon-blue/50 px-2 py-1 rounded text-xs font-bold text-white flex items-center gap-1 whitespace-nowrap">
-            <Satellite className="w-3 h-3 text-neon-blue" /> ISS
-          </div>
-        </Html>
-      </group>
+      {/* Satellites Core Layer */}
+      {activeSatellites.length > 0 && (
+        <points ref={pointsRef}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" count={activeSatellites.length} array={positions} itemSize={3} />
+            <bufferAttribute attach="attributes-color" count={activeSatellites.length} array={colors} itemSize={3} />
+          </bufferGeometry>
+          <pointsMaterial size={0.012} vertexColors transparent opacity={0.6} sizeAttenuation depthWrite={false} />
+        </points>
+      )}
 
-      {/* Tiangong Marker (Mocked Orbit) */}
-      <group ref={tiangongGroupRef}>
-        <mesh>
-          <sphereGeometry args={[0.04, 16, 16]} />
-          <meshBasicMaterial color="#ff0055" />
-        </mesh>
-        <mesh>
-          <sphereGeometry args={[0.08, 16, 16]} />
-          <meshBasicMaterial color="#ff0055" transparent opacity={0.4} blending={THREE.AdditiveBlending} />
-        </mesh>
-        <Html distanceFactor={15} position={[0, 0.15, 0]} center>
-          <div className="bg-space-900/80 backdrop-blur-md border border-neon-purple/50 px-2 py-1 rounded text-xs font-bold text-white flex items-center gap-1 whitespace-nowrap">
-            <Satellite className="w-3 h-3 text-neon-purple" /> Tiangong
-          </div>
-        </Html>
-      </group>
+      {/* Satellites Bloom Layer */}
+      {activeSatellites.length > 0 && (
+        <points ref={glowPointsRef}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" count={activeSatellites.length} array={positions} itemSize={3} />
+            <bufferAttribute attach="attributes-color" count={activeSatellites.length} array={colors} itemSize={3} />
+          </bufferGeometry>
+          <pointsMaterial size={0.035} vertexColors transparent opacity={0.9} sizeAttenuation blending={THREE.AdditiveBlending} depthWrite={false} />
+        </points>
+      )}
 
-      <ambientLight intensity={0.2} />
-      <directionalLight position={[5, 3, 5]} intensity={1.5} />
+      {/* Selected Orbit Visualization */}
+      {selectedSat && <SelectedOrbitRing sat={selectedSat} />}
+
+      <ambientLight intensity={0.15} />
+      <directionalLight position={[10, 5, -10]} intensity={2.0} color="#ffffff" />
+      <directionalLight position={[-10, -5, 10]} intensity={0.4} color="#0055ff" />
     </group>
   );
 };
 
-// --- Main View ---
+const SelectedOrbitRing = ({ sat }) => {
+  const orbitPoints = useMemo(() => {
+    const points = [];
+    for(let i=0; i <= 100; i++) {
+      const theta = (i / 100) * Math.PI * 2;
+      const x1 = sat.r * Math.cos(theta);
+      const z1 = sat.r * Math.sin(theta);
+      const y2 = z1 * Math.sin(sat.i);
+      const z2 = z1 * Math.cos(sat.i);
+      const x3 = x1 * Math.cos(sat.omega) + z2 * Math.sin(sat.omega);
+      const z3 = -x1 * Math.sin(sat.omega) + z2 * Math.cos(sat.omega);
+      points.push(new THREE.Vector3(x3, y2, z3));
+    }
+    return points;
+  }, [sat]);
 
-export default function LiveSpaceView() {
-  const { addXp, badges } = useGamificationStore();
-  const [issData, setIssData] = useState(null);
-  const [astronauts, setAstronauts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const markerRef = useRef();
 
-  useEffect(() => {
-    // Award XP for visiting live data
-    addXp(10);
-
-    const fetchISSData = async () => {
-      try {
-        const res = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
-        const data = await res.json();
-        setIssData(data);
-      } catch (error) {
-        console.error('Failed to fetch ISS data:', error);
-      }
-    };
-
-    const fetchAstronauts = async () => {
-      try {
-        // Using a reliable HTTPS proxy/alternative for open-notify
-        const res = await fetch('https://corquaid.github.io/international-space-station-APIs/JSON/people-in-space.json');
-        if (res.ok) {
-          const data = await res.json();
-          setAstronauts(data.people);
-        } else {
-          throw new Error('Fallback to mock');
-        }
-      } catch (error) {
-        // Fallback mock data if API fails
-        setAstronauts([
-          { name: "Oleg Kononenko", craft: "ISS" },
-          { name: "Nikolai Chub", craft: "ISS" },
-          { name: "Tracy Caldwell Dyson", craft: "ISS" },
-          { name: "Matthew Dominick", craft: "ISS" },
-          { name: "Michael Barratt", craft: "ISS" },
-          { name: "Jeanette Epps", craft: "ISS" },
-          { name: "Alexander Grebenkin", craft: "ISS" }
-        ]);
-      }
-    };
-
-    fetchISSData();
-    fetchAstronauts();
-    setLoading(false);
-
-    // Update ISS position every 3 seconds
-    const interval = setInterval(fetchISSData, 3000);
-    return () => clearInterval(interval);
-  }, [addXp]);
+  useFrame(() => {
+    if(markerRef.current) {
+        const x1 = sat.r * Math.cos(sat.theta);
+        const z1 = sat.r * Math.sin(sat.theta);
+        const y2 = z1 * Math.sin(sat.i);
+        const z2 = z1 * Math.cos(sat.i);
+        const x3 = x1 * Math.cos(sat.omega) + z2 * Math.sin(sat.omega);
+        const z3 = -x1 * Math.sin(sat.omega) + z2 * Math.cos(sat.omega);
+        markerRef.current.position.set(x3, y2, z3);
+    }
+  });
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div className="text-center mb-12">
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl md:text-5xl font-bold mb-4"
-        >
-          Live <span className="text-glow-purple text-neon-purple">Space</span> Data
-        </motion.h1>
-        <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-          Track the International Space Station in real-time and see who is currently orbiting Earth.
-        </p>
+    <group>
+      <Line points={orbitPoints} color={sat.color.getHexString()} opacity={0.5} transparent lineWidth={2.5} />
+      <mesh ref={markerRef}>
+        <sphereGeometry args={[0.04, 16, 16]} />
+        <meshBasicMaterial color={sat.color} />
+        <mesh>
+          <sphereGeometry args={[0.09, 16, 16]} />
+          <meshBasicMaterial color={sat.color} transparent opacity={0.6} blending={THREE.AdditiveBlending} />
+        </mesh>
+      </mesh>
+    </group>
+  );
+};
+
+// --- MAIN VIEW UI ---
+
+export default function LiveSpaceView() {
+  const { addXp } = useGamificationStore();
+  const [activeSatellites, setActiveSatellites] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSatId, setSelectedSatId] = useState(null);
+  
+  // Real-time counter for UI tick
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    addXp(20);
+    const mockData = generateMockSatellites();
+    setActiveSatellites(mockData);
+    
+    // Default select ISS
+    const iss = mockData.find(s => s.type === 'ISS');
+    if(iss) setSelectedSatId(iss.id);
+
+    const int = setInterval(() => setTick(t => t+1), 100); 
+    return () => clearInterval(int);
+  }, [addXp]);
+
+  const filteredSats = useMemo(() => {
+    if(!searchQuery) return activeSatellites.filter(s => s.type === 'ISS' || s.type === 'Starlink').slice(0, 50); 
+    return activeSatellites.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 100);
+  }, [searchQuery, activeSatellites]);
+
+  const selectedSat = useMemo(() => activeSatellites.find(s => s.id === selectedSatId), [selectedSatId, activeSatellites]);
+
+  const stats = useMemo(() => {
+    return {
+      total: activeSatellites.length,
+      starlink: activeSatellites.filter(s => s.type === 'Starlink').length,
+      leo: activeSatellites.filter(s => s.type === 'LEO' || s.type === 'ISS').length,
+      geo: activeSatellites.filter(s => s.type === 'GEO').length
+    };
+  }, [activeSatellites]);
+
+  return (
+    <div className="fixed inset-0 w-full h-full bg-[#020205] overflow-hidden text-white font-sans selection:bg-neon-blue/30 pt-16">
+      
+      {/* --- 3D CANVAS BACKGROUND --- */}
+      <div className="absolute inset-0 z-0">
+        <Canvas camera={{ position: [0, 1.5, 6], fov: 45 }} gl={{ antialias: false, powerPreference: "high-performance" }}>
+          <color attach="background" args={['#010103']} />
+          <Stars radius={100} depth={50} count={5000} factor={3} saturation={0} fade speed={0.5} />
+          
+          <Suspense fallback={null}>
+            <EarthAndSatellites activeSatellites={activeSatellites} selectedSatId={selectedSatId} />
+          </Suspense>
+
+          <EffectComposer disableNormalPass>
+            <Bloom luminanceThreshold={0.15} mipmapBlur intensity={1.8} />
+          </EffectComposer>
+
+          <OrbitControls 
+            enablePan={true} 
+            panSpeed={0.5} 
+            minDistance={2.5} 
+            maxDistance={12} 
+            autoRotate 
+            autoRotateSpeed={0.2} 
+            dampingFactor={0.05} 
+          />
+        </Canvas>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 3D ISS Tracker */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="lg:col-span-2 glass rounded-3xl overflow-hidden relative h-[500px] border-neon-blue/30"
-        >
-          <div className="absolute top-4 left-4 z-10 bg-space-900/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl">
-            <h3 className="text-white font-bold flex items-center gap-2 mb-2">
-              <Satellite className="w-5 h-5 text-neon-blue" /> ISS Live Telemetry
-            </h3>
-            {issData ? (
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-gray-300">
-                  <MapPin className="w-4 h-4 text-neon-purple" />
-                  <span>Lat: {issData.latitude.toFixed(4)}°</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-300">
-                  <MapPin className="w-4 h-4 text-neon-purple" />
-                  <span>Lng: {issData.longitude.toFixed(4)}°</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-300">
-                  <NavIcon className="w-4 h-4 text-yellow-400" />
-                  <span>Alt: {issData.altitude.toFixed(2)} km</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-300">
-                  <Gauge className="w-4 h-4 text-red-400" />
-                  <span>Vel: {issData.velocity.toFixed(2)} km/h</span>
-                </div>
-              </div>
-            ) : (
-              <div className="text-gray-400 text-sm animate-pulse">Acquiring signal...</div>
-            )}
-          </div>
-
-          <div className="absolute inset-0">
-            <Canvas camera={{ position: [0, 0, 6], fov: 45 }}>
-              <color attach="background" args={['#000005']} />
-              <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
-              {issData && <EarthAndSatellites issLat={issData.latitude} issLng={issData.longitude} />}
-              <OrbitControls enablePan={false} minDistance={3} maxDistance={10} />
-            </Canvas>
-          </div>
-        </motion.div>
-
-        {/* Astronauts List */}
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="glass p-6 rounded-3xl flex flex-col h-[500px]"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Users className="w-6 h-6 text-neon-purple" />
-              Humans in Space
-            </h2>
-            <div className="bg-neon-purple/20 text-neon-purple px-3 py-1 rounded-full font-bold">
-              {astronauts.length}
+      {/* --- HUD UI OVERLAY --- */}
+      <div className="absolute inset-0 pt-20 pb-4 px-4 sm:px-6 z-10 pointer-events-none flex flex-col justify-between">
+        
+        {/* Top Header */}
+        <div className="flex justify-between items-start">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+            className="backdrop-blur-xl bg-black/50 border border-white/10 rounded-2xl p-4 sm:p-5 pointer-events-auto shadow-[0_0_30px_rgba(0,240,255,0.05)]"
+          >
+            <div className="flex items-center gap-3 mb-1">
+              <Globe2 className="w-6 h-6 text-neon-blue" />
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+                Orbital <span className="text-neon-blue">Map</span>
+              </h1>
             </div>
-          </div>
+            <div className="flex items-center gap-2 text-[11px] text-neon-blue font-mono uppercase tracking-widest">
+              <span className="w-2 h-2 rounded-full bg-neon-blue animate-pulse shadow-[0_0_8px_rgba(0,240,255,0.8)]"></span>
+              Simulation Active
+            </div>
+          </motion.div>
 
-          <div className="flex-grow overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-            {loading ? (
-              <div className="text-center text-gray-400 py-8 animate-pulse">Establishing connection...</div>
-            ) : (
-              astronauts.map((astro, idx) => (
-                <div key={idx} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between hover:bg-white/10 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center font-bold text-white">
-                      {astro.name.charAt(0)}
-                    </div>
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+            className="flex gap-2 sm:gap-4 pointer-events-auto"
+          >
+            <div className="backdrop-blur-xl bg-black/50 border border-white/10 rounded-xl px-4 py-2 flex flex-col items-end shadow-lg">
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider">Objects Tracked</span>
+              <span className="text-lg font-mono font-bold text-white">{stats.total.toLocaleString()}</span>
+            </div>
+            <div className="hidden sm:flex backdrop-blur-xl bg-black/50 border border-white/10 rounded-xl px-4 py-2 flex-col items-end shadow-lg">
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider">Starlink DB</span>
+              <span className="text-lg font-mono font-bold text-neon-blue">{stats.starlink.toLocaleString()}</span>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Middle Section (Sidebars) */}
+        <div className="flex justify-between items-end flex-1 my-4 gap-4">
+          
+          {/* Left Panel - Satellite Info & Target */}
+          <div className="w-full max-w-sm pointer-events-auto flex flex-col gap-4">
+            
+            <AnimatePresence mode="popLayout">
+              {selectedSat && (
+                <motion.div 
+                  key="target-info"
+                  initial={{ opacity: 0, x: -20, scale: 0.95 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="backdrop-blur-2xl bg-black/60 border border-neon-blue/30 rounded-2xl p-5 shadow-[0_0_40px_rgba(0,240,255,0.15)] relative overflow-hidden"
+                >
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-blue to-transparent"></div>
+                  
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <p className="text-white font-medium">{astro.name}</p>
-                      <p className="text-xs text-gray-400 flex items-center gap-1">
-                        <Globe2 className="w-3 h-3" /> {astro.craft}
-                      </p>
+                      <div className="text-[10px] text-neon-blue font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        <Crosshair className="w-3 h-3" /> Target Locked
+                      </div>
+                      <h3 className="text-2xl font-black text-white uppercase tracking-wider truncate max-w-[200px]">{selectedSat.name}</h3>
+                    </div>
+                    <div className="bg-white/5 p-2 rounded-lg border border-white/10">
+                      <Satellite className="w-5 h-5 text-gray-300" />
                     </div>
                   </div>
-                  <Activity className="w-4 h-4 text-neon-blue" />
+                  
+                  <div className="space-y-2">
+                    <div className="bg-black/50 p-3 rounded-xl border border-white/5 flex justify-between items-center group hover:border-neon-blue/30 transition-colors">
+                      <div className="flex items-center gap-2 text-gray-400 text-[11px] font-bold uppercase tracking-widest">
+                        <Activity className="w-3.5 h-3.5 text-neon-purple" /> Alt (Radius)
+                      </div>
+                      <div className="font-mono text-sm text-white group-hover:text-neon-purple transition-colors">
+                        {((selectedSat.r - 2) * 6371).toFixed(1)} <span className="text-gray-500 text-[10px]">km</span>
+                      </div>
+                    </div>
+                    <div className="bg-black/50 p-3 rounded-xl border border-white/5 flex justify-between items-center group hover:border-neon-blue/30 transition-colors">
+                      <div className="flex items-center gap-2 text-gray-400 text-[11px] font-bold uppercase tracking-widest">
+                        <Gauge className="w-3.5 h-3.5 text-orange-400" /> Velocity
+                      </div>
+                      <div className="font-mono text-sm text-white group-hover:text-orange-400 transition-colors">
+                        {(selectedSat.speed * 1000000).toFixed(0)} <span className="text-gray-500 text-[10px]">km/h</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="bg-black/50 p-2.5 rounded-xl border border-white/5 flex flex-col">
+                        <span className="text-gray-500 text-[9px] font-bold uppercase tracking-widest mb-1">Inclination</span>
+                        <span className="font-mono text-sm text-white">{(selectedSat.i * (180/Math.PI)).toFixed(2)}°</span>
+                      </div>
+                      <div className="bg-black/50 p-2.5 rounded-xl border border-white/5 flex flex-col">
+                        <span className="text-gray-500 text-[9px] font-bold uppercase tracking-widest mb-1">Class</span>
+                        <span className="font-bold text-sm text-white uppercase">{selectedSat.type}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              className="backdrop-blur-xl bg-black/50 border border-white/10 rounded-2xl flex flex-col h-[350px] shadow-2xl"
+            >
+              <div className="p-4 border-b border-white/10">
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Search constellation..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 pl-11 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue transition-colors font-mono"
+                  />
+                  <Search className="w-4 h-4 text-gray-500 absolute left-4 top-3.5" />
                 </div>
-              ))
-            )}
+              </div>
+
+              <div className="flex-grow overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                {filteredSats.map(sat => (
+                  <button
+                    key={sat.id}
+                    onClick={() => setSelectedSatId(sat.id)}
+                    className={`w-full text-left p-3 rounded-xl transition-all flex items-center gap-3 group ${
+                      selectedSatId === sat.id 
+                        ? 'bg-neon-blue/20 border border-neon-blue/50 shadow-[0_0_15px_rgba(0,240,255,0.15)]' 
+                        : 'bg-transparent border border-transparent hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: sat.color.getStyle(), boxShadow: `0 0 10px ${sat.color.getStyle()}` }}></div>
+                    <div className="truncate flex-grow">
+                      <div className={`font-mono text-xs font-bold truncate transition-colors ${selectedSatId === sat.id ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                        {sat.name}
+                      </div>
+                      <div className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{sat.type}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
-      </div>
 
-      {/* Live Video Feed Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mt-8 glass p-6 rounded-3xl border border-white/10"
-      >
-        <h2 className="text-2xl font-bold flex items-center gap-2 mb-6">
-          <Activity className="w-6 h-6 text-neon-blue" />
-          Live Video Feed
-        </h2>
-        <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black">
-          <iframe 
-            width="100%" 
-            height="100%" 
-            src="https://www.youtube.com/embed/sWasdbDVNvc?si=I9YUJ72H5_JibrEi" 
-            title="YouTube video player" 
-            frameBorder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-            referrerPolicy="strict-origin-when-cross-origin" 
-            allowFullScreen
-          ></iframe>
+          {/* Right Panel - Legend & Extra Stats */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+            className="hidden lg:flex flex-col gap-4 w-64 pointer-events-auto"
+          >
+            <div className="backdrop-blur-xl bg-black/50 border border-white/10 rounded-2xl p-5 shadow-2xl">
+               <h4 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-5 flex items-center gap-2">
+                 <Database className="w-4 h-4" /> Orbital Legend
+               </h4>
+               <div className="space-y-4">
+                 <div className="flex items-center gap-4">
+                   <div className="w-3 h-3 rounded-full bg-[#00ffff] shadow-[0_0_12px_#00ffff]"></div>
+                   <span className="text-xs font-mono font-bold text-gray-200 tracking-wider">Starlink / LEO</span>
+                 </div>
+                 <div className="flex items-center gap-4">
+                   <div className="w-3 h-3 rounded-full bg-[#ffaa00] shadow-[0_0_12px_#ffaa00]"></div>
+                   <span className="text-xs font-mono font-bold text-gray-200 tracking-wider">GEO Satellites</span>
+                 </div>
+                 <div className="flex items-center gap-4">
+                   <div className="w-3 h-3 rounded-full bg-[#ff0055] shadow-[0_0_12px_#ff0055]"></div>
+                   <span className="text-xs font-mono font-bold text-gray-200 tracking-wider">ISS Station</span>
+                 </div>
+                 <div className="flex items-center gap-4">
+                   <div className="w-3 h-3 rounded-full bg-[#bbbbbb] shadow-[0_0_12px_#bbbbbb]"></div>
+                   <span className="text-xs font-mono font-bold text-gray-200 tracking-wider">MEO / Deep Space</span>
+                 </div>
+               </div>
+            </div>
+
+            <div className="backdrop-blur-xl bg-black/50 border border-white/10 rounded-2xl p-4 flex items-center gap-4 text-gray-400 shadow-2xl">
+              <ShieldAlert className="w-8 h-8 text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
+              <div>
+                <div className="text-white font-bold text-xs uppercase tracking-wider mb-1">Collision Check</div>
+                <div className="font-mono text-[10px] text-green-400 font-bold">SYSTEM NOMINAL</div>
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </motion.div>
 
-      {/* ── MISSION TRACKER SECTION ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-
-        {/* Upcoming Launches */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="lg:col-span-2 glass p-6 rounded-3xl border border-white/10"
-        >
-          <h2 className="text-2xl font-bold flex items-center gap-2 mb-6">
-            <Rocket className="w-6 h-6 text-neon-purple" />
-            Upcoming Launches
-            <span className="ml-auto text-xs font-medium text-white/30 uppercase tracking-widest">Live API</span>
-          </h2>
-          <UpcomingLaunches />
-        </motion.div>
-
-        {/* NASA APOD */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="glass p-6 rounded-3xl border border-white/10"
-        >
-          <NasaApod />
-        </motion.div>
       </div>
     </div>
   );
 }
+
