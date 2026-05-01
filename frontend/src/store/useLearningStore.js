@@ -3,15 +3,21 @@ import { persist } from 'zustand/middleware';
 import { useGamificationStore } from './useGamificationStore';
 import api from '@/lib/api';
 
+const initialState = {
+  enrolledUnits: [],
+  completedLessons: [],
+  masteredLessons: [],
+  lessonScores: {},
+  currentLessonId: null,
+  currentUnitId: null,
+};
+
 export const useLearningStore = create()(
   persist(
     (set, get) => ({
-      enrolledUnits: [],
-      completedLessons: [],
-      masteredLessons: [],
-      lessonScores: {},
-      currentLessonId: null,
-      currentUnitId: null,
+      ...initialState,
+
+      reset: () => set(initialState),
 
       enrollUnit: (unitId) => {
         const s = get();
