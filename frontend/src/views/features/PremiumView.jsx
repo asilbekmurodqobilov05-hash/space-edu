@@ -2,68 +2,70 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Crown, CheckCircle2, Sparkles, Rocket, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function PremiumView() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleGetPlan = () => {
     navigate('/login');
   };
 
   const promoFeatures = [
-    'Unlimited access to all lessons',
-    'Bonus coins & experience (1.2x to 2.2x)',
-    'Extra daily tasks',
-    'Fuel lasts longer in Space Run',
-    'Free access to daily and weekly lessons',
-    'Special support from admin (Pro plan)'
+    t('premium', 'promoFeature1'),
+    t('premium', 'promoFeature2'),
+    t('premium', 'promoFeature3'),
+    t('premium', 'promoFeature4'),
+    t('premium', 'promoFeature5'),
+    t('premium', 'promoFeature6')
   ];
 
   const plans = [
     {
-      name: 'PREMIUM (Basic)',
+      name: t('premium', 'basic'),
       price: '$5',
       icon: <Sparkles className="w-8 h-8 text-violet-400" />,
       color: 'from-violet-500 to-purple-600',
       shadow: 'shadow-[0_0_30px_rgba(139,92,246,0.15)]',
       border: 'border-violet-500/30',
       features: [
-        '1.2x coins & experience',
-        '1 more daily task',
-        'Boost, bonus coins, and daily tasks',
-        'Free access to selected lessons',
-        'Fuel savings in games'
+        t('premium', 'basicFeat1'),
+        t('premium', 'basicFeat2'),
+        t('premium', 'basicFeat3'),
+        t('premium', 'basicFeat4'),
+        t('premium', 'basicFeat5')
       ]
     },
     {
-      name: 'PREMIUM PLUS',
+      name: t('premium', 'plus'),
       price: '$15',
       icon: <Rocket className="w-10 h-10 text-fuchsia-400" />,
       color: 'from-fuchsia-500 to-pink-600',
       shadow: 'shadow-[0_0_40px_rgba(217,70,239,0.3)]',
       border: 'border-fuchsia-500/50',
       scale: 'scale-105', // Highlight middle plan
-      badge: 'MOST POPULAR',
+      badge: t('premium', 'mostPopular'),
       features: [
-        '1.5x coins & experience',
-        '3 daily tasks',
-        'Free access to daily lessons',
-        'Fuel lasts 2x longer'
+        t('premium', 'plusFeat1'),
+        t('premium', 'plusFeat2'),
+        t('premium', 'plusFeat3'),
+        t('premium', 'plusFeat4')
       ]
     },
     {
-      name: 'PREMIUM PRO',
+      name: t('premium', 'pro'),
       price: '$30',
       icon: <Crown className="w-8 h-8 text-amber-400" />,
       color: 'from-amber-500 to-orange-600',
       shadow: 'shadow-[0_0_30px_rgba(245,158,11,0.15)]',
       border: 'border-amber-500/30',
       features: [
-        '2.2x coins & experience',
-        '5 daily tasks',
-        'Free access to daily and weekly lessons',
-        'Fuel lasts 3.5x longer',
-        'Special care by admin'
+        t('premium', 'proFeat1'),
+        t('premium', 'proFeat2'),
+        t('premium', 'proFeat3'),
+        t('premium', 'proFeat4'),
+        t('premium', 'proFeat5')
       ]
     }
   ];
@@ -90,11 +92,11 @@ export default function PremiumView() {
               animate={{ opacity: 1, y: 0 }}
               className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-fuchsia-300 leading-tight"
             >
-              Upgrade your space journey. Try 1 month of Premium for $0.
+              {t('premium', 'heroTitle')}
             </motion.h1>
             
             <p className="text-xl text-violet-200/90 font-medium mb-8">
-              Only $5/month after. Cancel anytime.
+              {t('premium', 'heroSubtitle')}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start mb-6">
@@ -102,18 +104,18 @@ export default function PremiumView() {
                 onClick={handleGetPlan}
                 className="px-8 py-4 bg-white text-black hover:bg-gray-200 font-bold rounded-full text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all hover:scale-105"
               >
-                Try 1 month for $0
+                {t('premium', 'tryFreeBtn')}
               </button>
               <button 
                 onClick={scrollToPlans}
                 className="px-6 py-4 text-white hover:text-violet-300 font-medium rounded-full border border-transparent hover:border-white/20 transition-all bg-white/5 hover:bg-white/10"
               >
-                View all plans
+                {t('premium', 'viewPlansBtn')}
               </button>
             </div>
 
             <p className="text-xs text-gray-500 max-w-md mx-auto lg:mx-0">
-              $0 for 1 month, then $5 per month after. Offer only available if you haven't tried Premium before. Terms apply.
+              {t('premium', 'termsText')}
             </p>
           </div>
 
@@ -121,7 +123,7 @@ export default function PremiumView() {
           <div className="flex-1 w-full max-w-md lg:max-w-none bg-black/40 rounded-2xl p-8 border border-white/10">
             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-violet-400" />
-              Why go Premium?
+              {t('premium', 'whyPremium')}
             </h3>
             <div className="space-y-4">
               {promoFeatures.map((feature, idx) => (
@@ -133,7 +135,7 @@ export default function PremiumView() {
             </div>
             
             <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center sm:items-start">
-               <div className="text-sm text-gray-400 mb-2">Accepted payment methods</div>
+               <div className="text-sm text-gray-400 mb-2">{t('premium', 'acceptedPayments')}</div>
                <div className="flex items-center gap-3 text-white/70">
                  <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-md border border-white/10 text-sm font-bold tracking-wider">VISA</div>
                  <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-md border border-white/10 text-sm font-bold tracking-wider">MasterCard</div>
@@ -151,7 +153,7 @@ export default function PremiumView() {
           animate={{ opacity: 1, y: 0 }}
           className="text-3xl md:text-4xl font-extrabold mb-6 text-white"
         >
-          Affordable plans for every space explorer
+          {t('premium', 'plansTitle')}
         </motion.h2>
         
         <motion.p 
@@ -160,7 +162,7 @@ export default function PremiumView() {
           transition={{ delay: 0.1 }}
           className="text-lg text-gray-400 leading-relaxed"
         >
-          Choose a Premium plan and unlock unlimited learning, fuel bonuses, daily tasks, and ad-free experience. Access lessons, games, and exclusive content. Cancel anytime.
+          {t('premium', 'plansDesc')}
         </motion.p>
       </div>
 
@@ -190,7 +192,7 @@ export default function PremiumView() {
                 <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400">
                   {plan.price}
                 </span>
-                <span className="text-gray-400 font-medium">/ month</span>
+                <span className="text-gray-400 font-medium">{t('premium', 'perMonth')}</span>
               </div>
             </div>
 
@@ -207,7 +209,7 @@ export default function PremiumView() {
               onClick={handleGetPlan}
               className={`w-full py-4 rounded-xl font-bold text-white text-lg tracking-wide transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r ${plan.color} shadow-lg`}
             >
-              GET PLAN
+              {t('premium', 'getPlanBtn')}
             </button>
           </motion.div>
         ))}
