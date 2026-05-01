@@ -75,6 +75,7 @@ export default function StarFinderView() {
   const [result, setResult] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showReminderToast, setShowReminderToast] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   const { starOfTheDay, initializeDailyStar } = useStarStore();
 
@@ -161,39 +162,76 @@ export default function StarFinderView() {
         >
           Star <span className="text-glow-purple text-neon-purple">Finder</span>
         </motion.h1>
+
+        <motion.button 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => setShowInstructions(true)}
+          className="px-6 py-2 bg-white/5 hover:bg-neon-purple/20 hover:text-neon-purple text-white/70 hover:border-neon-purple/50 rounded-full transition-all flex items-center gap-2 mx-auto border border-white/10 text-sm font-medium backdrop-blur-sm"
+        >
+          <Info className="w-4 h-4" /> How to use
+        </motion.button>
       </div>
 
-      {/* Tutorial / Instructions Area */}
-      <motion.div 
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        key={activeTab} // re-animate when tab changes
-        className="mb-8 max-w-3xl mx-auto bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-sm"
-      >
-        <div className="flex items-center gap-3 mb-3">
-          <Info className="w-5 h-5 text-neon-purple" />
-          <h3 className="text-lg font-bold text-white">
-            {activeTab === 'ar' ? 'AR View Instructions' : 'How to use Star Finder'}
-          </h3>
-        </div>
-        
-        {activeTab === 'ar' ? (
-          <ul className="text-gray-300 text-sm space-y-2 list-disc pl-5">
-            <li><strong>Allow Camera:</strong> Ensure you have granted camera permissions to see the live feed.</li>
-            <li><strong>Calibrate Compass:</strong> If on mobile, move your phone in a figure-8 motion to calibrate.</li>
-            <li><strong>Follow the Arrow:</strong> The glowing purple arrow in the center will rotate to point towards your target star. Turn your body to match the arrow.</li>
-            <li><strong>Constellation Lines:</strong> When you point your camera close to the target star, white constellation lines will automatically overlay on the screen.</li>
-            <li><strong>Manual Mode:</strong> If you are on a laptop or device without a compass, use the "Manual Mode" slider at the bottom to adjust your heading.</li>
-          </ul>
-        ) : (
-          <ul className="text-gray-300 text-sm space-y-2 list-disc pl-5">
-            <li><strong>Select Location & Star:</strong> Choose your current city and the star you wish to find, then click Calculate.</li>
-            <li><strong>Review Details:</strong> Check the visibility score, best viewing times, and read the Star Story to learn about its history.</li>
-            <li><strong>Start AR View:</strong> Click "Open AR Camera View" at the bottom of the details panel to be guided exactly where to look.</li>
-            <li><strong>Collect Stars:</strong> Finding a star in AR automatically adds it to your collection and earns you points!</li>
-          </ul>
+      {/* Tutorial / Instructions Modal-like Area */}
+      <AnimatePresence>
+        {showInstructions && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+            onClick={() => setShowInstructions(false)}
+          >
+            <motion.div 
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-2xl w-full bg-[#0c0518] border border-neon-purple/30 p-8 rounded-3xl shadow-2xl shadow-neon-purple/20 relative"
+            >
+              <button 
+                onClick={() => setShowInstructions(false)}
+                className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors"
+              >
+                <ChevronDown className="w-6 h-6 rotate-180" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-neon-purple/20 rounded-lg">
+                  <Info className="w-6 h-6 text-neon-purple" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">
+                  {activeTab === 'ar' ? 'AR View Instructions' : 'How to use Star Finder'}
+                </h3>
+              </div>
+              
+              <div className="space-y-6">
+                {activeTab === 'ar' ? (
+                  <ul className="text-gray-300 space-y-4">
+                    <li className="flex gap-3"><span className="text-neon-purple font-bold">01.</span> <span><strong>Allow Camera:</strong> Ensure you have granted camera permissions to see the live feed.</span></li>
+                    <li className="flex gap-3"><span className="text-neon-purple font-bold">02.</span> <span><strong>Calibrate Compass:</strong> If on mobile, move your phone in a figure-8 motion to calibrate.</span></li>
+                    <li className="flex gap-3"><span className="text-neon-purple font-bold">03.</span> <span><strong>Follow the Arrow:</strong> The glowing purple arrow in the center will rotate to point towards your target star. Turn your body to match the arrow.</span></li>
+                    <li className="flex gap-3"><span className="text-neon-purple font-bold">04.</span> <span><strong>Constellation Lines:</strong> When you point your camera close to the target star, white constellation lines will automatically overlay on the screen.</span></li>
+                    <li className="flex gap-3"><span className="text-neon-purple font-bold">05.</span> <span><strong>Manual Mode:</strong> If you are on a laptop or device without a compass, use the "Manual Mode" slider at the bottom to adjust your heading.</span></li>
+                  </ul>
+                ) : (
+                  <ul className="text-gray-300 space-y-4">
+                    <li className="flex gap-3"><span className="text-neon-purple font-bold">01.</span> <span><strong>Select Location & Star:</strong> Choose your current city and the star you wish to find, then click Calculate.</span></li>
+                    <li className="flex gap-3"><span className="text-neon-purple font-bold">02.</span> <span><strong>Review Details:</strong> Check the visibility score, best viewing times, and read the Star Story to learn about its history.</span></li>
+                    <li className="flex gap-3"><span className="text-neon-purple font-bold">03.</span> <span><strong>Start AR View:</strong> Click "Open AR Camera View" at the bottom of the details panel to be guided exactly where to look.</span></li>
+                    <li className="flex gap-3"><span className="text-neon-purple font-bold">04.</span> <span><strong>Collect Stars:</strong> Finding a star in AR automatically adds it to your collection and earns you points!</span></li>
+                  </ul>
+                )}
+              </div>
+
+              <button 
+                onClick={() => setShowInstructions(false)}
+                className="mt-8 w-full py-3 bg-neon-purple text-black font-bold rounded-xl hover:bg-white transition-colors shadow-lg shadow-neon-purple/20"
+              >
+                Got it!
+              </button>
+            </motion.div>
+          </motion.div>
         )}
-      </motion.div>
+      </AnimatePresence>
 
       {/* Daily Star Banner */}
       {dailyStarData && (
