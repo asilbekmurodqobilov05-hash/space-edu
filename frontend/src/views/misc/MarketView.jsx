@@ -12,7 +12,10 @@ const MOCK_ITEMS = [
     slug: 'quantum-book', 
     title_en: 'Quantum Physics', 
     title_ru: 'Квантовая физика',
+    title_uz: 'Kvant fizikasi',
     description_en: 'A deep dive into the fundamental laws of the universe, covering entanglement and wave-particle duality.', 
+    description_ru: 'Глубокое погружение в фундаментальные законы Вселенной, охватывающее запутанность и корпускулярно-волновой дуализм.',
+    description_uz: 'Koinotning fundamental qonunlariga chuqur sho\'ng\'ish, kvant chalkashligi va korpuskulyar-to\'lqin dualizmini qamrab oladi.',
     item_type: 'book', 
     price: 125000,
     original_price: 150000,
@@ -27,7 +30,10 @@ const MOCK_ITEMS = [
     slug: 'mars-book', 
     title_en: 'The Martian Chronicles', 
     title_ru: 'Марсианские хроники',
+    title_uz: 'Mars xronikalari',
     description_en: 'Ray Bradbury\'s classic exploration of humanity\'s first steps on the Red Planet.', 
+    description_ru: 'Классическое исследование Рэя Брэдбери первых шагов человечества на Красной планете.',
+    description_uz: 'Rey Bredberining insoniyatning Qizil sayyoradagi ilk qadamlari haqidagi klassik asari.',
     item_type: 'book', 
     price: 85000,
     is_bestseller: false,
@@ -40,7 +46,10 @@ const MOCK_ITEMS = [
     slug: 'raptor-engine', 
     title_en: 'Raptor Engine V2', 
     title_ru: 'Двигатель Raptor V2',
+    title_uz: 'Raptor dvigateli V2',
     description_en: 'High-performance methalox engine designed for the next generation of interplanetary transport.', 
+    description_ru: 'Высокоэффективный металоксовый двигатель, предназначенный для межпланетного транспорта следующего поколения.',
+    description_uz: 'Interplanetar transportning keyingi avlodi uchun mo\'ljallangan yuqori samarali metaloks dvigateli.',
     item_type: 'rocket_module', 
     price: 12500000,
     original_price: 15000000,
@@ -55,7 +64,10 @@ const MOCK_ITEMS = [
     slug: 'space-helmet', 
     title_en: 'Astra Helmet', 
     title_ru: 'Шлем Astra',
+    title_uz: 'Astra dubulg\'asi',
     description_en: 'Next-gen HUD with real-time oxygen monitoring and wide-angle panoramic visor.', 
+    description_ru: 'HUD следующего поколения с мониторингом кислорода в реальном времени и широкоугольным панорамным козырьком.',
+    description_uz: 'Haqiqiy vaqtda kislorod monitoringi va keng burchakli panoramali vizorga ega keyingi avlod HUD tizimi.',
     item_type: 'other', 
     price: 450000,
     is_bestseller: true,
@@ -68,7 +80,10 @@ const MOCK_ITEMS = [
     slug: 'solar-wing', 
     title_en: 'Solar Array Wing', 
     title_ru: 'Солнечная панель',
+    title_uz: 'Quyosh batareyasi paneli',
     description_en: 'High-efficiency gallium arsenide solar panels for continuous power generation in orbit.', 
+    description_ru: 'Высокоэффективные солнечные панели из арсенида галлия для непрерывной выработки энергии на орбите.',
+    description_uz: 'Orbitada uzluksiz energiya ishlab chiqarish uchun yuqori samarali galliy arsenidli quyosh panellari.',
     item_type: 'satellite', 
     price: 890000,
     original_price: 1100000,
@@ -83,7 +98,10 @@ const MOCK_ITEMS = [
     slug: 'imaging-sensor', 
     title_en: 'Multi-Spectral Sensor', 
     title_ru: 'Мультиспектральный сенсор',
+    title_uz: 'Multispektral datchik',
     description_en: 'Capture high-resolution data across various spectrums for planetary analysis.', 
+    description_ru: 'Захват данных высокого разрешения в различных спектрах для планетарного анализа.',
+    description_uz: 'Sayyoralarni tahlil qilish uchun turli spektrlarda yuqori aniqlikdagi ma\'lumotlarni olish.',
     item_type: 'satellite', 
     price: 1150000,
     is_bestseller: false,
@@ -96,7 +114,10 @@ const MOCK_ITEMS = [
     slug: 'gravity-boots', 
     title_en: 'Mag-Grip Boots', 
     title_ru: 'Магнитные ботинки Mag-Grip',
+    title_uz: 'Mag-Grip magnitli etiklari',
     description_en: 'Magnetic soles designed for zero-G environments and metallic hull walking.', 
+    description_ru: 'Магнитные подошвы, предназначенные для условий невесомости и ходьбы по металлическим корпусам.',
+    description_uz: 'Vaznsizlik sharoitida va metall korpuslarda yurish uchun mo\'ljallangan magnitli tagliklar.',
     item_type: 'other', 
     price: 320000,
     original_price: 400000,
@@ -111,7 +132,10 @@ const MOCK_ITEMS = [
     slug: 'lunar-wheel', 
     title_en: 'Regolith Wheel', 
     title_ru: 'Колесо для реголита',
+    title_uz: 'Regolit g\'ildiragi',
     description_en: 'Specially engineered mesh wheel for maximum traction on loose lunar and martian soil.', 
+    description_ru: 'Специально разработанное сетчатое колесо для максимального сцепления с рыхлым лунным и марсианским грунтом.',
+    description_uz: 'Bo\'sh oy va mars tuprog\'ida maksimal tortishish uchun maxsus ishlab chiqilgan to\'rli g\'ildirak.',
     item_type: 'other', 
     price: 250000,
     is_bestseller: false,
@@ -124,7 +148,10 @@ const MOCK_ITEMS = [
     slug: 'fuel-tank', 
     title_en: 'Titanium Fuel Tank', 
     title_ru: 'Титановый топливный бак',
+    title_uz: 'Titanli yoqilg\'i baki',
     description_en: 'Ultra-lightweight storage for cryogenic propellants with advanced thermal insulation.', 
+    description_ru: 'Сверхлегкое хранилище для криогенного топлива с современной теплоизоляцией.',
+    description_uz: 'Ilg\'or issiqlik izolatsiyasiga ega kriogenli yoqilg\'i uchun o\'ta yengil ombor.',
     item_type: 'rocket_module', 
     price: 780000,
     original_price: 900000,
@@ -139,7 +166,10 @@ const MOCK_ITEMS = [
     slug: 'antenna-high', 
     title_en: 'Ka-Band Antenna', 
     title_ru: 'Антенна Ka-диапазона',
+    title_uz: 'Ka-diapazonli antenna',
     description_en: 'Long-range communication array for high-bandwidth data transfer across the solar system.', 
+    description_ru: 'Антенная решетка дальнего действия для высокоскоростной передачи данных по всей Солнечной системе.',
+    description_uz: 'Quyosh tizimi bo\'ylab yuqori o\'tkazish qobiliyatiga ega ma\'lumotlarni uzatish uchun uzoq masofali aloqa majmuasi.',
     item_type: 'satellite', 
     price: 550000,
     is_bestseller: false,
@@ -152,7 +182,10 @@ const MOCK_ITEMS = [
     slug: 'astrophysics-book', 
     title_en: 'Astrophysics 101', 
     title_ru: 'Основы астрофизики',
+    title_uz: 'Astrofizika asoslari',
     description_en: 'Essential knowledge for every space explorer, from stellar evolution to black holes.', 
+    description_ru: 'Необходимые знания для каждого исследователя космоса, от звездной эволюции до черных дыр.',
+    description_uz: 'Har bir kosmik tadqiqotchi uchun yulduzlar evolyutsiyasidan tortib qora tuynuklargacha bo\'lgan zarur bilimlar.',
     item_type: 'book', 
     price: 180000,
     is_bestseller: true,
@@ -181,9 +214,10 @@ const MOCK_ITEMS = [
   },
 ];
 
-const formatPrice = (price) => {
+const formatPrice = (price, t) => {
   if (price == null) return '—';
-  return Number(price).toLocaleString('ru-RU') + ' сум';
+  const formatted = Number(price).toLocaleString('uz-UZ').replace(/,/g, ' ');
+  return `${formatted} ${t('market', 'sum')}`;
 };
 
 const getPrice = (item) => item.price ?? item.cost_fuel ?? 0;
@@ -323,7 +357,7 @@ function ProductModal({ item, onClose, onBuy, buying }) {
           <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto flex flex-col">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xs font-bold uppercase tracking-wider text-violet-400 bg-violet-400/10 px-3 py-1 rounded-full">
-                {item.item_type.replace('_', ' ')}
+                {t('market', `types.${item.item_type}`)}
               </span>
             </div>
             
@@ -346,15 +380,15 @@ function ProductModal({ item, onClose, onBuy, buying }) {
                 className="w-full mt-6 bg-violet-600 hover:bg-violet-500 text-white py-4 rounded-xl font-[800] text-[15px] flex items-center justify-center gap-2 transition-all shadow-[0_10px_30px_rgba(124,58,237,0.3)] active:scale-[0.98]"
               >
                 {buying ? <Loader className="w-5 h-5 animate-spin" /> : <ShoppingCart className="w-5 h-5" />}
-                Добавить в корзину
+                {t('market', 'addCart')}
               </button>
             </div>
 
-            <h4 className="text-sm font-[800] uppercase tracking-wider text-white/40 mb-4">Характеристики</h4>
+            <h4 className="text-sm font-[800] uppercase tracking-wider text-white/40 mb-4">{t('market', 'specs')}</h4>
             <div className="space-y-3">
               {Object.entries(item.specs || {}).map(([key, val]) => (
                 <div key={key} className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-sm text-white/50 capitalize">{key}</span>
+                  <span className="text-sm text-white/50 capitalize">{t('market', `specLabels.${key}`) || key}</span>
                   <span className="text-sm font-medium text-white/90">{val}</span>
                 </div>
               ))}
@@ -407,16 +441,16 @@ export default function MarketView() {
 
   const handleBuy = async (slug) => {
     if (!isAuthenticated) {
-      alert('Please log in to purchase items.');
+      alert(t('market', 'loginRequired'));
       return;
     }
     setBuying(slug);
     try {
       await api.post('/market/purchase/', { item_slug: slug });
       setInventory(prev => new Set([...prev, slug]));
-      alert('Purchase successful!');
+      alert(t('market', 'purchaseSuccess'));
     } catch (err) {
-      alert(err.response?.data?.detail || 'Purchase failed.');
+      alert(err.response?.data?.detail || t('market', 'purchaseFailed'));
     } finally {
       setBuying(null);
     }
@@ -512,7 +546,7 @@ export default function MarketView() {
                           : 'text-white/60 hover:bg-white/5 hover:text-white border border-transparent'
                       }`}
                     >
-                      {category === 'all' ? t('market', 'allProducts') : category.replace('_', ' ')}
+                      {category === 'all' ? t('market', 'allProducts') : t('market', `types.${category}`)}
                     </button>
                   ))}
                 </div>
