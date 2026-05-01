@@ -12,5 +12,12 @@ urlpatterns = [
     path('questions/', views.QuestionsListView.as_view()),
     path('questions/<int:pk>/', views.QuestionDetailView.as_view()),
     path('spheres/', views.SpheresListView.as_view()),
+    path('spheres/<int:pk>/', views.SphereDetailView.as_view()),
+    path('topics/', views.TopicListView.as_view()),
+    path('topics/<int:pk>/', views.TopicDetailView.as_view()),
+    path('lessons/', views.TopicLessonListView.as_view()),
+    path('lessons/<int:pk>/', views.TopicLessonDetailView.as_view()),
+    path('market/', views.MarketItemListView.as_view()),
+    path('market/<int:pk>/', views.MarketItemDetailView.as_view()),
     path('chat-rooms/', views.ChatRoomsView.as_view()),
 ]

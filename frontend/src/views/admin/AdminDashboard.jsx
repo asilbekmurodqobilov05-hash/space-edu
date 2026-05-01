@@ -2,35 +2,54 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/api';
-import { Users, BookOpen, ShoppingBag, MessageCircle, Newspaper, Calendar, HelpCircle, ChevronRight, Search, Plus, Trash2, Edit, X, Check, Shield } from 'lucide-react';
+import { Users, BookOpen, ShoppingBag, MessageCircle, Newspaper, Calendar, HelpCircle, Search, Plus, Trash2, Edit, X, Shield, Sun, Moon, ArrowLeft } from 'lucide-react';
 
-const TABS = [
-  { id: 'dashboard', label: 'Dashboard', icon: Shield },
-  { id: 'users', label: 'Users', icon: Users },
-  { id: 'news', label: 'News', icon: Newspaper },
-  { id: 'events', label: 'Events', icon: Calendar },
-  { id: 'questions', label: 'Questions', icon: HelpCircle },
-  { id: 'courses', label: 'Courses', icon: BookOpen },
-  { id: 'chat', label: 'Chat Rooms', icon: MessageCircle },
+const MENU_GROUPS = [
+  {
+    title: 'Platform Management',
+    items: [
+      { id: 'dashboard', label: 'Dashboard', icon: Shield },
+      { id: 'users', label: 'Users & Profiles', icon: Users },
+    ]
+  },
+  {
+    title: 'Education & Content',
+    items: [
+      { id: 'spheres', label: 'Course Spheres', icon: BookOpen },
+      { id: 'topics', label: 'Course Topics', icon: BookOpen },
+      { id: 'lessons', label: 'Lessons', icon: BookOpen },
+      { id: 'questions', label: 'Challenges', icon: HelpCircle },
+    ]
+  },
+  {
+    title: 'Community & Store',
+    items: [
+      { id: 'market', label: 'Market Items', icon: ShoppingBag },
+      { id: 'news', label: 'News Articles', icon: Newspaper },
+      { id: 'events', label: 'Space Events', icon: Calendar },
+      { id: 'chat', label: 'Chat Rooms', icon: MessageCircle },
+    ]
+  }
 ];
+const TABS = MENU_GROUPS.flatMap(g => g.items);
 
 function StatCard({ label, value, sub }) {
   return (
-    <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 hover:border-violet/30 transition-all">
-      <p className="text-[10px] font-[800] text-white/30 uppercase tracking-widest mb-2">{label}</p>
-      <p className="text-3xl font-[900] text-white">{value}</p>
-      {sub && <p className="text-xs text-white/30 mt-1">{sub}</p>}
+    <div className="bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/10 rounded-2xl p-5 hover:border-violet/30 transition-all">
+      <p className="text-[10px] font-extrabold text-slate-500 dark:text-white/30 uppercase tracking-widest mb-2">{label}</p>
+      <p className="text-3xl font-black text-slate-900 dark:text-white">{value}</p>
+      {sub && <p className="text-xs text-slate-400 dark:text-white/30 mt-1">{sub}</p>}
     </div>
   );
 }
 
 function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-space-800 border border-white/10 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-white/5">
-          <h3 className="font-[900] text-lg">{title}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl"><X className="w-4 h-4" /></button>
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-[#1a1b23] border border-slate-900/10 dark:border-white/10 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-900/5 dark:border-white/5">
+          <h3 className="font-black text-lg">{title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-900/5 dark:hover:bg-white/5 rounded-xl"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5">{children}</div>
       </div>
@@ -41,29 +60,27 @@ function Modal({ title, onClose, children }) {
 function Field({ label, value, onChange, type = 'text', options }) {
   return (
     <div className="flex flex-col gap-1.5 mb-4">
-      <label className="text-[10px] font-[800] text-white/30 uppercase tracking-widest">{label}</label>
+      <label className="text-[10px] font-extrabold text-slate-500 dark:text-white/30 uppercase tracking-widest">{label}</label>
       {type === 'select' ? (
-        <select value={value} onChange={e => onChange(e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet/40">
-          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        <select value={value} onChange={e => onChange(e.target.value)} className="bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet/40">
+          {options.map(o => <option key={o.value} value={o.value} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{o.label}</option>)}
         </select>
       ) : type === 'textarea' ? (
-        <textarea value={value} onChange={e => onChange(e.target.value)} rows={3} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet/40 resize-none" />
+        <textarea value={value} onChange={e => onChange(e.target.value)} rows={3} className="bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet/40 resize-none" />
       ) : type === 'checkbox' ? (
         <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={value} onChange={e => onChange(e.target.checked)} className="accent-violet w-4 h-4" /><span className="text-sm">{value ? 'Yes' : 'No'}</span></label>
       ) : (
-        <input type={type} value={value} onChange={e => onChange(e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet/40" />
+        <input type={type} value={value} onChange={e => onChange(e.target.value)} className="bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet/40" />
       )}
     </div>
   );
 }
 
-// ═══ TAB PANELS ═══
-
 function DashboardTab({ stats }) {
-  if (!stats) return <p className="text-white/30">Loading...</p>;
+  if (!stats) return <p className="text-slate-400">Loading...</p>;
   return (
     <div>
-      <h2 className="text-2xl font-[900] mb-6">Platform Overview</h2>
+      <h2 className="text-2xl font-black mb-6">Platform Overview</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Users" value={stats.users?.total} sub={`+${stats.users?.new_week} this week`} />
         <StatCard label="Staff" value={stats.users?.staff_count} />
@@ -74,17 +91,17 @@ function DashboardTab({ stats }) {
         <StatCard label="Events" value={stats.community?.space_events} />
         <StatCard label="Chat Messages" value={stats.community?.chat_messages} />
       </div>
-      <h3 className="font-[800] text-sm uppercase tracking-widest text-white/40 mb-3">Recent Users</h3>
-      <div className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden">
+      <h3 className="font-extrabold text-sm uppercase tracking-widest text-slate-500 dark:text-white/40 mb-3">Recent Users</h3>
+      <div className="bg-slate-900/[0.02] dark:bg-white/[0.02] border border-slate-900/5 dark:border-white/5 rounded-xl overflow-hidden">
         {(stats.recent_users || []).map(u => (
-          <div key={u.id} className="flex items-center justify-between px-5 py-3 border-b border-white/5 last:border-0">
+          <div key={u.id} className="flex items-center justify-between px-5 py-3 border-b border-slate-900/5 dark:border-white/5 last:border-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-violet/20 flex items-center justify-center text-xs font-bold">{(u.first_name || u.username)[0].toUpperCase()}</div>
-              <div><p className="text-sm font-bold">{u.first_name} {u.last_name}</p><p className="text-[10px] text-white/30">@{u.username} · {u.email}</p></div>
+              <div><p className="text-sm font-bold">{u.first_name} {u.last_name}</p><p className="text-[10px] text-slate-400">@{u.username} · {u.email}</p></div>
             </div>
             <div className="flex items-center gap-2">
               {u.is_staff && <span className="text-[9px] font-bold bg-violet/20 text-violet-light px-2 py-0.5 rounded-full">STAFF</span>}
-              <span className="text-[10px] text-white/20">{new Date(u.date_joined).toLocaleDateString()}</span>
+              <span className="text-[10px] text-slate-400">{new Date(u.date_joined).toLocaleDateString()}</span>
             </div>
           </div>
         ))}
@@ -96,24 +113,35 @@ function DashboardTab({ stats }) {
 function UsersTab() {
   const [users, setUsers] = useState([]);
   const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [editing, setEditing] = useState(null);
-  const load = () => api.get(`/admin-panel/users/?q=${q}`).then(r => setUsers(r.data)).catch(() => {});
-  useEffect(() => { load(); }, [q]);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(timer);
+  }, [q]);
+
+  const load = () => api.get(`/admin-panel/users/?q=${debouncedQ}`).then(r => setUsers(r.data)).catch(() => {});
+  useEffect(() => { load(); }, [debouncedQ]);
   const save = () => { api.patch(`/admin-panel/users/${editing.id}/`, editing).then(() => { setEditing(null); load(); }); };
   const del = (id) => { if (confirm('Delete user?')) api.delete(`/admin-panel/users/${id}/`).then(load); };
+  
   return (
     <div>
       <div className="flex items-center gap-4 mb-6">
-        <h2 className="text-2xl font-[900]">Users</h2>
-        <div className="flex-1 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search users..." className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-violet/40" /></div>
+        <h2 className="text-2xl font-black">Users</h2>
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search users..." className="w-full bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-violet/40 text-slate-900 dark:text-white" />
+        </div>
       </div>
-      <div className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden">
+      <div className="bg-slate-900/[0.02] dark:bg-white/[0.02] border border-slate-900/5 dark:border-white/5 rounded-xl overflow-hidden">
         {users.map(u => (
-          <div key={u.id} className="flex items-center justify-between px-5 py-3 border-b border-white/5 last:border-0">
-            <div><p className="text-sm font-bold">{u.first_name} {u.last_name} <span className="text-white/30">@{u.username}</span></p><p className="text-[10px] text-white/30">{u.email}</p></div>
+          <div key={u.id} className="flex items-center justify-between px-5 py-3 border-b border-slate-900/5 dark:border-white/5 last:border-0">
+            <div><p className="text-sm font-bold">{u.first_name} {u.last_name} <span className="text-slate-400 font-normal">@{u.username}</span></p><p className="text-[10px] text-slate-400">{u.email}</p></div>
             <div className="flex items-center gap-2">
               {u.is_staff && <span className="text-[9px] font-bold bg-violet/20 text-violet-light px-2 py-0.5 rounded-full">STAFF</span>}
-              <button onClick={() => setEditing({...u})} className="p-2 hover:bg-white/5 rounded-lg"><Edit className="w-3.5 h-3.5 text-white/40" /></button>
+              <button onClick={() => setEditing({...u})} className="p-2 hover:bg-slate-900/5 dark:hover:bg-white/5 rounded-lg"><Edit className="w-3.5 h-3.5 text-slate-400" /></button>
               <button onClick={() => del(u.id)} className="p-2 hover:bg-red-500/10 rounded-lg"><Trash2 className="w-3.5 h-3.5 text-red-400/50" /></button>
             </div>
           </div>
@@ -121,11 +149,18 @@ function UsersTab() {
       </div>
       {editing && (
         <Modal title="Edit User" onClose={() => setEditing(null)}>
-          <Field label="First Name" value={editing.first_name} onChange={v => setEditing({...editing, first_name: v})} />
-          <Field label="Last Name" value={editing.last_name} onChange={v => setEditing({...editing, last_name: v})} />
-          <Field label="Staff" value={editing.is_staff} onChange={v => setEditing({...editing, is_staff: v})} type="checkbox" />
-          <Field label="Active" value={editing.is_active} onChange={v => setEditing({...editing, is_active: v})} type="checkbox" />
-          <button onClick={save} className="w-full py-3 bg-violet rounded-xl font-bold text-sm mt-2">Save Changes</button>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="First Name" value={editing.first_name || ''} onChange={v => setEditing({...editing, first_name: v})} />
+            <Field label="Last Name" value={editing.last_name || ''} onChange={v => setEditing({...editing, last_name: v})} />
+          </div>
+          <Field label="Astronaut Name (Username)" value={editing.astronaut_name || ''} onChange={v => setEditing({...editing, astronaut_name: v})} />
+          <Field label="Bio" value={editing.bio || ''} onChange={v => setEditing({...editing, bio: v})} type="textarea" />
+          <Field label="Language" value={editing.language || 'uz'} onChange={v => setEditing({...editing, language: v})} type="select" options={[{value:'uz',label:'Uzbek'}, {value:'en',label:'English'}, {value:'ru',label:'Russian'}]} />
+          <div className="flex gap-4 mt-2">
+            <Field label="Staff" value={editing.is_staff} onChange={v => setEditing({...editing, is_staff: v})} type="checkbox" />
+            <Field label="Active" value={editing.is_active} onChange={v => setEditing({...editing, is_active: v})} type="checkbox" />
+          </div>
+          <button onClick={save} className="w-full py-3 bg-violet text-white rounded-xl font-bold text-sm mt-4">Save Changes</button>
         </Modal>
       )}
     </div>
@@ -149,16 +184,16 @@ function CrudTab({ title, endpoint, fields, defaultItem }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-[900]">{title}</h2>
-        <button onClick={() => { setCreating(true); setForm(defaultItem); }} className="flex items-center gap-2 px-4 py-2 bg-violet rounded-xl text-sm font-bold hover:bg-violet-dark transition-colors"><Plus className="w-4 h-4" />Add New</button>
+        <h2 className="text-2xl font-black">{title}</h2>
+        <button onClick={() => { setCreating(true); setForm(defaultItem); }} className="flex items-center gap-2 px-4 py-2 bg-violet text-white rounded-xl text-sm font-bold hover:bg-violet-dark transition-colors"><Plus className="w-4 h-4" />Add New</button>
       </div>
-      <div className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden">
-        {items.length === 0 && <p className="p-8 text-center text-white/20 text-sm">No items yet</p>}
+      <div className="bg-slate-900/[0.02] dark:bg-white/[0.02] border border-slate-900/5 dark:border-white/5 rounded-xl overflow-hidden">
+        {items.length === 0 && <p className="p-8 text-center text-slate-400 text-sm">No items yet</p>}
         {items.map(item => (
-          <div key={item.id} className="flex items-center justify-between px-5 py-3 border-b border-white/5 last:border-0">
-            <div><p className="text-sm font-bold">{item[displayField]?.substring?.(0, 80) || item[displayField]}</p>{subField && <p className="text-[10px] text-white/30">{item[subField]}</p>}</div>
+          <div key={item.id} className="flex items-center justify-between px-5 py-3 border-b border-slate-900/5 dark:border-white/5 last:border-0">
+            <div><p className="text-sm font-bold">{item[displayField]?.substring?.(0, 80) || item[displayField]}</p>{subField && <p className="text-[10px] text-slate-400">{item[subField]}</p>}</div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setEditing({...item})} className="p-2 hover:bg-white/5 rounded-lg"><Edit className="w-3.5 h-3.5 text-white/40" /></button>
+              <button onClick={() => setEditing({...item})} className="p-2 hover:bg-slate-900/5 dark:hover:bg-white/5 rounded-lg"><Edit className="w-3.5 h-3.5 text-slate-400" /></button>
               <button onClick={() => del(item.id)} className="p-2 hover:bg-red-500/10 rounded-lg"><Trash2 className="w-3.5 h-3.5 text-red-400/50" /></button>
             </div>
           </div>
@@ -171,33 +206,9 @@ function CrudTab({ title, endpoint, fields, defaultItem }) {
               value={(creating ? form : editing)[f.name] ?? ''}
               onChange={v => creating ? setForm({...form, [f.name]: v}) : setEditing({...editing, [f.name]: v})} />
           ))}
-          <button onClick={save} className="w-full py-3 bg-violet rounded-xl font-bold text-sm mt-2">{creating ? 'Create' : 'Save'}</button>
+          <button onClick={save} className="w-full py-3 bg-violet text-white rounded-xl font-bold text-sm mt-2">{creating ? 'Create' : 'Save'}</button>
         </Modal>
       )}
-    </div>
-  );
-}
-
-function CoursesTab() {
-  const [spheres, setSpheres] = useState([]);
-  useEffect(() => { api.get('/admin-panel/spheres/').then(r => setSpheres(r.data)).catch(() => {}); }, []);
-  return (
-    <div>
-      <h2 className="text-2xl font-[900] mb-6">Courses Overview</h2>
-      <p className="text-white/30 text-sm mb-4">Manage detailed course content in Django Admin → <a href="http://localhost:8000/admin/courses/" target="_blank" className="text-violet-light underline">Open Django Admin</a></p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {spheres.map(s => (
-          <div key={s.id} className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 hover:border-violet/30 transition-all">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-[800]" style={{ color: s.color }}>{s.title}</h3>
-              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${s.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{s.is_active ? 'ACTIVE' : 'INACTIVE'}</span>
-            </div>
-            <div className="flex gap-4 text-xs text-white/40">
-              <span>{s.topics_count} topics</span><span>{s.lessons_count} lessons</span>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -216,17 +227,17 @@ function ChatTab() {
   };
   return (
     <div>
-      <h2 className="text-2xl font-[900] mb-6">Chat Rooms</h2>
+      <h2 className="text-2xl font-black mb-6">Chat Rooms</h2>
       <div className="flex gap-3 mb-6">
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Room name" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm flex-1 focus:outline-none focus:border-violet/40" />
-        <input value={slug} onChange={e => setSlug(e.target.value)} placeholder="slug" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm w-40 focus:outline-none focus:border-violet/40" />
-        <button onClick={addRoom} className="px-4 py-2 bg-violet rounded-xl text-sm font-bold"><Plus className="w-4 h-4" /></button>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Room name" className="bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl px-4 py-2 text-sm flex-1 focus:outline-none focus:border-violet/40 text-slate-900 dark:text-white" />
+        <input value={slug} onChange={e => setSlug(e.target.value)} placeholder="slug" className="bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl px-4 py-2 text-sm w-40 focus:outline-none focus:border-violet/40 text-slate-900 dark:text-white" />
+        <button onClick={addRoom} className="px-4 py-2 bg-violet text-white rounded-xl text-sm font-bold"><Plus className="w-4 h-4" /></button>
       </div>
-      <div className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden">
+      <div className="bg-slate-900/[0.02] dark:bg-white/[0.02] border border-slate-900/5 dark:border-white/5 rounded-xl overflow-hidden">
         {rooms.map(r => (
-          <div key={r.id} className="flex items-center justify-between px-5 py-4 border-b border-white/5 last:border-0">
-            <div><p className="font-bold text-sm">{r.name}</p><p className="text-[10px] text-white/30">#{r.slug}</p></div>
-            <span className="text-xs text-white/30">{r.messages} messages</span>
+          <div key={r.id} className="flex items-center justify-between px-5 py-4 border-b border-slate-900/5 dark:border-white/5 last:border-0">
+            <div><p className="font-bold text-sm">{r.name}</p><p className="text-[10px] text-slate-400">#{r.slug}</p></div>
+            <span className="text-xs text-slate-400">{r.messages} messages</span>
           </div>
         ))}
       </div>
@@ -234,33 +245,33 @@ function ChatTab() {
   );
 }
 
-// ═══ MAIN ═══
-
 const NEWS_FIELDS = [
   { name: 'title_en', label: 'Title (EN)' }, { name: 'title_uz', label: 'Title (UZ)' }, { name: 'title_ru', label: 'Title (RU)' },
-  { name: 'summary_en', label: 'Summary (EN)', type: 'textarea' }, { name: 'summary_uz', label: 'Summary (UZ)', type: 'textarea' },
+  { name: 'summary_en', label: 'Summary (EN)', type: 'textarea' }, { name: 'summary_uz', label: 'Summary (UZ)', type: 'textarea' }, { name: 'summary_ru', label: 'Summary (RU)', type: 'textarea' },
+  { name: 'content_en', label: 'Content (EN)', type: 'textarea' }, { name: 'content_uz', label: 'Content (UZ)', type: 'textarea' }, { name: 'content_ru', label: 'Content (RU)', type: 'textarea' },
   { name: 'category', label: 'Category', type: 'select', options: [
     {value:'discovery',label:'Discovery'},{value:'technology',label:'Technology'},{value:'exploration',label:'Exploration'},
     {value:'local',label:'Local'},{value:'science',label:'Science'},{value:'mission',label:'Mission'}
   ]},
-  { name: 'source', label: 'Source' }, { name: 'is_published', label: 'Published', type: 'checkbox' },
+  { name: 'source', label: 'Source' }, { name: 'source_url', label: 'Source URL' }, { name: 'is_published', label: 'Published', type: 'checkbox' },
 ];
-const NEWS_DEFAULT = { title_en:'',title_uz:'',title_ru:'',summary_en:'',summary_uz:'',summary_ru:'',category:'science',source:'',is_published:true };
+const NEWS_DEFAULT = { title_en:'',title_uz:'',title_ru:'',summary_en:'',summary_uz:'',summary_ru:'',content_en:'',content_uz:'',content_ru:'',category:'science',source:'',source_url:'',is_published:true };
 
 const EVENT_FIELDS = [
   { name: 'title_en', label: 'Title (EN)' }, { name: 'title_uz', label: 'Title (UZ)' }, { name: 'title_ru', label: 'Title (RU)' },
-  { name: 'description_en', label: 'Description (EN)', type: 'textarea' }, { name: 'description_uz', label: 'Description (UZ)', type: 'textarea' },
-  { name: 'event_date', label: 'Date', type: 'date' },
+  { name: 'description_en', label: 'Description (EN)', type: 'textarea' }, { name: 'description_uz', label: 'Description (UZ)', type: 'textarea' }, { name: 'description_ru', label: 'Description (RU)', type: 'textarea' },
+  { name: 'event_date', label: 'Date', type: 'date' }, { name: 'event_time', label: 'Time', type: 'time' },
   { name: 'event_type', label: 'Type', type: 'select', options: [
     {value:'launch',label:'Launch'},{value:'mission',label:'Mission'},{value:'discovery',label:'Discovery'},
     {value:'observation',label:'Observation'},{value:'meteor_shower',label:'Meteor Shower'},{value:'solar_eclipse',label:'Solar Eclipse'},
   ]},
-  { name: 'is_featured', label: 'Featured', type: 'checkbox' },
+  { name: 'source_url', label: 'Source URL' },
+  { name: 'is_featured', label: 'Featured', type: 'checkbox' }, { name: 'is_historical', label: 'Historical', type: 'checkbox' },
 ];
-const EVENT_DEFAULT = { title_en:'',title_uz:'',title_ru:'',description_en:'',description_uz:'',description_ru:'',event_date:'',event_type:'discovery',is_featured:false };
+const EVENT_DEFAULT = { title_en:'',title_uz:'',title_ru:'',description_en:'',description_uz:'',description_ru:'',event_date:'',event_time:'',event_type:'discovery',source_url:'',is_featured:false,is_historical:false };
 
 const Q_FIELDS = [
-  { name: 'question', label: 'Question (UZ)', type: 'textarea' }, { name: 'question_en', label: 'Question (EN)', type: 'textarea' },
+  { name: 'question', label: 'Question (UZ)', type: 'textarea' }, { name: 'question_en', label: 'Question (EN)', type: 'textarea' }, { name: 'question_ru', label: 'Question (RU)', type: 'textarea' },
   { name: 'category', label: 'Category', type: 'select', options: [
     {value:'physics',label:'Physics'},{value:'astronomy',label:'Astronomy'},{value:'problems',label:'Problems'},{value:'general',label:'General'}
   ]},
@@ -269,13 +280,52 @@ const Q_FIELDS = [
   { name: 'explanation', label: 'Explanation', type: 'textarea' },
   { name: 'is_active', label: 'Active', type: 'checkbox' },
 ];
-const Q_DEFAULT = { question:'',question_en:'',category:'general',difficulty:'medium',options:['','','',''],correct_answer:0,explanation:'',is_active:true };
+const Q_DEFAULT = { question:'',question_en:'',question_ru:'',category:'general',difficulty:'medium',options:['','','',''],correct_answer:0,explanation:'',is_active:true };
+
+const SPHERE_FIELDS = [
+  { name: 'slug', label: 'Slug' }, { name: 'title', label: 'Title (UZ)' }, { name: 'title_en', label: 'Title (EN)' }, { name: 'title_ru', label: 'Title (RU)' },
+  { name: 'description', label: 'Description (UZ)', type: 'textarea' }, { name: 'description_en', label: 'Description (EN)', type: 'textarea' },
+  { name: 'link', label: 'Link (Route)' },
+  { name: 'color', label: 'Color Hex' }, { name: 'icon', label: 'Icon Name' },
+  { name: 'is_active', label: 'Active', type: 'checkbox' },
+];
+const SPHERE_DEFAULT = { slug:'', title:'', title_en:'', title_ru:'', description:'', description_en:'', link:'', color:'#a78bfa', icon:'BookOpen', is_active:true };
+
+const TOPIC_FIELDS = [
+  { name: 'sphere_id', label: 'Sphere ID', type: 'number' }, { name: 'title', label: 'Title (UZ)' }, { name: 'title_en', label: 'Title (EN)' }, { name: 'title_ru', label: 'Title (RU)' },
+  { name: 'description', label: 'Description', type: 'textarea' },
+  { name: 'color', label: 'Color Hex' },
+];
+const TOPIC_DEFAULT = { sphere_id:1, title:'', title_en:'', title_ru:'', description:'', color:'' };
+
+const LESSON_FIELDS = [
+  { name: 'topic_id', label: 'Topic ID', type: 'number' }, { name: 'name', label: 'Name (UZ)' }, { name: 'name_en', label: 'Name (EN)' }, { name: 'name_ru', label: 'Name (RU)' },
+  { name: 'video_url', label: 'Video URL' }, { name: 'content', label: 'Markdown Content', type: 'textarea' },
+];
+const LESSON_DEFAULT = { topic_id:1, name:'', name_en:'', name_ru:'', video_url:'', content:'' };
+
+const MARKET_FIELDS = [
+  { name: 'slug', label: 'Slug' }, { name: 'title_en', label: 'Title (EN)' }, { name: 'title_uz', label: 'Title (UZ)' }, { name: 'title_ru', label: 'Title (RU)' },
+  { name: 'description_en', label: 'Description (EN)', type: 'textarea' }, { name: 'description_uz', label: 'Description (UZ)', type: 'textarea' }, { name: 'description_ru', label: 'Description (RU)', type: 'textarea' },
+  { name: 'item_type', label: 'Type', type: 'select', options: [
+    {value:'spaceship',label:'Spaceship'},{value:'badge',label:'Badge'},{value:'boost',label:'XP Boost'},
+    {value:'book',label:'Book'},{value:'rocket_module',label:'Rocket Module'},{value:'satellite',label:'Satellite'},
+    {value:'avatar',label:'Avatar'},{value:'theme',label:'Theme'},{value:'tool',label:'Tool'},{value:'other',label:'Other'}
+  ]},
+  { name: 'price', label: 'Price (UZS)', type: 'number' }, { name: 'cost_fuel', label: 'Cost Fuel', type: 'number' },
+  { name: 'stock', label: 'Stock (0=unlimited)', type: 'number' },
+  { name: 'is_active', label: 'Active', type: 'checkbox' }, { name: 'is_bestseller', label: 'Bestseller', type: 'checkbox' }
+];
+const MARKET_DEFAULT = { slug:'', title_en:'', title_uz:'', title_ru:'', description_en:'', description_uz:'', description_ru:'', item_type:'other', price:0, cost_fuel:0, stock:0, is_active:true, is_bestseller:false };
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [tab, setTab] = useState('dashboard');
+  const [theme, setTheme] = useState(localStorage.getItem('adminTheme') || 'dark');
   const [stats, setStats] = useState(null);
+
+  useEffect(() => { localStorage.setItem('adminTheme', theme); }, [theme]);
 
   useEffect(() => {
     if (!user?.is_staff) { navigate('/'); return; }
@@ -285,41 +335,57 @@ export default function AdminDashboard() {
   if (!user?.is_staff) return null;
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 mb-8">
-          <Shield className="w-8 h-8 text-violet" />
-          <div><h1 className="text-3xl font-[900] tracking-tight">Admin Panel</h1><p className="text-xs text-white/30">UZ COSMOS Management Dashboard</p></div>
-        </div>
-
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          <div className="w-56 shrink-0 hidden md:block">
-            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-2 sticky top-24">
-              {TABS.map(t => (
-                <button key={t.id} onClick={() => setTab(t.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-[700] transition-all ${tab === t.id ? 'bg-violet/20 text-violet-light' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>
-                  <t.icon className="w-4 h-4" />{t.label}
-                </button>
-              ))}
+    <div className={`${theme === 'dark' ? 'dark' : ''} relative z-[100]`}>
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0b0c10] text-slate-900 dark:text-white transition-colors duration-300">
+        <div className="pt-12 pb-12 px-4 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-6">
+              <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-400 hover:text-violet transition-colors text-sm font-bold">
+                <ArrowLeft className="w-4 h-4" /> Exit
+              </button>
+              <div className="h-6 w-px bg-slate-200 dark:bg-white/10" />
+              <div className="flex items-center gap-3">
+                <Shield className="w-6 h-6 text-violet" />
+                <h1 className="text-xl font-black tracking-tight">Console</h1>
+              </div>
             </div>
+            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-2.5 bg-white dark:bg-white/5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors border border-slate-200 dark:border-white/5 shadow-sm">
+              {theme === 'dark' ? <Sun className="w-5 h-5 text-violet-light" /> : <Moon className="w-5 h-5 text-slate-600" />}
+            </button>
           </div>
+          
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Sidebar */}
+            <div className="w-full md:w-64 shrink-0">
+              <div className="bg-white dark:bg-[#1a1b23] border border-slate-200 dark:border-white/5 rounded-2xl p-4 sticky top-24 shadow-sm">
+                {MENU_GROUPS.map((group, idx) => (
+                  <div key={idx} className="mb-6 last:mb-0">
+                    <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3 px-2">{group.title}</h4>
+                    <div className="flex flex-col gap-1">
+                      {group.items.map(t => (
+                        <button key={t.id} onClick={() => setTab(t.id)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-bold transition-all ${tab === t.id ? 'bg-violet text-white shadow-lg shadow-violet/20' : 'text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/5'}`}>
+                          <t.icon className="w-4 h-4" />{t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          {/* Mobile tabs */}
-          <div className="md:hidden flex gap-2 overflow-x-auto pb-4 mb-4 w-full">
-            {TABS.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)} className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold ${tab === t.id ? 'bg-violet text-white' : 'bg-white/5 text-white/40'}`}>{t.label}</button>
-            ))}
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            {tab === 'dashboard' && <DashboardTab stats={stats} />}
-            {tab === 'users' && <UsersTab />}
-            {tab === 'news' && <CrudTab title="News Articles" endpoint="news" fields={NEWS_FIELDS} defaultItem={NEWS_DEFAULT} />}
-            {tab === 'events' && <CrudTab title="Space Events" endpoint="events" fields={EVENT_FIELDS} defaultItem={EVENT_DEFAULT} />}
-            {tab === 'questions' && <CrudTab title="Challenge Questions" endpoint="questions" fields={Q_FIELDS} defaultItem={Q_DEFAULT} />}
-            {tab === 'courses' && <CoursesTab />}
-            {tab === 'chat' && <ChatTab />}
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              {tab === 'dashboard' && <DashboardTab stats={stats} />}
+              {tab === 'users' && <UsersTab />}
+              {tab === 'news' && <CrudTab key="news" title="News Articles" endpoint="news" fields={NEWS_FIELDS} defaultItem={NEWS_DEFAULT} />}
+              {tab === 'events' && <CrudTab key="events" title="Space Events" endpoint="events" fields={EVENT_FIELDS} defaultItem={EVENT_DEFAULT} />}
+              {tab === 'questions' && <CrudTab key="questions" title="Challenge Questions" endpoint="questions" fields={Q_FIELDS} defaultItem={Q_DEFAULT} />}
+              {tab === 'spheres' && <CrudTab key="spheres" title="Spheres" endpoint="spheres" fields={SPHERE_FIELDS} defaultItem={SPHERE_DEFAULT} />}
+              {tab === 'topics' && <CrudTab key="topics" title="Topics" endpoint="topics" fields={TOPIC_FIELDS} defaultItem={TOPIC_DEFAULT} />}
+              {tab === 'lessons' && <CrudTab key="lessons" title="Lessons" endpoint="lessons" fields={LESSON_FIELDS} defaultItem={LESSON_DEFAULT} />}
+              {tab === 'market' && <CrudTab key="market" title="Market Items" endpoint="market" fields={MARKET_FIELDS} defaultItem={MARKET_DEFAULT} />}
+              {tab === 'chat' && <ChatTab />}
+            </div>
           </div>
         </div>
       </div>

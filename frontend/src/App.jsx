@@ -73,13 +73,14 @@ export default function App() {
   const location = useLocation();
   const isGame = location.pathname === GAME_PATH;
   const isAuth = ['/login', '/register'].includes(location.pathname);
+  const isAdmin = location.pathname === '/admin-panel';
   const hideFooterRoutes = ['/history'];
-  const shouldHideFooter = hideFooterRoutes.includes(location.pathname);
+  const shouldHideFooter = hideFooterRoutes.includes(location.pathname) || isAdmin;
 
   return (
     <div className="relative min-h-screen text-white font-sans">
-      {!isAuth && location.pathname !== '/' && !isGame && <ParticleBackground />}
-      {!isGame && !isAuth && <Navigation />}
+      {!isAuth && !isAdmin && location.pathname !== '/' && !isGame && <ParticleBackground />}
+      {!isGame && !isAuth && !isAdmin && <Navigation />}
 
       <main className="relative z-10">
         <Routes>
@@ -144,8 +145,8 @@ export default function App() {
         </Routes>
       </main>
 
-      {!isGame && !isAuth && <ChatSystem />}
-      {!isGame && !isAuth && !shouldHideFooter && <Footer />}
+      {!isGame && !isAuth && !isAdmin && <ChatSystem />}
+      {!isGame && !isAuth && !isAdmin && !shouldHideFooter && <Footer />}
     </div>
   );
 }
