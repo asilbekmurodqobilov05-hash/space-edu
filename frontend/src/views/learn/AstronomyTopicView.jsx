@@ -17,7 +17,7 @@ const blockVariants = {
 function LessonBlock({ lesson, index, color, onClick }) {
   const [hovered, setHovered] = useState(false);
   const { t, i18n } = useTranslation();
-  const colorLight = `${color}1A`; 
+  const colorLight = `${color}1A`;
   const colorBorder = `${color}40`;
 
   const isObject = typeof lesson === 'object';
@@ -62,13 +62,13 @@ function LessonBlock({ lesson, index, color, onClick }) {
           </h3>
           {type && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-               {type === 'satellite' ? <Satellite style={{ width: '10px', height: '10px', color: '#a78bfa' }} /> : <Rocket style={{ width: '10px', height: '10px', color: '#f472b6' }} />}
-               <span style={{ fontSize: '10px', textTransform: 'uppercase', tracking: '0.05em', color: type === 'satellite' ? '#a78bfa' : '#f472b6', fontWeight: 700 }}>{type}</span>
+              {type === 'satellite' ? <Satellite style={{ width: '10px', height: '10px', color: '#a78bfa' }} /> : <Rocket style={{ width: '10px', height: '10px', color: '#f472b6' }} />}
+              <span style={{ fontSize: '10px', textTransform: 'uppercase', tracking: '0.05em', color: type === 'satellite' ? '#a78bfa' : '#f472b6', fontWeight: 700 }}>{type}</span>
             </div>
           )}
         </div>
       </div>
-      
+
       <div style={{ display: 'flex', gap: '12px' }}>
         <button
           style={{
@@ -103,7 +103,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
             cursor: 'pointer', transition: 'all 0.2s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#f472b6'; 
+            e.currentTarget.style.background = '#f472b6';
             e.currentTarget.style.borderColor = '#f472b6';
             e.currentTarget.style.color = '#000';
           }}
@@ -137,12 +137,12 @@ export default function AstronomyTopicView() {
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {topic.lessons.map((lesson, i) => (
-            <LessonBlock 
-              key={i} 
-              lesson={lesson} 
-              index={i} 
-              color={topic.color} 
-              onClick={() => navigate(`/learn/astronomy/${topicId}/sub/${i}`)} 
+            <LessonBlock
+              key={i}
+              lesson={lesson}
+              index={i}
+              color={topic.color}
+              onClick={() => navigate(`/learn/astronomy/${topicId}/sub/${i}`)}
             />
           ))}
         </div>
