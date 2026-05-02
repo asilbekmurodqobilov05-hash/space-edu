@@ -14,7 +14,7 @@ import confetti from 'canvas-confetti';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function UniversalLessonView() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { subject, topicId, subIdx, lessonIdx, partIdx } = useParams();
   const navigate = useNavigate();
   const addRewards = useGamificationStore(s => s.addRewards);

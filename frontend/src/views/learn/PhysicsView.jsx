@@ -109,7 +109,7 @@ export default function PhysicsView() {
   const color = '#a78bfa';
   const colorLight = 'rgba(167,139,250,0.10)';
   const colorBorder = 'rgba(167,139,250,0.20)';
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>

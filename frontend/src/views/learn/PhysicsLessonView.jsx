@@ -16,7 +16,7 @@ const blockVariants = {
 
 function LessonPartBlock({ partNumber, lessonName, color, index, onClick }) {
   const [hovered, setHovered] = useState(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const colorLight = `${color}1A`; // 10% opacity
   const colorBorder = `${color}40`; // 25% opacity
 

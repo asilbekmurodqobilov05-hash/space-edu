@@ -15,7 +15,7 @@ export default function LoginView() {
   const login = useAuthStore((s) => s.login);
   const syncFromAPI = useGamificationStore((s) => s.syncFromAPI);
   const from = location.state?.from?.pathname || '/';
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);

@@ -123,7 +123,7 @@ export default function ProfileView() {
   const syncFromAPI = useGamificationStore((s) => s.syncFromAPI);
   const { likedLessons } = useLikesStore();
   const { completedLessons: localCompletedSlugs, lessonMetadata } = useLearningStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

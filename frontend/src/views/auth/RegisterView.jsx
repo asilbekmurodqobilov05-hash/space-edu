@@ -11,7 +11,7 @@ import GlassCard from '@/components/ui/GlassCard';
 export default function RegisterView() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const FIELDS = [
     { name: 'first_name',     label: t('registerPage', 'firstName'),    type: 'text',     placeholder: 'Alisher' },

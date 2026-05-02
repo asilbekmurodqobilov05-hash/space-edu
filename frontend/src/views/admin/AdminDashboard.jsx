@@ -78,7 +78,7 @@ function Field({ label, value, onChange, type = 'text', options }) {
 }
 
 function DashboardTab({ stats }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (!stats) return <p className="text-slate-400">Loading...</p>;
   return (
     <div>
@@ -113,7 +113,7 @@ function DashboardTab({ stats }) {
 }
 
 function UsersTab() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [users, setUsers] = useState([]);
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
@@ -171,7 +171,7 @@ function UsersTab() {
 }
 
 function CrudTab({ title, endpoint, fields, defaultItem }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [items, setItems] = useState([]);
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -218,7 +218,7 @@ function CrudTab({ title, endpoint, fields, defaultItem }) {
 }
 
 function ChatTab() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [rooms, setRooms] = useState([]);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -329,7 +329,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState('dashboard');
   const [theme, setTheme] = useState(localStorage.getItem('adminTheme') || 'dark');
   const [stats, setStats] = useState(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => { localStorage.setItem('adminTheme', theme); }, [theme]);
 

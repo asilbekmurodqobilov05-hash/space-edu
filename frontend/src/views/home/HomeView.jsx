@@ -75,7 +75,7 @@ const GlassCard = ({ icon, title, desc, accent, delay }) => (
 
 // ── HOME VIEW ─────────────────────────────────────────────────────────────────
 export default function HomeView() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const nebulaRef = useRef(null);
   const nebulaWrapRef = useRef(null);
   const [scanActive, setScanActive] = useState(false);

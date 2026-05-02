@@ -8,7 +8,7 @@ import {
 import { useTranslation } from '@/hooks/useTranslation';
 
 const Footer = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const currentYear = new Date().getFullYear();
   const lastUpdated = new Date().toLocaleDateString('en-US', {
     month: 'long',

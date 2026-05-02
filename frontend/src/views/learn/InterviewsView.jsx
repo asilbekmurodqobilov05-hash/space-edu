@@ -101,7 +101,7 @@ export default function InterviewsView() {
   const colorLight = 'rgba(167,139,250,0.10)';
   const colorBorder = 'rgba(167,139,250,0.25)';
   const topics = Object.values(interviewsTopicsData);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>

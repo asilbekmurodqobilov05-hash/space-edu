@@ -6,7 +6,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 export default function PremiumView() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const handleGetPlan = () => {
     navigate('/register');

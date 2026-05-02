@@ -4,7 +4,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 export default function NotFoundView() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white px-4">
       <motion.div

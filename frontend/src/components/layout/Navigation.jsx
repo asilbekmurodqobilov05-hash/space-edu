@@ -176,7 +176,7 @@ export default function Navigation() {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
   const { language, setLanguage } = useUserStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const { xp, level, fuel } = useGamificationStore();
   const currentLevel = level || 1;

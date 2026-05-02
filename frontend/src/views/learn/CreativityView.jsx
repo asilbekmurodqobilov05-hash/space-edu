@@ -101,7 +101,7 @@ export default function CreativityView() {
   const colorLight = 'rgba(244,114,182,0.10)';
   const colorBorder = 'rgba(244,114,182,0.25)';
   const topics = Object.values(creativityTopicsData);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>

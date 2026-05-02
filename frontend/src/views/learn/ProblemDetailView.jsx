@@ -12,7 +12,7 @@ export default function ProblemDetailView() {
   const navigate = useNavigate();
   const problem = problemsData[id];
   const setProblemStatus = useProblemsStore((state) => state.setProblemStatus);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
   const [userAnswer, setUserAnswer] = useState('');
   const [status, setStatus] = useState(null); // 'correct', 'wrong', or null

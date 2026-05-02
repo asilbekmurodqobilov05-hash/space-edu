@@ -103,7 +103,7 @@ const ORIGINAL_ERA_DATA = [
 ];
 
 function EraCard({ era, onOpen }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <motion.button
       type="button"
@@ -155,7 +155,7 @@ function TimelineRow({ era, index, onOpen }) {
 }
 
 function MediaItem({ item, onImageOpen }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (item.type === 'image' && item.src) {
     return (
       <button

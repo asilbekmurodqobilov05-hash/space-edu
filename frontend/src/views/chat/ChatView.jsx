@@ -44,7 +44,7 @@ function Message({ msg, isMe }) {
 
 export default function ChatView() {
   const { user } = useAuthStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [rooms, setRooms] = useState([]);
   const [activeRoom, setActiveRoom] = useState(null);
   const [messages, setMessages] = useState([]);

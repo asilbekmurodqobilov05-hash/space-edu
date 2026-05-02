@@ -44,7 +44,7 @@ const CATEGORIES = [
 ];
 
 export default function QuizHubView() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 flex flex-col items-center">

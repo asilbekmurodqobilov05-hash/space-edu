@@ -52,7 +52,7 @@ const RealisticEarth = ({ radius = 5, position = [0, 0, 0] }) => {
 // --- Sub-modules ---
 
 const RocketEngineeringLab = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const trackEvent = useGamificationStore((s) => s.trackEvent);
   const [activePart, setActivePart] = useState(null);
   const [showInternals, setShowInternals] = useState(false);
@@ -352,7 +352,7 @@ const LaunchAnimator = ({ launchState, rocketRef, stage1Ref, armRef, speed }) =>
 };
 
 const RocketLaunchSimulator = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const trackEvent = useGamificationStore((s) => s.trackEvent);
   const [launchState, setLaunchState] = useState('idle');
   const [countdown, setCountdown] = useState(3);
@@ -636,7 +636,7 @@ const MeteorShower = ({ intensity }) => {
 };
 
 const PlanetaryProcessesLab = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const trackEvent = useGamificationStore((s) => s.trackEvent);
   const [activeEvent, setActiveEvent] = useState('none');
   const [intensity, setIntensity] = useState(50);
@@ -813,7 +813,7 @@ const ParticleSystem = ({ count, color, size, radius }) => {
 };
 
 const UniverseChangesSimulator = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const trackEvent = useGamificationStore((s) => s.trackEvent);
   const [stage, setStage] = useState('nebula');
 
@@ -1075,7 +1075,7 @@ const OrbitalEarthAndVehicle = ({ altitude, inclination, solarPanelsDeployed, sa
 };
 
 const SatelliteControlSimulator = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const trackEvent = useGamificationStore((s) => s.trackEvent);
   const [altitude, setAltitude] = useState(400); // km
   const [inclination, setInclination] = useState(51.6); // degrees
@@ -1221,7 +1221,7 @@ const FalconTrackerLab = () => {
 // --- Main View ---
 
 export default function SpaceLabView() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeModule, setActiveModule] = useState('falcon');
 
   const modules = [

@@ -18,7 +18,7 @@ const blockVariants = {
 
 function LessonBlock({ lesson, index, color, onClick }) {
   const [hovered, setHovered] = useState(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const colorLight = `${color}1A`; 
   const colorBorder = `${color}40`;
 

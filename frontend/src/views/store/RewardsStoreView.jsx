@@ -258,7 +258,7 @@ export default function RewardsStoreView() {
   const { isAuthenticated } = useAuthStore();
   const fuel = useGamificationStore((s) => s.fuel);
   const syncFromAPI = useGamificationStore((s) => s.syncFromAPI);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const CATEGORIES = [
     { id: 'all', label: t('store', 'allRewards'), icon: Sparkles },

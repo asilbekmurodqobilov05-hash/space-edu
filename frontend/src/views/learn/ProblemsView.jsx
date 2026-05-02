@@ -20,7 +20,7 @@ export default function ProblemsView() {
     rows.push(Array.from({ length: Math.min(PER_ROW, TOTAL_PROBLEMS - i + 1) }, (_, k) => i + k));
   }
 
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>

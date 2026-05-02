@@ -6,7 +6,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 export default function PortfolioView() {
   const { portfolio, careerTrack } = useGamificationStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">

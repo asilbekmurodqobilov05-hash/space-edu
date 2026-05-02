@@ -5,7 +5,7 @@ import useStarStore from '../../store/useStarStore';
 import { useTranslation } from '../../hooks/useTranslation';
 
 export default function ARCameraView({ targetStar, targetAzimuth, targetAltitude }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   

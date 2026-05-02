@@ -7,7 +7,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 
 export default function StarCollection() {
   const { collection, points, badges } = useStarStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="w-full flex flex-col gap-8">

@@ -284,7 +284,7 @@ const CameraController = ({ targetObject, orbitControlsRef, selectedObj }) => {
 // --- Main View Component ---
 
 export default function SolarSystemView() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedObj, setSelectedObj] = useState(null);
   const [targetGroupRef, setTargetGroupRef] = useState(null);
   const orbitControlsRef = useRef();

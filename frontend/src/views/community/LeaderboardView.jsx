@@ -16,7 +16,7 @@ const RANK_STYLES = {
 export default function LeaderboardView() {
   const { user } = useAuthStore();
   const { xp, level } = useGamificationStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 

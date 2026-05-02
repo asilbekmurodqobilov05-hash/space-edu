@@ -102,7 +102,7 @@ export default function AstronomyView() {
   const colorLight = 'rgba(251,191,36,0.10)';
   const colorBorder = 'rgba(251,191,36,0.25)';
   const topics = Object.values(astronomyTopicsData);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>

@@ -103,7 +103,7 @@ function NewsCard({ article, index }) {
 }
 
 export default function NewsView() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [articles, setArticles] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [loading, setLoading] = useState(true);
