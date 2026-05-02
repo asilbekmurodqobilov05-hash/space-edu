@@ -27,5 +27,9 @@ export function useTranslation() {
     return `${section}.${key}`;
   };
 
-  return { t, language };
+  // i18n.language returns ISO codes ('en', 'ru', 'uz') for compatibility
+  const LANG_ISO = { ENG: 'en', RUS: 'ru', UZB: 'uz' };
+  const i18n = { language: LANG_ISO[language] || 'uz' };
+
+  return { t, language, i18n };
 }

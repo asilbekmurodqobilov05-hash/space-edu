@@ -91,7 +91,7 @@ function BentoCard({ section, index, wide, tall }) {
   const arrowRef     = useRef(null);
   const arrowIconRef = useRef(null);
   const navigate     = useNavigate();
-  const { t }        = useTranslation();
+  const { t, i18n }  = useTranslation();
   const Icon         = section.icon;
 
   const onHoverStart = () => {
