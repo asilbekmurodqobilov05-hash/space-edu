@@ -98,7 +98,7 @@ class UserSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('avatar', 'astronaut_name', 'bio', 'selected_spaceship', 'language')
+        fields = ('first_name', 'last_name', 'avatar', 'astronaut_name', 'bio', 'selected_spaceship', 'language')
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

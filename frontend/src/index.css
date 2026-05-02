@@ -496,4 +496,46 @@
     opacity: 0.7;
     transform: rotate(-8deg);
   }
+
+  /* ─── Cosmic loader spinner ─── */
+  @keyframes cosmic-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ─── Hero title gradient animation (HomeView) ─── */
+  @keyframes vgrad {
+    0%, 100% { background-position: 0% 50%; }
+    50%       { background-position: 100% 50%; }
+  }
+
+  /* ─── Bento grid (LearnView) ─── */
+  .bento-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 280px 280px 200px;
+    grid-template-areas:
+      "fizika  fizika  astro"
+      "masala  ijod    astro"
+      "interv  interv  interv";
+    gap: 18px;
+    position: relative;
+    z-index: 1;
+  }
+  @media (max-width: 1100px) and (min-width: 901px) {
+    .bento-grid {
+      grid-template-rows: 300px 300px 220px;
+    }
+  }
+  @media (max-width: 900px) {
+    .bento-grid {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto;
+      grid-template-areas:
+        "fizika"
+        "astro"
+        "masala"
+        "ijod"
+        "interv";
+    }
+  }
 }

@@ -30,6 +30,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
 import { useLikesStore } from '@/store/useLikesStore';
 import { useLearningStore } from '@/store/useLearningStore';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const CLAIMS_KEY = 'space-edu-profile-mission-claims';
 const STREAK_CLAIM_DAY_KEY = 'space-edu-profile-streak-claim-day';
@@ -122,6 +123,7 @@ export default function ProfileView() {
   const syncFromAPI = useGamificationStore((s) => s.syncFromAPI);
   const { likedLessons } = useLikesStore();
   const { completedLessons: localCompletedSlugs, lessonMetadata } = useLearningStore();
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -194,7 +196,7 @@ export default function ProfileView() {
       try {
         await fetchAll();
       } catch {
-        if (!cancelled) showToast('Could not load profile data', true);
+        if (!cancelled) showToast(t('profilePage', 'couldNotLoad'), true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -206,9 +208,9 @@ export default function ProfileView() {
     setRefreshing(true);
     try {
       await fetchAll();
-      showToast('Data refreshed');
+      showToast(t('profilePage', 'dataRefreshed'));
     } catch {
-      showToast('Refresh failed', true);
+      showToast(t('profilePage', 'refreshFailed'), true);
     } finally {
       setRefreshing(false);
     }
@@ -240,9 +242,9 @@ export default function ProfileView() {
       
       updateUser(data);
       setIsEditing(false);
-      showToast('Identity log saved successfully!');
+      showToast(t('profilePage', 'identitySaved'));
     } catch (err) {
-      showToast('Failed to update profile.', true);
+      showToast(t('profilePage', 'failedUpdate'), true);
     } finally {
       setSavingProfile(false);
     }
@@ -335,7 +337,7 @@ export default function ProfileView() {
   const { minXp, nextXp } = xpSegment(level);
 
   const displayName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.username || 'Cadet';
-  const title = `Level ${level}: Galactic Explorer`;
+  const title = t('profilePage', 'levelExplorer').replace('{level}', level);
 
   const rankLabel = leaderboardRank != null
     ? `#${leaderboardRank}${leaderboardTotal ? ` of ${leaderboardTotal}` : ''}`
@@ -384,24 +386,24 @@ export default function ProfileView() {
             className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10 disabled:opacity-50 transition-all"
           >
             {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            Refresh Data
+            {t('profilePage', 'refreshData')}
           </button>
           <Link
             to="/leaderboard"
             className="inline-flex items-center gap-2 rounded-full border border-violet-400/30 bg-violet-500/10 px-4 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/20 transition-all"
           >
-            <Trophy className="h-3.5 w-3.5" /> Leaderboard
+            <Trophy className="h-3.5 w-3.5" /> {t('profilePage', 'leaderboard')}
           </Link>
           <Link
             to="/quiz"
             className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-xs font-semibold text-blue-100 hover:bg-blue-500/20 transition-all"
           >
-            <Brain className="h-3.5 w-3.5" /> Quiz Hub
+            <Brain className="h-3.5 w-3.5" /> {t('profilePage', 'quizHub')}
           </Link>
         </div>
         {loading && (
           <span className="flex items-center gap-2 text-xs text-white/50">
-            <Loader2 className="h-4 w-4 animate-spin" /> Synchronizing...
+            <Loader2 className="h-4 w-4 animate-spin" /> {t('profilePage', 'syncing')}
           </span>
         )}
       </div>
@@ -413,7 +415,7 @@ export default function ProfileView() {
             className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-all z-10"
           >
             <Edit3 className="w-4 h-4" />
-            <span className="hidden sm:inline">Edit Profile</span>
+            <span className="hidden sm:inline">{t('profilePage', 'editProfile')}</span>
           </button>
         )}
         
@@ -432,7 +434,7 @@ export default function ProfileView() {
               {isEditing && (
                 <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
                   <Camera className="w-8 h-8 text-white mb-1 drop-shadow-md" />
-                  <span className="text-[11px] font-bold text-white uppercase tracking-wider drop-shadow-md">Change Photo</span>
+                  <span className="text-[11px] font-bold text-white uppercase tracking-wider drop-shadow-md">{t('profilePage', 'changePhoto')}</span>
                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                 </label>
               )}
@@ -449,7 +451,7 @@ export default function ProfileView() {
                   <span className="relative inline-flex rounded-full w-2 h-2 bg-gray-500"></span>
                 )}
               </span>
-              Command Center {user ? 'Online' : 'Offline'}
+              {t('profilePage', 'commandCenter')} {user ? t('profilePage', 'online') : t('profilePage', 'offline')}
             </span>
 
             {/* Streak & Mastery under Avatar */}
@@ -460,7 +462,7 @@ export default function ProfileView() {
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="block text-lg font-black text-white leading-none">{dailyStats.current_streak || streak}</span>
-                  <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-1 block">Streak</span>
+                  <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-1 block">{t('profilePage', 'streak')}</span>
                 </div>
               </div>
 
@@ -470,7 +472,7 @@ export default function ProfileView() {
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="block text-lg font-black text-white leading-none">{quizStats.total_quizzes || 0}</span>
-                  <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-1 block">Mastery</span>
+                  <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-1 block">{t('profilePage', 'mastery')}</span>
                 </div>
               </div>
 
@@ -480,8 +482,8 @@ export default function ProfileView() {
                   <Gamepad className="w-4 h-4 text-fuchsia-300" />
                 </div>
                 <div className="flex flex-col justify-center relative z-10">
-                  <span className="block text-lg font-black text-white leading-none tracking-wide">LAUNCH</span>
-                  <span className="text-[9px] font-bold text-fuchsia-300/80 uppercase tracking-widest mt-1 block">Space Run</span>
+                  <span className="block text-lg font-black text-white leading-none tracking-wide">{t('profilePage', 'launch')}</span>
+                  <span className="text-[9px] font-bold text-fuchsia-300/80 uppercase tracking-widest mt-1 block">{t('profilePage', 'spaceRun')}</span>
                 </div>
               </Link>
             </div>
@@ -512,13 +514,13 @@ export default function ProfileView() {
                 {bio ? (
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-inner">
                     <h3 className="text-xs font-bold text-violet-200/70 uppercase tracking-widest mb-3 flex items-center gap-2">
-                      <UserCircle2 className="w-4 h-4" /> Captain's Log
+                      <UserCircle2 className="w-4 h-4" /> {t('profilePage', 'captainsLog')}
                     </h3>
                     <p className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed">{bio}</p>
                   </div>
                 ) : (
                   <div className="bg-black/20 border border-white/5 rounded-2xl p-5 text-center">
-                    <p className="text-sm text-white/40 italic">No bio written yet. Tell the galaxy about yourself!</p>
+                    <p className="text-sm text-white/40 italic">{t('profilePage', 'noBio')}</p>
                   </div>
                 )}
 
@@ -527,17 +529,17 @@ export default function ProfileView() {
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-inner flex flex-col">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                       <h3 className="text-xs font-bold text-violet-200/70 uppercase tracking-widest flex items-center gap-2">
-                        <Globe2 className="w-4 h-4" /> Garage & Inventory
+                        <Globe2 className="w-4 h-4" /> {t('profilePage', 'garageInventory')}
                       </h3>
                       <Link
                         to="/market"
                         className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-400 hover:text-fuchsia-300 transition-colors bg-fuchsia-400/10 border border-fuchsia-400/20 px-3 py-1.5 rounded-lg shrink-0"
                       >
-                        Open Market →
+                        {t('profilePage', 'openMarket')}
                       </Link>
                     </div>
                     {inventory.length === 0 ? (
-                      <p className="text-sm text-white/40 my-auto">No items yet — visit the market.</p>
+                      <p className="text-sm text-white/40 my-auto">{t('profilePage', 'noItems')}</p>
                     ) : (
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-auto">
                         {inventory.slice(0, 4).map((row) => {
@@ -566,17 +568,17 @@ export default function ProfileView() {
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-inner flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-xs font-bold text-violet-200/70 uppercase tracking-widest flex items-center gap-2">
-                        <BadgeCheck className="w-4 h-4 text-yellow-400" /> Achieved Badges
+                        <BadgeCheck className="w-4 h-4 text-yellow-400" /> {t('profilePage', 'achievedBadges')}
                       </h3>
                       <button 
                         onClick={() => setShowBadgesModal(true)}
                         className="text-[10px] font-bold uppercase tracking-widest text-violet-300 hover:text-white transition-colors"
                       >
-                        See All
+                        {t('profilePage', 'seeAll')}
                       </button>
                     </div>
                     {badges.length === 0 ? (
-                      <p className="text-sm text-white/40 my-auto">Complete missions to earn badges.</p>
+                      <p className="text-sm text-white/40 my-auto">{t('profilePage', 'completeMissions')}</p>
                     ) : (
                       <div className="flex flex-wrap gap-3 mt-auto">
                         {badges.map((ub, i) => {
@@ -604,7 +606,7 @@ export default function ProfileView() {
               <div className="bg-white/5 border border-violet-500/30 rounded-2xl p-5 shadow-[0_0_30px_rgba(139,92,246,0.1)] space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold text-violet-200 uppercase tracking-widest flex items-center gap-2">
-                    <Edit3 className="w-4 h-4" /> Edit Identity
+                    <Edit3 className="w-4 h-4" /> {t('profilePage', 'editIdentity')}
                   </h3>
                   <button
                     onClick={() => {
@@ -624,7 +626,7 @@ export default function ProfileView() {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-violet-200/70 ml-1">First Name</label>
+                    <label className="text-xs font-medium text-violet-200/70 ml-1">{t('profilePage', 'firstNameLabel')}</label>
                     <input
                       type="text"
                       value={firstName}
@@ -634,7 +636,7 @@ export default function ProfileView() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-violet-200/70 ml-1">Last Name</label>
+                    <label className="text-xs font-medium text-violet-200/70 ml-1">{t('profilePage', 'lastNameLabel')}</label>
                     <input
                       type="text"
                       value={lastName}
@@ -646,7 +648,7 @@ export default function ProfileView() {
                 </div>
                 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-violet-200/70 ml-1">Astronaut Call Sign</label>
+                  <label className="text-xs font-medium text-violet-200/70 ml-1">{t('profilePage', 'callSign')}</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <span className="text-violet-400/60 font-bold">@</span>
@@ -662,13 +664,13 @@ export default function ProfileView() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-violet-200/70 ml-1">Captain's Log (Bio)</label>
+                  <label className="text-xs font-medium text-violet-200/70 ml-1">{t('profilePage', 'captainLogBio')}</label>
                   <textarea
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     rows={3}
                     maxLength={300}
-                    placeholder="Share your cosmic journey, favorite planets, or goals..."
+                    placeholder={t('profilePage', 'bioPlaceholder')}
                     className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all shadow-inner resize-none"
                   />
                 </div>
@@ -687,7 +689,7 @@ export default function ProfileView() {
                     }}
                     className="w-full sm:w-auto px-6 py-3 text-sm font-bold text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all"
                   >
-                    Cancel
+                    {t('profilePage', 'cancel')}
                   </button>
                   <button
                     type="button"
@@ -697,7 +699,7 @@ export default function ProfileView() {
                   >
                     <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
                     {savingProfile ? <Loader2 className="h-4 w-4 animate-spin relative z-10" /> : <Save className="h-4 w-4 relative z-10" />}
-                    <span className="relative z-10">Save Changes</span>
+                    <span className="relative z-10">{t('profilePage', 'saveChanges')}</span>
                   </button>
                 </div>
               </div>
@@ -713,7 +715,7 @@ export default function ProfileView() {
           {/* Quiz Performance */}
           <div className="rounded-3xl border border-white/10 bg-space-900/70 p-5">
             <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              <Brain className="w-5 h-5 text-blue-400" /> Quiz & Test Performance
+              <Brain className="w-5 h-5 text-blue-400" /> {t('profilePage', 'quizPerformance')}
             </h2>
             {quizStats.categories?.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -729,7 +731,7 @@ export default function ProfileView() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-white/40">No quizzes taken yet.</p>
+              <p className="text-sm text-white/40">{t('profilePage', 'noQuizzes')}</p>
             )}
           </div>
 
@@ -737,7 +739,7 @@ export default function ProfileView() {
           <div className="rounded-3xl border border-white/10 bg-space-900/70 p-5 flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                <Orbit className="w-5 h-5 text-emerald-400" /> Completed Lessons
+                <Orbit className="w-5 h-5 text-emerald-400" /> {t('profilePage', 'completedLessons')}
               </h2>
               {completedLessons.length > 3 && (
                 <button 
@@ -749,7 +751,7 @@ export default function ProfileView() {
               )}
             </div>
             {completedLessons.length === 0 ? (
-              <p className="text-sm text-white/40">No lesson progress yet — start learning.</p>
+              <p className="text-sm text-white/40">{t('profilePage', 'noLessons')}</p>
             ) : (
               <div className="space-y-3">
                 {completedLessons.slice(0, 3).map((row) => {
@@ -765,11 +767,11 @@ export default function ProfileView() {
                       <div>
                         <p className="font-medium text-white">{displayTitle}</p>
                         <p className="text-xs text-white/50 mt-1">
-                          {displaySubject} · Score {row.score}% {row.is_mastered ? '· Mastered' : ''}
+                          {displaySubject} · {t('profilePage', 'score')} {row.score}% {row.is_mastered ? `· ${t('profilePage', 'mastered')}` : ''}
                         </p>
                       </div>
                       <span className={`text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider ${row.is_mastered ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-white/70 bg-white/10 border border-white/10'}`}>
-                        {row.is_mastered ? 'Mastered' : 'Done'}
+                        {row.is_mastered ? t('profilePage', 'mastered') : t('profilePage', 'done')}
                       </span>
                     </div>
                   );
@@ -778,7 +780,7 @@ export default function ProfileView() {
             )}
             <div className="mt-auto pt-4">
               <Link to="/learn" className="inline-flex text-xs font-bold uppercase tracking-wider text-white/50 hover:text-white transition-colors">
-                Explore Courses →
+                {t('profilePage', 'exploreCourses')}
               </Link>
             </div>
           </div>
@@ -787,7 +789,7 @@ export default function ProfileView() {
           <div className="rounded-3xl border border-white/10 bg-space-900/70 p-5 flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                <Heart className="w-5 h-5 text-rose-400" /> Liked Lessons
+                <Heart className="w-5 h-5 text-rose-400" /> {t('profilePage', 'likedLessons')}
               </h2>
               {likedLessons.length > 3 && (
                 <button 
@@ -799,7 +801,7 @@ export default function ProfileView() {
               )}
             </div>
             {likedLessons.length === 0 ? (
-              <p className="text-sm text-white/40">No liked lessons yet.</p>
+              <p className="text-sm text-white/40">{t('profilePage', 'noLikedLessons')}</p>
             ) : (
               <div className="space-y-3">
                 {likedLessons.slice(0, 3).map((lesson) => (

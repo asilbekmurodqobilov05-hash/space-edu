@@ -64,8 +64,14 @@ AUTH_USER_MODEL = 'accounts.User'
 
 import dj_database_url
 
+# DB_URL takes priority; DATABASE_URL is the name Railway injects automatically
+_db_url = (
+    config('DB_URL', default=None)
+    or config('DATABASE_URL', default=None)
+    or f'sqlite:///{BASE_DIR / "db.sqlite3"}'
+)
 DATABASES = {
-    'default': dj_database_url.parse(config('DB_URL', default=f'sqlite:///{BASE_DIR / "db.sqlite3"}'))
+    'default': dj_database_url.parse(_db_url, conn_max_age=600)
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -81,6 +87,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # --- Cloudflare R2 Media Storage ---
 _r2_key = config('CLOUDFLARE_R2_ACCESS_KEY_ID', default=None)

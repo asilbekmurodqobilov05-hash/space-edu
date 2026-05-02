@@ -4,6 +4,7 @@ import { Send, MessageCircle, Loader, Users, Hash } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import GlassCard from '@/components/ui/GlassCard';
+import { useTranslation } from '@/hooks/useTranslation';
 
 function Avatar({ url, username }) {
   return url
@@ -43,6 +44,7 @@ function Message({ msg, isMe }) {
 
 export default function ChatView() {
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [rooms, setRooms] = useState([]);
   const [activeRoom, setActiveRoom] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -107,10 +109,10 @@ export default function ChatView() {
                 <MessageCircle className="w-6 h-6 text-violet-light" />
               </div>
               <div>
-                <h1 className="text-xl font-[900] text-white tracking-tight">Community <span className="text-glow-purple text-violet">Chat</span></h1>
+                <h1 className="text-xl font-[900] text-white tracking-tight">{t('chat', 'title')} <span className="text-glow-purple text-violet">{t('chat', 'titleHighlight')}</span></h1>
                 <div className="flex items-center gap-2 mt-0.5">
                   <Hash className="w-3 h-3 text-white/30" />
-                  <span className="text-[10px] font-[800] text-white/40 uppercase tracking-widest">{activeRoomName || 'Selecting room...'}</span>
+                  <span className="text-[10px] font-[800] text-white/40 uppercase tracking-widest">{activeRoomName || t('chat', 'selectingRoom')}</span>
                 </div>
               </div>
             </div>
@@ -139,12 +141,12 @@ export default function ChatView() {
             {loading ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-4 opacity-20">
                 <Loader className="w-8 h-8 animate-spin" />
-                <p className="text-[10px] font-[800] uppercase tracking-widest">Initializing Comms...</p>
+                <p className="text-[10px] font-[800] uppercase tracking-widest">{t('chat', 'initializing')}</p>
               </div>
             ) : messages.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 opacity-20">
                 <Users className="w-10 h-10" />
-                <p className="text-[10px] font-[800] uppercase tracking-widest">The channel is quiet</p>
+                <p className="text-[10px] font-[800] uppercase tracking-widest">{t('chat', 'quietChannel')}</p>
               </div>
             ) : (
               messages.map((msg) => (
@@ -160,7 +162,7 @@ export default function ChatView() {
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Compose a message for the crew..."
+                placeholder={t('chat', 'composePlaceholder')}
                 maxLength={1000}
                 className="flex-1 bg-white/[0.04] border border-white/10 rounded-2xl px-6 py-4 text-white text-[14px] placeholder-white/20 outline-none focus:border-violet/40 focus:bg-white/[0.06] transition-all"
               />

@@ -4,6 +4,7 @@ import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { creativityTopicsData } from '@/data/creativityTopicsData';
 import { Play } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const blockVariants = {
   hidden: { opacity: 0, y: 30 },
@@ -15,6 +16,7 @@ const blockVariants = {
 
 function CreativityLessonCard({ lesson, index, color, onClick }) {
   const [hovered, setHovered] = useState(false);
+  const { t, i18n } = useTranslation();
   const colorLight = `${color}1A`; 
   const colorBorder = `${color}40`;
 
@@ -99,7 +101,7 @@ function CreativityLessonCard({ lesson, index, color, onClick }) {
             textTransform: 'uppercase', 
             letterSpacing: '0.1em' 
           }}>
-            CREATIVITY MODULE
+            {t('learnViews', 'creativityModule')}
           </span>
         </div>
 
@@ -121,8 +123,7 @@ function CreativityLessonCard({ lesson, index, color, onClick }) {
           lineHeight: 1.6,
           marginBottom: '24px'
         }}>
-          Explore the engineering and design principles behind {lesson.name}. 
-          Watch the video to understand its role in space exploration and development.
+          {t('learnViews', 'lessonDescription', { name: lesson.name })}
         </p>
 
         <button
@@ -151,7 +152,7 @@ function CreativityLessonCard({ lesson, index, color, onClick }) {
           }}
         >
           <Play style={{ width: '18px', height: '18px', fill: 'currentColor' }} />
-          Full Screen Video
+          {t('learnViews', 'fullScreenVideo')}
         </button>
       </div>
     </motion.div>
@@ -169,7 +170,7 @@ export default function CreativityTopicView() {
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
-      <SectionPageHeader title={topic.titleEn} color={topic.color} backPath="/learn/creativity" />
+      <SectionPageHeader title={i18n.language === 'en' ? (topic.titleEn || topic.title) : i18n.language === 'ru' ? (topic.titleRu || topic.title) : topic.title} color={topic.color} backPath="/learn/creativity" />
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>

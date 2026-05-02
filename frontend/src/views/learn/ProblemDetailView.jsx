@@ -5,12 +5,14 @@ import { CheckCircle2, XCircle, ArrowLeft, Send } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { problemsData } from '@/data/problemsData';
 import { useProblemsStore } from '@/store/useProblemsStore';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function ProblemDetailView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const problem = problemsData[id];
   const setProblemStatus = useProblemsStore((state) => state.setProblemStatus);
+  const { t } = useTranslation();
   
   const [userAnswer, setUserAnswer] = useState('');
   const [status, setStatus] = useState(null); // 'correct', 'wrong', or null
@@ -77,7 +79,7 @@ export default function ProblemDetailView() {
                display: 'block',
                marginBottom: '12px'
              }}>
-               SHART (QUESTION)
+               {t('learnViews', 'questionHeader')}
              </span>
              <h2 style={{ fontSize: '24px', color: '#fff', lineHeight: 1.6, fontWeight: 500 }}>
                {problem.question}
@@ -90,7 +92,7 @@ export default function ProblemDetailView() {
                 type="text"
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
-                placeholder="Javobingizni kiriting..."
+                placeholder={t('learnViews', 'enterAnswer')}
                 style={{
                   width: '100%',
                   padding: '18px 24px',
@@ -128,7 +130,7 @@ export default function ProblemDetailView() {
               onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
               <Send style={{ width: '20px', height: '20px' }} />
-              Javobni yuborish
+              {t('learnViews', 'submitAnswer')}
             </button>
           </form>
         </motion.div>
@@ -195,19 +197,19 @@ export default function ProblemDetailView() {
               </div>
               
               <h3 style={{ fontSize: '32px', fontWeight: 800, color: '#fff', marginBottom: '12px', letterSpacing: '-0.02em' }}>
-                {status === 'correct' ? 'Barakalla!' : 'Siz xato qildingiz'}
+                {status === 'correct' ? t('learnViews', 'correctHeader') : t('learnViews', 'wrongHeader')}
               </h3>
               
               <p style={{ color: 'rgba(255,255,255,0.4)', marginBottom: status === 'correct' ? '40px' : '24px', fontSize: '17px', lineHeight: 1.6 }}>
                 {status === 'correct' 
-                  ? "Tabriklaymiz! Siz ushbu masalani muvaffaqiyatli hal qildingiz." 
-                  : "Xavotir olmang, harakat davomida bilim ortadi."}
+                  ? t('learnViews', 'correctDesc')
+                  : t('learnViews', 'wrongDesc')}
               </p>
 
               {status === 'wrong' && (
                 <div style={{ marginBottom: '32px' }}>
                   <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
-                    To'g'ri javob bu bo'ladi:
+                    {t('learnViews', 'correctAnswerWas')}
                   </p>
                   <div style={{
                     background: 'rgba(74,222,128,0.1)',
@@ -227,7 +229,7 @@ export default function ProblemDetailView() {
 
               {status === 'wrong' && (
                 <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <span style={{ color: '#ff4d4d' }}>❤</span> Davom eting, siz zo'r natijalarga erishasiz!
+                  <span style={{ color: '#ff4d4d' }}>❤</span> {t('learnViews', 'keepGoing')}
                 </p>
               )}
 
@@ -256,7 +258,7 @@ export default function ProblemDetailView() {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-                      Qayta urinish
+                      {t('learnViews', 'tryAgain')}
                     </button>
                     <button
                       onClick={handleNext}
@@ -280,7 +282,7 @@ export default function ProblemDetailView() {
                       onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                       onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                     >
-                      Keyingi savol
+                      {t('learnViews', 'nextQuestion')}
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </button>
                   </>
@@ -302,7 +304,7 @@ export default function ProblemDetailView() {
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                   >
-                    Davom etish
+                    {t('learnViews', 'continue')}
                   </button>
                 )}
               </div>

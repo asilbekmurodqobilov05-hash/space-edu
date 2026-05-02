@@ -2,7 +2,7 @@ export const astronomyTopicsData = {
   1: {
     id: 1,
     title: 'Quyosh tizimi',
-    titleEn: 'Solar System',
+    titleEn: 'Solar System', titleRu: 'Солнечная система',
     color: '#fbbf24',
     lessons: [
       { 
@@ -82,7 +82,7 @@ export const astronomyTopicsData = {
   2: {
     id: 2,
     title: 'Yulduzlar',
-    titleEn: 'Stars',
+    titleEn: 'Stars', titleRu: 'Звезды',
     color: '#fbbf24',
     lessons: [
       "O", "B", "A", "F", "G", "K", "M"
@@ -98,7 +98,7 @@ export const astronomyTopicsData = {
   3: {
     id: 3,
     title: 'Sun\'iy yo\'ldoshlar va raketalar',
-    titleEn: 'Satellites and Rockets',
+    titleEn: 'Satellites and Rockets', titleRu: 'Искусственные спутники и ракеты',
     color: '#fbbf24',
     lessons: [
       { name: "Falcon 9", type: "rocket" },

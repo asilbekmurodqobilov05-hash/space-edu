@@ -34,16 +34,25 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    optimizeDeps: {
+      esbuildOptions: {
+        target: 'esnext',
+      },
+    },
     build: {
-      target: 'es2020',
+      target: 'esnext',
       minify: 'esbuild',
       cssMinify: true,
       sourcemap: false,
       assetsInlineLimit: 4096,
       rollupOptions: {
         output: {
+          format: 'es',
           manualChunks: {
-            three: ['three', '@react-three/fiber', '@react-three/drei', '@react-three/postprocessing'],
+            'react-vendor': ['react', 'react-dom'],
+            'router': ['react-router-dom'],
+            'motion': ['motion'],
+            'three': ['three', '@react-three/fiber', '@react-three/drei', '@react-three/postprocessing'],
           },
         },
       },

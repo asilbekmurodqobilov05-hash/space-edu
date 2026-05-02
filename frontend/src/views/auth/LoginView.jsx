@@ -6,6 +6,7 @@ import api from '@/lib/api';
 
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import GlassCard from '@/components/ui/GlassCard';
 
 export default function LoginView() {
@@ -14,6 +15,7 @@ export default function LoginView() {
   const login = useAuthStore((s) => s.login);
   const syncFromAPI = useGamificationStore((s) => s.syncFromAPI);
   const from = location.state?.from?.pathname || '/';
+  const { t } = useTranslation();
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
@@ -28,7 +30,7 @@ export default function LoginView() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.email || !form.password) {
-      setError('Fill in all fields.');
+      setError(t('loginPage', 'fillAll'));
       return;
     }
     setLoading(true);
@@ -43,7 +45,7 @@ export default function LoginView() {
 
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid email or password.');
+      setError(err.response?.data?.detail || t('loginPage', 'invalidCreds'));
     } finally {
       setLoading(false);
     }
@@ -74,15 +76,15 @@ export default function LoginView() {
             <Rocket className="w-6 h-6 text-violet-light" />
             <span className="text-xl font-[900] tracking-tighter text-white">Space edu</span>
           </motion.div>
-          <h1 className="text-4xl font-[900] text-white tracking-tight mb-3">Welcome <span className="text-glow-purple text-violet">Back</span></h1>
-          <p className="text-white/30 text-sm font-[500]">Enter your credentials to re-enter mission control</p>
+          <h1 className="text-4xl font-[900] text-white tracking-tight mb-3">{t('loginPage', 'welcomeTitle')}{t('loginPage', 'welcomeHighlight') ? <> <span className="text-glow-purple text-violet">{t('loginPage', 'welcomeHighlight')}</span></> : null}</h1>
+          <p className="text-white/30 text-sm font-[500]">{t('loginPage', 'subtitle')}</p>
         </div>
 
         <GlassCard accent="#8b5cf6" className="!p-8 sm:!p-10 shadow-2xl">
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             {/* Email */}
             <div className="flex flex-col gap-2.5">
-              <label className="text-[10px] font-[800] text-white/30 uppercase tracking-[0.2em] ml-1">Email Address</label>
+              <label className="text-[10px] font-[800] text-white/30 uppercase tracking-[0.2em] ml-1">{t('loginPage', 'emailLabel')}</label>
               <input
                 name="email"
                 type="email"
@@ -96,7 +98,7 @@ export default function LoginView() {
 
             {/* Password */}
             <div className="flex flex-col gap-2.5">
-              <label className="text-[10px] font-[800] text-white/30 uppercase tracking-[0.2em] ml-1">Security Key</label>
+              <label className="text-[10px] font-[800] text-white/30 uppercase tracking-[0.2em] ml-1">{t('loginPage', 'passwordLabel')}</label>
               <div className="relative">
                 <input
                   name="password"
@@ -139,7 +141,7 @@ export default function LoginView() {
                   <Loader className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    Launch Mission <Rocket className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    {t('loginPage', 'launchMission')} <Rocket className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                   </>
                 )}
               </span>
@@ -147,9 +149,9 @@ export default function LoginView() {
 
             <div className="mt-4 pt-6 border-t border-white/5 text-center">
               <p className="text-white/30 text-xs font-[600]">
-                New to the academy?{' '}
+                {t('loginPage', 'newToAcademy')}{' '}
                 <Link to="/register" className="text-violet-light hover:text-white font-[800] transition-colors">
-                  Initialize Profile
+                  {t('loginPage', 'initProfile')}
                 </Link>
               </p>
             </div>
@@ -158,7 +160,7 @@ export default function LoginView() {
 
         {/* Footer info */}
         <div className="mt-12 flex items-center justify-center gap-2 text-white/10 uppercase text-[9px] font-[800] tracking-[0.4em]">
-          <ShieldCheck className="w-3 h-3" /> Encrypted Connection
+          <ShieldCheck className="w-3 h-3" /> {t('loginPage', 'encrypted')}
         </div>
       </motion.div>
     </div>

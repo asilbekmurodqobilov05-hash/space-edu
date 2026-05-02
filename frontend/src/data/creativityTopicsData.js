@@ -18,7 +18,7 @@ export const creativityTopicsData = {
   2: {
     id: 2,
     title: 'Raketalar va sun\'iy yo\'ldoshlar',
-    titleEn: 'Rockets and Satellites',
+    titleEn: 'Rockets and Satellites', titleRu: 'Ракеты и искусственные спутники',
     color: '#f472b6',
     lessons: [
       "Falcon 9", "Falcon Heavy", "Electron", "New Shepard", "Starship", "International Space Station", "Terra", "Aqua", "Envisat", "Gaia"

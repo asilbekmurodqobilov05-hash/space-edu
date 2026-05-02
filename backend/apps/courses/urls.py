@@ -1,8 +1,8 @@
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
 from . import views
 
-router = DefaultRouter()
+router = SimpleRouter()
 
 # ── New sphere-based endpoints ──
 router.register('spheres',       views.SphereViewSet,       basename='sphere')

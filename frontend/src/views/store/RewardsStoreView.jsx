@@ -25,6 +25,7 @@ import {
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // ── Icon mapping (backend sends icon string, we map to Lucide component) ─────
 const ICON_MAP = {
@@ -68,13 +69,8 @@ const TIER_CONFIG = {
   },
 };
 
-const CATEGORIES = [
-  { id: 'all', label: 'All Rewards', icon: Sparkles },
-  { id: 'tests', label: 'Mock Tests', icon: GraduationCap },
-  { id: 'mentor', label: 'Mentorship', icon: MessageSquare },
-  { id: 'content', label: 'Premium Content', icon: BookOpen },
-  { id: 'game', label: 'Game Items', icon: Gamepad2 },
-];
+// Using translation keys via a hook directly in the component for the categories array.
+// See active usage in component below.
 
 // ── Toast component ───────────────────────────────────────────────────────────
 function Toast({ message, type, onClose }) {
@@ -151,12 +147,12 @@ function RewardCard({ reward, owned, onPurchase, purchasing, userCoins }) {
           <div className="flex items-center gap-2">
             <Coins className="w-4 h-4 text-amber-400" />
             <span className="text-lg font-black text-white tabular-nums">{reward.cost}</span>
-            <span className="text-[10px] text-white/30 font-bold uppercase tracking-wider">coins</span>
+            <span className="text-[10px] text-white/30 font-bold uppercase tracking-wider">{t('store', 'coins')}</span>
           </div>
 
           {owned ? (
             <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-              <Unlock className="w-3.5 h-3.5" /> Unlocked
+              <Unlock className="w-3.5 h-3.5" /> {t('store', 'unlocked')}
             </span>
           ) : (
             <button
@@ -175,7 +171,7 @@ function RewardCard({ reward, owned, onPurchase, purchasing, userCoins }) {
               ) : (
                 <Lock className="w-3.5 h-3.5" />
               )}
-              {canAfford ? 'Unlock' : 'Need more'}
+              {canAfford ? t('store', 'unlock') : t('store', 'needMore')}
             </button>
           )}
         </div>
@@ -209,13 +205,13 @@ function ConfirmModal({ reward, userCoins, onConfirm, onCancel, purchasing }) {
           <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tier.color} flex items-center justify-center mx-auto mb-4 shadow-xl ring-2 ${tier.ring}`}>
             <Icon className="w-8 h-8 text-white" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-1">Unlock {reward.title_en}?</h3>
+          <h3 className="text-xl font-bold text-white mb-1">{t('store', 'unlockPrompt').replace('{item}', reward.title_en)}</h3>
           <p className="text-sm text-white/50">{reward.description_en}</p>
         </div>
 
         <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/5">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-white/60">Your balance</span>
+            <span className="text-sm text-white/60">{t('store', 'yourBalance')}</span>
             <div className="flex items-center gap-1.5">
               <Coins className="w-4 h-4 text-amber-400" />
               <span className="font-bold text-white">{userCoins}</span>
@@ -223,12 +219,12 @@ function ConfirmModal({ reward, userCoins, onConfirm, onCancel, purchasing }) {
           </div>
           <div className="h-px bg-white/5 my-3" />
           <div className="flex items-center justify-between">
-            <span className="text-sm text-white/60">Cost</span>
+            <span className="text-sm text-white/60">{t('store', 'cost')}</span>
             <span className="font-bold text-red-400">-{reward.cost}</span>
           </div>
           <div className="h-px bg-white/5 my-3" />
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-white/80">Remaining</span>
+            <span className="text-sm font-bold text-white/80">{t('store', 'remaining')}</span>
             <div className="flex items-center gap-1.5">
               <Coins className="w-4 h-4 text-amber-400" />
               <span className="font-bold text-white">{userCoins - reward.cost}</span>
@@ -241,7 +237,7 @@ function ConfirmModal({ reward, userCoins, onConfirm, onCancel, purchasing }) {
             onClick={onCancel}
             className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 font-bold text-sm hover:bg-white/5 transition-colors"
           >
-            Cancel
+            {t('store', 'cancel')}
           </button>
           <button
             onClick={() => onConfirm(reward)}
@@ -249,7 +245,7 @@ function ConfirmModal({ reward, userCoins, onConfirm, onCancel, purchasing }) {
             className={`flex-1 py-3 rounded-xl font-bold text-sm text-white bg-gradient-to-r ${tier.color} shadow-lg hover:shadow-xl transition-all active:scale-[0.97] flex items-center justify-center gap-2`}
           >
             {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-            Confirm
+            {t('store', 'confirm')}
           </button>
         </div>
       </motion.div>
@@ -262,6 +258,15 @@ export default function RewardsStoreView() {
   const { isAuthenticated } = useAuthStore();
   const fuel = useGamificationStore((s) => s.fuel);
   const syncFromAPI = useGamificationStore((s) => s.syncFromAPI);
+  const { t } = useTranslation();
+
+  const CATEGORIES = [
+    { id: 'all', label: t('store', 'allRewards'), icon: Sparkles },
+    { id: 'tests', label: t('store', 'mockTests'), icon: GraduationCap },
+    { id: 'mentor', label: t('store', 'mentorship'), icon: MessageSquare },
+    { id: 'content', label: t('store', 'premiumContent'), icon: BookOpen },
+    { id: 'game', label: t('store', 'gameItems'), icon: Gamepad2 },
+  ];
 
   const [products, setProducts] = useState([]);
   const [purchasedSlugs, setPurchasedSlugs] = useState(new Set());
@@ -302,11 +307,11 @@ export default function RewardsStoreView() {
 
   const handlePurchase = async (reward) => {
     if (!isAuthenticated) {
-      showToast('Please log in to unlock rewards.', 'error');
+      showToast(t('store', 'loginToUnlock'), 'error');
       return;
     }
     if (userCoins < reward.cost) {
-      showToast('Not enough coins! Keep playing to earn more.', 'error');
+      showToast(t('store', 'notEnoughCoins'), 'error');
       return;
     }
 
@@ -321,9 +326,9 @@ export default function RewardsStoreView() {
 
       setPurchasedSlugs((prev) => new Set([...prev, reward.slug]));
       setConfirmReward(null);
-      showToast(`🎉 "${reward.title_en}" unlocked! Enjoy your premium content.`, 'success');
+      showToast(t('store', 'purchaseSuccess').replace('{item}', reward.title_en), 'success');
     } catch (err) {
-      showToast(err.response?.data?.detail || 'Purchase failed. Please try again.', 'error');
+      showToast(err.response?.data?.detail || t('store', 'purchaseFailed'), 'error');
     } finally {
       setPurchasing(false);
     }
@@ -353,7 +358,7 @@ export default function RewardsStoreView() {
           animate={{ opacity: 1, y: 0 }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-bold uppercase tracking-widest mb-6"
         >
-          <Star className="w-3.5 h-3.5" /> Premium Rewards
+          <Star className="w-3.5 h-3.5" /> {t('store', 'premiumRewards')}
         </motion.div>
 
         <motion.h1
@@ -362,7 +367,7 @@ export default function RewardsStoreView() {
           transition={{ delay: 0.1 }}
           className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-100 to-violet-300 mb-3"
         >
-          Rewards Store
+          {t('store', 'title')}
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
@@ -370,7 +375,7 @@ export default function RewardsStoreView() {
           transition={{ delay: 0.2 }}
           className="text-white/40 max-w-lg mx-auto text-sm leading-relaxed"
         >
-          Spend your hard-earned coins to unlock premium mock tests, mentorship sessions, game power-ups, and exclusive content.
+          {t('store', 'description')}
         </motion.p>
       </div>
 
@@ -384,21 +389,21 @@ export default function RewardsStoreView() {
         <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-5 py-3">
           <Coins className="w-5 h-5 text-amber-400" />
           <div>
-            <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Balance</p>
+            <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{t('store', 'balance')}</p>
             <p className="text-xl font-black text-amber-200 tabular-nums">{userCoins}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl px-5 py-3">
           <Unlock className="w-5 h-5 text-emerald-400" />
           <div>
-            <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Unlocked</p>
+            <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{t('store', 'unlocked')}</p>
             <p className="text-xl font-black text-emerald-200 tabular-nums">{unlockedCount}<span className="text-sm text-white/30">/{products.length}</span></p>
           </div>
         </div>
         <div className="flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-2xl px-5 py-3">
           <Flame className="w-5 h-5 text-violet-400" />
           <div>
-            <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Available</p>
+            <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{t('store', 'available')}</p>
             <p className="text-xl font-black text-violet-200 tabular-nums">{products.length - unlockedCount}</p>
           </div>
         </div>
@@ -447,7 +452,7 @@ export default function RewardsStoreView() {
 
       {filteredProducts.length === 0 && (
         <div className="text-center py-20">
-          <p className="text-white/30 text-sm">No rewards in this category yet.</p>
+          <p className="text-white/30 text-sm">{t('store', 'noRewards')}</p>
         </div>
       )}
 

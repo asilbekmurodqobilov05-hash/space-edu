@@ -3,6 +3,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from rest_framework.permissions import IsAuthenticated
+
 from apps.courses.models import Lesson, Unit
 from apps.gamification.services import check_and_award_badges
 
@@ -11,6 +13,8 @@ from .serializers import LessonCompleteSerializer, LessonProgressSerializer, Uni
 
 
 class UserProgressView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         lessons = UserLessonProgress.objects.filter(user=request.user).select_related('lesson')
         enrollments = UserUnitEnrollment.objects.filter(user=request.user).select_related('unit')
@@ -21,6 +25,8 @@ class UserProgressView(APIView):
 
 
 class LessonCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, lesson_slug):
         serializer = LessonCompleteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -79,6 +85,8 @@ class LessonCompleteView(APIView):
 
 
 class UnitProgressView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, unit_slug):
         try:
             unit = Unit.objects.prefetch_related('lessons').get(slug=unit_slug)
@@ -101,6 +109,8 @@ class UnitProgressView(APIView):
 
 
 class UnitEnrollView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, unit_slug):
         try:
             unit = Unit.objects.get(slug=unit_slug)

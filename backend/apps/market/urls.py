@@ -1,9 +1,9 @@
 from django.urls import path
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
 from . import views
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register('items',      views.MarketItemViewSet,     basename='market-item')
 router.register('categories', views.MarketCategoryViewSet, basename='market-category')
 

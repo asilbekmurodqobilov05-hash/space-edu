@@ -3,9 +3,11 @@ import { motion } from 'motion/react';
 import { Award, Star, Lock, Trophy } from 'lucide-react';
 import useStarStore from '../../store/useStarStore';
 import { stars } from '../../data/stars';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function StarCollection() {
   const { collection, points, badges } = useStarStore();
+  const { t } = useTranslation();
 
   return (
     <div className="w-full flex flex-col gap-8">
@@ -18,10 +20,10 @@ export default function StarCollection() {
           className="glass p-6 rounded-3xl border border-neon-purple/30 flex items-center justify-between bg-gradient-to-r from-black/60 to-neon-purple/10"
         >
           <div>
-            <h3 className="text-gray-400 font-medium uppercase tracking-wider text-sm mb-1">Total Points</h3>
+            <h3 className="text-gray-400 font-medium uppercase tracking-wider text-sm mb-1">{t('ar', 'totalPoints')}</h3>
             <div className="text-4xl font-bold text-white flex items-center gap-3">
               {points}
-              <span className="text-neon-purple text-lg font-medium">+Pts</span>
+              <span className="text-neon-purple text-lg font-medium">{t('ar', 'pts')}</span>
             </div>
           </div>
           <div className="w-16 h-16 rounded-full bg-neon-purple/20 flex items-center justify-center border border-neon-purple/50">
@@ -36,7 +38,7 @@ export default function StarCollection() {
           className="glass p-6 rounded-3xl border border-white/10 flex items-center justify-between"
         >
           <div>
-            <h3 className="text-gray-400 font-medium uppercase tracking-wider text-sm mb-1">Badges Earned</h3>
+            <h3 className="text-gray-400 font-medium uppercase tracking-wider text-sm mb-1">{t('ar', 'badgesEarned')}</h3>
             <div className="text-4xl font-bold text-white flex items-center gap-2">
               {badges.length}
             </div>
@@ -44,7 +46,7 @@ export default function StarCollection() {
               <div className="flex gap-2 mt-2">
                 {badges.map(badge => (
                   <div key={badge} className="px-3 py-1 bg-neon-purple/20 text-neon-purple text-xs rounded-full border border-neon-purple/30 font-medium">
-                    {badge === 'daily_finder' ? 'Daily Master' : 'Star Gazer'}
+                    {badge === 'daily_finder' ? t('ar', 'dailyMaster') : t('ar', 'starGazer')}
                   </div>
                 ))}
               </div>
@@ -60,9 +62,9 @@ export default function StarCollection() {
       <div className="glass p-8 rounded-3xl border border-white/10">
         <div className="flex items-center gap-3 mb-8">
           <Star className="w-6 h-6 text-neon-purple" />
-          <h2 className="text-2xl font-bold text-white">My Star Collection</h2>
+          <h2 className="text-2xl font-bold text-white">{t('ar', 'myCollection')}</h2>
           <span className="ml-auto bg-white/10 px-4 py-1 rounded-full text-sm font-medium text-gray-300 border border-white/10">
-            {collection.length} / {stars.length} Found
+            {t('ar', 'foundProgress').replace('{count}', collection.length).replace('{total}', stars.length)}
           </span>
         </div>
 

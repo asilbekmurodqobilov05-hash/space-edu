@@ -1,8 +1,8 @@
 from django.urls import path
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 from . import views
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register('questions', views.ChallengeQuestionViewSet, basename='challenge-question')
 
 urlpatterns = router.urls + [

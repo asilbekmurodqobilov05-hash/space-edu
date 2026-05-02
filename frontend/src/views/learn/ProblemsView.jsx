@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { HelpCircle } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { useProblemsStore } from '@/store/useProblemsStore';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const TOTAL_PROBLEMS = 145;
 const PER_ROW = 10;
@@ -19,9 +20,11 @@ export default function ProblemsView() {
     rows.push(Array.from({ length: Math.min(PER_ROW, TOTAL_PROBLEMS - i + 1) }, (_, k) => i + k));
   }
 
+  const { t } = useTranslation();
+
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
-      <SectionPageHeader title="Masalalar — Problems" color={color} />
+      <SectionPageHeader title={t('learnViews', 'problemsTitle')} color={color} />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>
         {/* Intro */}
@@ -42,7 +45,7 @@ export default function ProblemsView() {
             <HelpCircle style={{ width: '36px', height: '36px', color }} />
           </div>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px', maxWidth: '500px', margin: '0 auto' }}>
-            Jami {TOTAL_PROBLEMS} ta masala — har birini hal qiling va bilimlaringizni mustahkamlang
+            {t('learnViews', 'problemsDesc').replace('{count}', TOTAL_PROBLEMS)}
           </p>
         </motion.div>
 

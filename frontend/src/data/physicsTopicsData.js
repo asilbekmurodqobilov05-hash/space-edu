@@ -2,7 +2,7 @@ export const physicsTopicsData = {
   1: {
     id: 1,
     title: 'Kinematika',
-    titleEn: 'Kinematics',
+    titleEn: 'Kinematics', titleRu: 'Кинематика',
     color: '#00e5ff',
     lessons: [
       "Basic concepts in mechanics",
@@ -23,7 +23,7 @@ export const physicsTopicsData = {
   2: {
     id: 2,
     title: 'Dinamika',
-    titleEn: 'Dynamics',
+    titleEn: 'Dynamics', titleRu: 'Динамика',
     color: '#00e5ff',
     lessons: [
       "Force. Newton's first law",
@@ -47,7 +47,7 @@ export const physicsTopicsData = {
   3: {
     id: 3,
     title: 'Statika',
-    titleEn: 'Statics',
+    titleEn: 'Statics', titleRu: 'Статика',
     color: '#00e5ff',
     lessons: [
       "Center of gravity of a body",
@@ -67,7 +67,7 @@ export const physicsTopicsData = {
   4: {
     id: 4,
     title: 'Suyuqlik va gazlar mexanikasi',
-    titleEn: 'Mechanics of Fluids and Gases',
+    titleEn: 'Mechanics of Fluids and Gases', titleRu: 'Механика жидкостей и газов',
     color: '#00e5ff',
     lessons: [
       "Pressure. Pascal's law",
@@ -82,7 +82,7 @@ export const physicsTopicsData = {
   5: {
     id: 5,
     title: 'Tebranishlar va to\'lqinlar',
-    titleEn: 'Oscillations and Waves',
+    titleEn: 'Oscillations and Waves', titleRu: 'Колебания и волны',
     color: '#00e5ff',
     lessons: [
       "Basic concepts characterizing oscillatory motion",
@@ -98,7 +98,7 @@ export const physicsTopicsData = {
   6: {
     id: 6,
     title: 'Molekulyar fizika',
-    titleEn: 'Molecular Physics',
+    titleEn: 'Molecular Physics', titleRu: 'Молекулярная физика',
     color: '#00e5ff',
     lessons: [
       "Structure of matter and its basic properties",
@@ -120,7 +120,7 @@ export const physicsTopicsData = {
   7: {
     id: 7,
     title: 'Termodinamika',
-    titleEn: 'Thermodynamics',
+    titleEn: 'Thermodynamics', titleRu: 'Термодинамика',
     color: '#00e5ff',
     lessons: [
       "Internal energy",
@@ -134,7 +134,7 @@ export const physicsTopicsData = {
   8: {
     id: 8,
     title: 'Elektrostatika',
-    titleEn: 'Electrostatics',
+    titleEn: 'Electrostatics', titleRu: 'Электростатика',
     color: '#00e5ff',
     lessons: [
       "Electric charge. Law of conservation of charge",
@@ -155,7 +155,7 @@ export const physicsTopicsData = {
   9: {
     id: 9,
     title: 'O\'zgarmas tok qonunlari',
-    titleEn: 'Direct Current Laws',
+    titleEn: 'Direct Current Laws', titleRu: 'Законы постоянного тока',
     color: '#00e5ff',
     lessons: [
       "Electric current. Current strength",
@@ -172,7 +172,7 @@ export const physicsTopicsData = {
   10: {
     id: 10,
     title: 'Turli muhitlarda elektr qonunlari',
-    titleEn: 'Electric Current in Different Media',
+    titleEn: 'Electric Current in Different Media', titleRu: 'Законы электрического тока в различных средах',
     color: '#00e5ff',
     lessons: [
       "Electric current in metals",
@@ -186,7 +186,7 @@ export const physicsTopicsData = {
   11: {
     id: 11,
     title: 'Elektromagnit hodisalar',
-    titleEn: 'Electromagnetic Phenomena',
+    titleEn: 'Electromagnetic Phenomena', titleRu: 'Электромагнитные явления',
     color: '#00e5ff',
     lessons: [
       "Permanent magnets. Magnetic field. Magnetic field of currents",
@@ -202,7 +202,7 @@ export const physicsTopicsData = {
   12: {
     id: 12,
     title: 'Elektromagnit tebranishlar va to\'lqinlar',
-    titleEn: 'Electromagnetic Oscillations and Waves',
+    titleEn: 'Electromagnetic Oscillations and Waves', titleRu: 'Электромагнитные колебания и волны',
     color: '#00e5ff',
     lessons: [
       "Charge, voltage, and current in an oscillatory circuit",
@@ -221,7 +221,7 @@ export const physicsTopicsData = {
   13: {
     id: 13,
     title: 'Optika',
-    titleEn: 'Optics',
+    titleEn: 'Optics', titleRu: 'Оптика',
     color: '#00e5ff',
     lessons: [
       "Reflection of light",
@@ -245,7 +245,7 @@ export const physicsTopicsData = {
   14: {
     id: 14,
     title: 'Atom va yadro fizikasi',
-    titleEn: 'Atomic and Nuclear Physics',
+    titleEn: 'Atomic and Nuclear Physics', titleRu: 'Атомная и ядерная физика',
     color: '#00e5ff',
     lessons: [
       "Rutherford's experiment. Bohr's postulates",

@@ -2,8 +2,10 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { Camera, Compass, Crosshair, Star, CheckCircle, Navigation, SlidersHorizontal, AlertCircle } from 'lucide-react';
 import useStarStore from '../../store/useStarStore';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function ARCameraView({ targetStar, targetAzimuth, targetAltitude }) {
+  const { t } = useTranslation();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   
@@ -145,8 +147,8 @@ export default function ARCameraView({ targetStar, targetAzimuth, targetAltitude
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-6 text-center">
           <Camera className="w-12 h-12 mb-4 text-white/30" />
-          <p>Camera access is required for AR View.</p>
-          <p className="text-sm mt-2">Please allow camera permissions and ensure you are on a secure context.</p>
+          <p>{t('ar', 'cameraRequired')}</p>
+          <p className="text-sm mt-2">{t('ar', 'cameraAllow')}</p>
         </div>
       )}
 
@@ -155,13 +157,13 @@ export default function ARCameraView({ targetStar, targetAzimuth, targetAltitude
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="bg-gray-900 p-8 rounded-3xl border border-white/10 text-center max-w-sm mx-4">
             <Compass className="w-12 h-12 text-neon-purple mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">Enable AR Compass</h3>
-            <p className="text-gray-400 text-sm mb-6">We need access to your device's orientation sensors to guide you to the stars.</p>
+            <h3 className="text-xl font-bold text-white mb-2">{t('ar', 'enableCompass')}</h3>
+            <p className="text-gray-400 text-sm mb-6">{t('ar', 'compassDesc')}</p>
             <button 
               onClick={requestOrientationPermission}
               className="w-full py-3 bg-neon-purple hover:bg-white text-black font-bold rounded-xl transition-colors"
             >
-              Grant Permission
+              {t('ar', 'grantPermission')}
             </button>
           </div>
         </div>
@@ -193,12 +195,12 @@ export default function ARCameraView({ targetStar, targetAzimuth, targetAltitude
         <div className="flex justify-between items-start">
           <div className="bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex items-center gap-2 pointer-events-auto shadow-lg">
             <Compass className="w-4 h-4 text-neon-purple" />
-            <span className="text-white font-mono">{Math.round(heading)}° {isManualMode ? '(Manual)' : 'N'}</span>
+            <span className="text-white font-mono">{Math.round(heading)}° {isManualMode ? `(${t('ar', 'manual')})` : 'N'}</span>
           </div>
 
           <div className="bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex flex-col items-end shadow-lg">
-            <span className="text-xs text-gray-400 uppercase">Target</span>
-            <span className="text-white font-bold">{targetStar?.name || 'None'}</span>
+            <span className="text-xs text-gray-400 uppercase">{t('ar', 'target')}</span>
+            <span className="text-white font-bold">{targetStar?.name || t('ar', 'none')}</span>
           </div>
         </div>
 
@@ -214,7 +216,7 @@ export default function ARCameraView({ targetStar, targetAzimuth, targetAltitude
                 <CheckCircle className="w-16 h-16 text-green-500 drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
               </div>
               <div className="mt-4 bg-green-500 text-black font-bold px-6 py-2 rounded-full text-lg shadow-[0_0_20px_rgba(34,197,94,0.5)] whitespace-nowrap">
-                Star Found!
+                {t('ar', 'starFound')}
               </div>
             </motion.div>
           ) : (
@@ -240,7 +242,7 @@ export default function ARCameraView({ targetStar, targetAzimuth, targetAltitude
           {sensorAvailable === false && (
             <div className="flex items-start gap-3 mb-4 text-amber-400/90 text-sm bg-amber-400/10 p-3 rounded-lg border border-amber-400/20">
               <AlertCircle className="w-5 h-5 shrink-0" />
-              <p>Your device does not have a compass. Use the slider below to align the arrow manually to {targetAzimuth}°.</p>
+              <p>{t('ar', 'noCompassDesc').replace('{targetAzimuth}', targetAzimuth)}</p>
             </div>
           )}
           
@@ -266,7 +268,7 @@ export default function ARCameraView({ targetStar, targetAzimuth, targetAltitude
           className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all backdrop-blur-md border shadow-lg ${isManualMode ? 'bg-neon-purple text-black border-neon-purple' : 'bg-black/60 text-white border-white/20 hover:bg-white/10'}`}
         >
           <SlidersHorizontal className="w-5 h-5" /> 
-          <span>{isManualMode ? 'Compass Mode' : 'Manual Mode'}</span>
+          <span>{isManualMode ? t('ar', 'compassMode') : t('ar', 'manualMode')}</span>
         </button>
       </div>
 

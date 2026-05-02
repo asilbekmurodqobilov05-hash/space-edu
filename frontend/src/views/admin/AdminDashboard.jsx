@@ -3,31 +3,32 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/api';
 import { Users, BookOpen, ShoppingBag, MessageCircle, Newspaper, Calendar, HelpCircle, Search, Plus, Trash2, Edit, X, Shield, Sun, Moon, ArrowLeft } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const MENU_GROUPS = [
   {
-    title: 'Platform Management',
+    titleKey: 'platformManagement',
     items: [
-      { id: 'dashboard', label: 'Dashboard', icon: Shield },
-      { id: 'users', label: 'Users & Profiles', icon: Users },
+      { id: 'dashboard', labelKey: 'dashboard', icon: Shield },
+      { id: 'users', labelKey: 'users', icon: Users },
     ]
   },
   {
-    title: 'Education & Content',
+    titleKey: 'educationContent',
     items: [
-      { id: 'spheres', label: 'Course Spheres', icon: BookOpen },
-      { id: 'topics', label: 'Course Topics', icon: BookOpen },
-      { id: 'lessons', label: 'Lessons', icon: BookOpen },
-      { id: 'questions', label: 'Challenges', icon: HelpCircle },
+      { id: 'spheres', labelKey: 'spheres', icon: BookOpen },
+      { id: 'topics', labelKey: 'topics', icon: BookOpen },
+      { id: 'lessons', labelKey: 'lessons', icon: BookOpen },
+      { id: 'questions', labelKey: 'questions', icon: HelpCircle },
     ]
   },
   {
-    title: 'Community & Store',
+    titleKey: 'communityStore',
     items: [
-      { id: 'market', label: 'Market Items', icon: ShoppingBag },
-      { id: 'news', label: 'News Articles', icon: Newspaper },
-      { id: 'events', label: 'Space Events', icon: Calendar },
-      { id: 'chat', label: 'Chat Rooms', icon: MessageCircle },
+      { id: 'market', labelKey: 'market', icon: ShoppingBag },
+      { id: 'news', labelKey: 'news', icon: Newspaper },
+      { id: 'events', labelKey: 'events', icon: Calendar },
+      { id: 'chat', labelKey: 'chat', icon: MessageCircle },
     ]
   }
 ];
@@ -77,21 +78,22 @@ function Field({ label, value, onChange, type = 'text', options }) {
 }
 
 function DashboardTab({ stats }) {
+  const { t } = useTranslation();
   if (!stats) return <p className="text-slate-400">Loading...</p>;
   return (
     <div>
-      <h2 className="text-2xl font-black mb-6">Platform Overview</h2>
+      <h2 className="text-2xl font-black mb-6">{t('admin', 'platformOverview')}</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Users" value={stats.users?.total} sub={`+${stats.users?.new_week} this week`} />
-        <StatCard label="Staff" value={stats.users?.staff_count} />
-        <StatCard label="Lessons" value={stats.content?.lessons} />
+        <StatCard label={t('admin', 'totalUsers')} value={stats.users?.total} sub={`+${stats.users?.new_week}`} />
+        <StatCard label={t('admin', 'staff')} value={stats.users?.staff_count} />
+        <StatCard label={t('admin', 'lessons')} value={stats.content?.lessons} />
         <StatCard label="Problems" value={stats.content?.problems} />
-        <StatCard label="Questions" value={stats.content?.challenge_questions} />
-        <StatCard label="News Articles" value={stats.community?.news_articles} />
-        <StatCard label="Events" value={stats.community?.space_events} />
-        <StatCard label="Chat Messages" value={stats.community?.chat_messages} />
+        <StatCard label={t('admin', 'questions')} value={stats.content?.challenge_questions} />
+        <StatCard label={t('admin', 'news')} value={stats.community?.news_articles} />
+        <StatCard label={t('admin', 'events')} value={stats.community?.space_events} />
+        <StatCard label={t('admin', 'chatMessages')} value={stats.community?.chat_messages} />
       </div>
-      <h3 className="font-extrabold text-sm uppercase tracking-widest text-slate-500 dark:text-white/40 mb-3">Recent Users</h3>
+      <h3 className="font-extrabold text-sm uppercase tracking-widest text-slate-500 dark:text-white/40 mb-3">{t('admin', 'recentUsers')}</h3>
       <div className="bg-slate-900/[0.02] dark:bg-white/[0.02] border border-slate-900/5 dark:border-white/5 rounded-xl overflow-hidden">
         {(stats.recent_users || []).map(u => (
           <div key={u.id} className="flex items-center justify-between px-5 py-3 border-b border-slate-900/5 dark:border-white/5 last:border-0">
@@ -111,6 +113,7 @@ function DashboardTab({ stats }) {
 }
 
 function UsersTab() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
@@ -129,10 +132,10 @@ function UsersTab() {
   return (
     <div>
       <div className="flex items-center gap-4 mb-6">
-        <h2 className="text-2xl font-black">Users</h2>
+        <h2 className="text-2xl font-black">{t('admin', 'users')}</h2>
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search users..." className="w-full bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-violet/40 text-slate-900 dark:text-white" />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('admin', 'searchUsers')} className="w-full bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-violet/40 text-slate-900 dark:text-white" />
         </div>
       </div>
       <div className="bg-slate-900/[0.02] dark:bg-white/[0.02] border border-slate-900/5 dark:border-white/5 rounded-xl overflow-hidden">
@@ -148,19 +151,19 @@ function UsersTab() {
         ))}
       </div>
       {editing && (
-        <Modal title="Edit User" onClose={() => setEditing(null)}>
+        <Modal title={t('admin', 'editUser')} onClose={() => setEditing(null)}>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="First Name" value={editing.first_name || ''} onChange={v => setEditing({...editing, first_name: v})} />
-            <Field label="Last Name" value={editing.last_name || ''} onChange={v => setEditing({...editing, last_name: v})} />
+            <Field label={t('admin', 'firstName')} value={editing.first_name || ''} onChange={v => setEditing({...editing, first_name: v})} />
+            <Field label={t('admin', 'lastName')} value={editing.last_name || ''} onChange={v => setEditing({...editing, last_name: v})} />
           </div>
-          <Field label="Astronaut Name (Username)" value={editing.astronaut_name || ''} onChange={v => setEditing({...editing, astronaut_name: v})} />
-          <Field label="Bio" value={editing.bio || ''} onChange={v => setEditing({...editing, bio: v})} type="textarea" />
-          <Field label="Language" value={editing.language || 'uz'} onChange={v => setEditing({...editing, language: v})} type="select" options={[{value:'uz',label:'Uzbek'}, {value:'en',label:'English'}, {value:'ru',label:'Russian'}]} />
+          <Field label={t('admin', 'astronautName')} value={editing.astronaut_name || ''} onChange={v => setEditing({...editing, astronaut_name: v})} />
+          <Field label={t('admin', 'bio')} value={editing.bio || ''} onChange={v => setEditing({...editing, bio: v})} type="textarea" />
+          <Field label={t('admin', 'language')} value={editing.language || 'uz'} onChange={v => setEditing({...editing, language: v})} type="select" options={[{value:'uz',label:'Uzbek'}, {value:'en',label:'English'}, {value:'ru',label:'Russian'}]} />
           <div className="flex gap-4 mt-2">
-            <Field label="Staff" value={editing.is_staff} onChange={v => setEditing({...editing, is_staff: v})} type="checkbox" />
-            <Field label="Active" value={editing.is_active} onChange={v => setEditing({...editing, is_active: v})} type="checkbox" />
+            <Field label={t('admin', 'staff')} value={editing.is_staff} onChange={v => setEditing({...editing, is_staff: v})} type="checkbox" />
+            <Field label={t('admin', 'active')} value={editing.is_active} onChange={v => setEditing({...editing, is_active: v})} type="checkbox" />
           </div>
-          <button onClick={save} className="w-full py-3 bg-violet text-white rounded-xl font-bold text-sm mt-4">Save Changes</button>
+          <button onClick={save} className="w-full py-3 bg-violet text-white rounded-xl font-bold text-sm mt-4">{t('admin', 'saveChanges')}</button>
         </Modal>
       )}
     </div>
@@ -168,6 +171,7 @@ function UsersTab() {
 }
 
 function CrudTab({ title, endpoint, fields, defaultItem }) {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -185,10 +189,10 @@ function CrudTab({ title, endpoint, fields, defaultItem }) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-black">{title}</h2>
-        <button onClick={() => { setCreating(true); setForm(defaultItem); }} className="flex items-center gap-2 px-4 py-2 bg-violet text-white rounded-xl text-sm font-bold hover:bg-violet-dark transition-colors"><Plus className="w-4 h-4" />Add New</button>
+        <button onClick={() => { setCreating(true); setForm(defaultItem); }} className="flex items-center gap-2 px-4 py-2 bg-violet text-white rounded-xl text-sm font-bold hover:bg-violet-dark transition-colors"><Plus className="w-4 h-4" />{t('admin', 'addNew')}</button>
       </div>
       <div className="bg-slate-900/[0.02] dark:bg-white/[0.02] border border-slate-900/5 dark:border-white/5 rounded-xl overflow-hidden">
-        {items.length === 0 && <p className="p-8 text-center text-slate-400 text-sm">No items yet</p>}
+        {items.length === 0 && <p className="p-8 text-center text-slate-400 text-sm">{t('admin', 'noItemsYet')}</p>}
         {items.map(item => (
           <div key={item.id} className="flex items-center justify-between px-5 py-3 border-b border-slate-900/5 dark:border-white/5 last:border-0">
             <div><p className="text-sm font-bold">{item[displayField]?.substring?.(0, 80) || item[displayField]}</p>{subField && <p className="text-[10px] text-slate-400">{item[subField]}</p>}</div>
@@ -200,13 +204,13 @@ function CrudTab({ title, endpoint, fields, defaultItem }) {
         ))}
       </div>
       {(editing || creating) && (
-        <Modal title={creating ? `New ${title}` : `Edit ${title}`} onClose={() => { setEditing(null); setCreating(false); }}>
+        <Modal title={creating ? t('admin', 'addNew') : title} onClose={() => { setEditing(null); setCreating(false); }}>
           {fields.map(f => (
             <Field key={f.name} label={f.label} type={f.type || 'text'} options={f.options}
               value={(creating ? form : editing)[f.name] ?? ''}
               onChange={v => creating ? setForm({...form, [f.name]: v}) : setEditing({...editing, [f.name]: v})} />
           ))}
-          <button onClick={save} className="w-full py-3 bg-violet text-white rounded-xl font-bold text-sm mt-2">{creating ? 'Create' : 'Save'}</button>
+          <button onClick={save} className="w-full py-3 bg-violet text-white rounded-xl font-bold text-sm mt-2">{creating ? t('admin', 'create') : t('admin', 'save')}</button>
         </Modal>
       )}
     </div>
@@ -214,6 +218,7 @@ function CrudTab({ title, endpoint, fields, defaultItem }) {
 }
 
 function ChatTab() {
+  const { t } = useTranslation();
   const [rooms, setRooms] = useState([]);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -227,17 +232,17 @@ function ChatTab() {
   };
   return (
     <div>
-      <h2 className="text-2xl font-black mb-6">Chat Rooms</h2>
+      <h2 className="text-2xl font-black mb-6">{t('admin', 'chatRooms')}</h2>
       <div className="flex gap-3 mb-6">
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Room name" className="bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl px-4 py-2 text-sm flex-1 focus:outline-none focus:border-violet/40 text-slate-900 dark:text-white" />
-        <input value={slug} onChange={e => setSlug(e.target.value)} placeholder="slug" className="bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl px-4 py-2 text-sm w-40 focus:outline-none focus:border-violet/40 text-slate-900 dark:text-white" />
+        <input value={name} onChange={e => setName(e.target.value)} placeholder={t('admin', 'roomName')} className="bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl px-4 py-2 text-sm flex-1 focus:outline-none focus:border-violet/40 text-slate-900 dark:text-white" />
+        <input value={slug} onChange={e => setSlug(e.target.value)} placeholder={t('admin', 'slug')} className="bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl px-4 py-2 text-sm w-40 focus:outline-none focus:border-violet/40 text-slate-900 dark:text-white" />
         <button onClick={addRoom} className="px-4 py-2 bg-violet text-white rounded-xl text-sm font-bold"><Plus className="w-4 h-4" /></button>
       </div>
       <div className="bg-slate-900/[0.02] dark:bg-white/[0.02] border border-slate-900/5 dark:border-white/5 rounded-xl overflow-hidden">
         {rooms.map(r => (
           <div key={r.id} className="flex items-center justify-between px-5 py-4 border-b border-slate-900/5 dark:border-white/5 last:border-0">
             <div><p className="font-bold text-sm">{r.name}</p><p className="text-[10px] text-slate-400">#{r.slug}</p></div>
-            <span className="text-xs text-slate-400">{r.messages} messages</span>
+            <span className="text-xs text-slate-400">{r.messages} {t('admin', 'messages')}</span>
           </div>
         ))}
       </div>
@@ -324,6 +329,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState('dashboard');
   const [theme, setTheme] = useState(localStorage.getItem('adminTheme') || 'dark');
   const [stats, setStats] = useState(null);
+  const { t } = useTranslation();
 
   useEffect(() => { localStorage.setItem('adminTheme', theme); }, [theme]);
 
@@ -341,12 +347,12 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-6">
               <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-400 hover:text-violet transition-colors text-sm font-bold">
-                <ArrowLeft className="w-4 h-4" /> Exit
+                <ArrowLeft className="w-4 h-4" /> {t('admin', 'exit')}
               </button>
               <div className="h-6 w-px bg-slate-200 dark:bg-white/10" />
               <div className="flex items-center gap-3">
                 <Shield className="w-6 h-6 text-violet" />
-                <h1 className="text-xl font-black tracking-tight">Console</h1>
+                <h1 className="text-xl font-black tracking-tight">{t('admin', 'console')}</h1>
               </div>
             </div>
             <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-2.5 bg-white dark:bg-white/5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors border border-slate-200 dark:border-white/5 shadow-sm">
@@ -360,11 +366,11 @@ export default function AdminDashboard() {
               <div className="bg-white dark:bg-[#1a1b23] border border-slate-200 dark:border-white/5 rounded-2xl p-4 sticky top-24 shadow-sm">
                 {MENU_GROUPS.map((group, idx) => (
                   <div key={idx} className="mb-6 last:mb-0">
-                    <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3 px-2">{group.title}</h4>
+                    <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3 px-2">{t('admin', group.titleKey)}</h4>
                     <div className="flex flex-col gap-1">
-                      {group.items.map(t => (
-                        <button key={t.id} onClick={() => setTab(t.id)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-bold transition-all ${tab === t.id ? 'bg-violet text-white shadow-lg shadow-violet/20' : 'text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/5'}`}>
-                          <t.icon className="w-4 h-4" />{t.label}
+                      {group.items.map(t_item => (
+                        <button key={t_item.id} onClick={() => setTab(t_item.id)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-bold transition-all ${tab === t_item.id ? 'bg-violet text-white shadow-lg shadow-violet/20' : 'text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/5'}`}>
+                          <t_item.icon className="w-4 h-4" />{t('admin', t_item.labelKey)}
                         </button>
                       ))}
                     </div>

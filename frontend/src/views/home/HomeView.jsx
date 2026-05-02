@@ -1,126 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "motion/react";
-import { Rocket, ArrowRight, BookOpen, Target, Award, Zap, Globe, Star, ChevronDown, Telescope, FlaskConical, Play, Gamepad2 } from "lucide-react";
+import { Rocket, ArrowRight, BookOpen, Target, Award, Globe, Star, ChevronDown, Telescope, FlaskConical, Play, Gamepad2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "@/hooks/useTranslation";
 import Earth3D from "@/components/3d/Earth3D";
-
-
-// ── MILKY WAY STARFIELD ───────────────────────────────────────────────────────
-const Starfield = () => {
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    let raf;
-    let w = 0, h = 0, stars = [];
-
-    const COLORS = ['#ffffff', '#ffe8d6', '#e8e0ff', '#d4e8ff', '#fff4e0'];
-
-    const init = () => {
-      w = window.innerWidth;
-      h = window.innerHeight;
-      canvas.width = w;
-      canvas.height = h;
-      const r = Math.random;
-
-      // Background stars — scattered uniformly
-      const bg = Array.from({ length: 380 }, () => ({
-        x: r() * w, y: r() * h,
-        sz: 0.15 + r() * 0.55,
-        spd: 0.003 + r() * 0.008,
-        ph: r() * Math.PI * 2,
-        col: '#ffffff',
-        base: 0.25 + r() * 0.45,
-        sparkle: false,
-        mw: false,
-      }));
-
-      // Milky Way band — diagonal, bottom-left to top-right (~35°)
-      const mw = Array.from({ length: 750 }, () => {
-        const t = r();
-        const perp = (r() - 0.5) * 0.28;
-        const cos35 = Math.cos(0.61);
-        const sin35 = Math.sin(0.61);
-        const bx = (t + perp * cos35 - 0.1) * w;
-        const by = h - (t * 0.9 + perp * sin35) * h * 1.1;
-        return {
-          x: bx, y: by,
-          sz: 0.08 + r() * 0.42,
-          spd: 0.004 + r() * 0.013,
-          ph: r() * Math.PI * 2,
-          col: COLORS[Math.floor(r() * COLORS.length)],
-          base: 0.18 + r() * 0.55,
-          sparkle: false,
-          mw: true,
-        };
-      });
-
-      // Bright foreground sparkle stars
-      const bright = Array.from({ length: 22 }, () => ({
-        x: r() * w, y: r() * h,
-        sz: 1.1 + r() * 1.9,
-        spd: 0.009 + r() * 0.02,
-        ph: r() * Math.PI * 2,
-        col: r() > 0.5 ? '#ffffff' : r() > 0.25 ? '#c4b5fd' : '#ffe4b5',
-        base: 0.65 + r() * 0.3,
-        sparkle: true,
-        mw: false,
-      }));
-
-      stars = [...bg, ...mw, ...bright];
-    };
-
-    const draw = (t) => {
-      ctx.clearRect(0, 0, w, h);
-
-      // Milky Way soft purple glow band
-      const grd = ctx.createLinearGradient(0, h * 0.85, w * 0.85, 0);
-      grd.addColorStop(0, 'rgba(55, 15, 95, 0)');
-      grd.addColorStop(0.2, 'rgba(75, 25, 120, 0.016)');
-      grd.addColorStop(0.45, 'rgba(95, 45, 145, 0.028)');
-      grd.addColorStop(0.6, 'rgba(75, 25, 120, 0.016)');
-      grd.addColorStop(1, 'rgba(55, 15, 95, 0)');
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, w, h);
-
-      for (const s of stars) {
-        const tw = 0.5 + 0.5 * Math.sin(t * s.spd + s.ph);
-        ctx.globalAlpha = s.base * (0.45 + 0.55 * tw);
-
-        if (s.sparkle) {
-          ctx.strokeStyle = s.col;
-          ctx.lineWidth = 0.45;
-          ctx.beginPath();
-          for (let i = 0; i < 4; i++) {
-            const ang = (i / 4) * Math.PI * 2;
-            ctx.moveTo(s.x, s.y);
-            ctx.lineTo(s.x + Math.cos(ang) * s.sz * 3.5, s.y + Math.sin(ang) * s.sz * 3.5);
-          }
-          ctx.stroke();
-        }
-
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.sz, 0, Math.PI * 2);
-        ctx.fillStyle = s.col;
-        ctx.fill();
-      }
-
-      ctx.globalAlpha = 1;
-      raf = requestAnimationFrame(draw);
-    };
-
-    window.addEventListener("resize", init);
-    init();
-    raf = requestAnimationFrame(draw);
-    return () => { window.removeEventListener("resize", init); cancelAnimationFrame(raf); };
-  }, []);
-
-  return <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />;
-};
-
 
 
 // ── ANIMATED COUNTER ──────────────────────────────────────────────────────────
@@ -226,8 +109,7 @@ export default function HomeView() {
   const titleWords = t("home", "title").split(" ");
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#030208' }}>
-      <Starfield />
+    <div className="relative min-h-screen overflow-x-hidden">
 
       {/* Nebula ambient layers — parallax reactive */}
       <div ref={nebulaRef} className="pointer-events-none fixed inset-0 z-[1]"
@@ -279,8 +161,6 @@ export default function HomeView() {
           {/* Text column */}
           <div className="order-2 lg:order-1 flex flex-col items-center lg:items-start text-center lg:text-left relative z-10">
 
-
-
             {/* Title — word-by-word reveal with blur */}
             <h1 className="text-[clamp(38px,5.8vw,72px)] font-[900] tracking-[-0.035em] leading-[1.05] mb-7 flex flex-wrap justify-center lg:justify-start gap-x-4 gap-y-1">
               {titleWords.map((word, i) => {
@@ -306,13 +186,6 @@ export default function HomeView() {
                 );
               })}
             </h1>
-
-            <style>{`
-              @keyframes vgrad {
-                0%,100% { background-position: 0% 50%; }
-                50%      { background-position: 100% 50%; }
-              }
-            `}</style>
 
             <motion.p
               initial={{ opacity: 0 }}
@@ -365,8 +238,6 @@ export default function HomeView() {
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </motion.div>
-
-
           </div>
 
           {/* 3D Earth column */}

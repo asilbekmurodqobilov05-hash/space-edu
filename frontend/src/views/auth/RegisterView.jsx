@@ -5,20 +5,22 @@ import { Eye, EyeOff, Rocket, Star, ShieldCheck } from 'lucide-react';
 import api from '@/lib/api';
 
 import { useAuthStore } from '@/store/useAuthStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import GlassCard from '@/components/ui/GlassCard';
-
-const FIELDS = [
-  { name: 'first_name',     label: 'First Name',    type: 'text',     placeholder: 'Alisher' },
-  { name: 'last_name',      label: 'Last Name',     type: 'text',     placeholder: 'Navoi' },
-  { name: 'email',          label: 'Email',         type: 'email',    placeholder: 'cosmonaut@cosmos.uz' },
-  { name: 'date_of_birth',  label: 'Date of Birth', type: 'date',     placeholder: '' },
-  { name: 'password',       label: 'Security Key',  type: 'password', placeholder: '8+ characters' },
-  { name: 'password2',      label: 'Confirm Key',   type: 'password', placeholder: 'Repeat key' },
-];
 
 export default function RegisterView() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
+  const { t } = useTranslation();
+
+  const FIELDS = [
+    { name: 'first_name',     label: t('registerPage', 'firstName'),    type: 'text',     placeholder: 'Alisher' },
+    { name: 'last_name',      label: t('registerPage', 'lastName'),     type: 'text',     placeholder: 'Navoi' },
+    { name: 'email',          label: t('registerPage', 'email'),        type: 'email',    placeholder: 'cosmonaut@cosmos.uz' },
+    { name: 'date_of_birth',  label: t('registerPage', 'dob'),          type: 'date',     placeholder: '' },
+    { name: 'password',       label: t('registerPage', 'securityKey'),  type: 'password', placeholder: t('registerPage', 'placeholder8chars') },
+    { name: 'password2',      label: t('registerPage', 'confirmKey'),   type: 'password', placeholder: t('registerPage', 'repeatKey') },
+  ];
 
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '',
@@ -46,7 +48,7 @@ export default function RegisterView() {
       if (errorData.non_field_errors && !errorData.detail) {
         errorData.detail = errorData.non_field_errors[0];
       }
-      setErrors(errorData.detail ? errorData : { ...errorData, detail: errorData.detail || 'Registration failed.' });
+      setErrors(errorData.detail ? errorData : { ...errorData, detail: errorData.detail || t('registerPage', 'regFailed') });
     } finally {
       setLoading(false);
     }
@@ -77,8 +79,8 @@ export default function RegisterView() {
             <Star className="w-5 h-5 text-violet-light" />
             <span className="text-xl font-[900] tracking-tighter text-white">Space edu</span>
           </motion.div>
-          <h1 className="text-4xl font-[900] text-white tracking-tight mb-3">Join the <span className="text-glow-purple text-violet">Academy</span></h1>
-          <p className="text-white/30 text-sm font-[500]">Initialize your profile to begin the cosmic journey</p>
+          <h1 className="text-4xl font-[900] text-white tracking-tight mb-3">{t('registerPage', 'joinTitle')} <span className="text-glow-purple text-violet">{t('registerPage', 'joinHighlight')}</span></h1>
+          <p className="text-white/30 text-sm font-[500]">{t('registerPage', 'subtitle')}</p>
         </div>
 
         <GlassCard accent="#8b5cf6" className="!p-8 sm:!p-10 shadow-2xl">
@@ -139,7 +141,7 @@ export default function RegisterView() {
                   <Loader className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    Initialize Profile <Rocket className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    {t('registerPage', 'initProfile')} <Rocket className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                   </>
                 )}
               </span>
@@ -147,9 +149,9 @@ export default function RegisterView() {
 
             <div className="mt-4 pt-6 border-t border-white/5 text-center">
               <p className="text-white/30 text-xs font-[600]">
-                Already have an account?{' '}
+                {t('registerPage', 'haveAccount')}{' '}
                 <Link to="/login" className="text-violet-light hover:text-white font-[800] transition-colors">
-                  Sign In
+                  {t('registerPage', 'signIn')}
                 </Link>
               </p>
             </div>
@@ -158,7 +160,7 @@ export default function RegisterView() {
 
         {/* Footer info */}
         <div className="mt-12 flex items-center justify-center gap-2 text-white/10 uppercase text-[9px] font-[800] tracking-[0.4em]">
-          <ShieldCheck className="w-3 h-3" /> Secure Enrollment Protocol
+          <ShieldCheck className="w-3 h-3" /> {t('registerPage', 'secureEnroll')}
         </div>
       </motion.div>
     </div>

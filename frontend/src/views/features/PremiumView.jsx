@@ -9,7 +9,7 @@ export default function PremiumView() {
   const { t } = useTranslation();
 
   const handleGetPlan = () => {
-    navigate('/login');
+    navigate('/register');
   };
 
   const promoFeatures = [

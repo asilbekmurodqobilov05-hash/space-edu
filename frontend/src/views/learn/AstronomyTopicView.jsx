@@ -4,6 +4,7 @@ import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { astronomyTopicsData } from '@/data/astronomyTopicsData';
 import { BookOpen, Beaker, Satellite, Rocket } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const blockVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -15,6 +16,7 @@ const blockVariants = {
 
 function LessonBlock({ lesson, index, color, onClick }) {
   const [hovered, setHovered] = useState(false);
+  const { t, i18n } = useTranslation();
   const colorLight = `${color}1A`; 
   const colorBorder = `${color}40`;
 
@@ -89,7 +91,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
           }}
         >
           <BookOpen style={{ width: '16px', height: '16px' }} />
-          Test
+          {t('learnViews', 'testButton')}
         </button>
         <button
           style={{
@@ -112,7 +114,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
           }}
         >
           <Beaker style={{ width: '16px', height: '16px' }} />
-          Lab
+          {t('learnViews', 'labButton')}
         </button>
       </div>
     </motion.div>
@@ -130,7 +132,7 @@ export default function AstronomyTopicView() {
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
-      <SectionPageHeader title={topic.title} color={topic.color} backPath="/learn/astronomy" />
+      <SectionPageHeader title={i18n.language === 'en' ? (topic.titleEn || topic.title) : i18n.language === 'ru' ? (topic.titleRu || topic.title) : topic.title} color={topic.color} backPath="/learn/astronomy" />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

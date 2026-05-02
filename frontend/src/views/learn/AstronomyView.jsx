@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Telescope, ArrowRight } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { astronomyTopicsData } from '@/data/astronomyTopicsData';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 24, scale: 0.97 },
@@ -16,6 +17,7 @@ const cardVariants = {
 function TopicCard({ topic, index, color, colorLight, colorBorder }) {
   const [hovered, setHovered] = useState(false);
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   return (
     <motion.div
@@ -64,13 +66,15 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
             {topic.id === 1 ? '☀️' : topic.id === 2 ? '⭐' : topic.id === 3 ? '🛰️' : '🌌'}
           </div>
           <div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: 700, color: '#fff' }}>{topic.title}</h3>
-            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{topic.titleEn}</span>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: 700, color: '#fff' }}>{i18n.language === 'en' ? (topic.titleEn || topic.title) : i18n.language === 'ru' ? (topic.titleRu || topic.title) : topic.title}</h3>
+            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{i18n.language === 'en' ? topic.title : topic.titleEn}</span>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
-            <span style={{ color, fontWeight: 700 }}>{topic.lessons.length}</span> dars
+            {t('learnViews', 'lessonCount').split('{count}')[0]}
+            <span style={{ color, fontWeight: 700 }}>{topic.lessons.length}</span>
+            {t('learnViews', 'lessonCount').split('{count}')[1]}
           </span>
           <div
             style={{
@@ -98,10 +102,11 @@ export default function AstronomyView() {
   const colorLight = 'rgba(251,191,36,0.10)';
   const colorBorder = 'rgba(251,191,36,0.25)';
   const topics = Object.values(astronomyTopicsData);
+  const { t } = useTranslation();
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
-      <SectionPageHeader title="Astronomiya — Astronomy" color={color} />
+      <SectionPageHeader title={t('learnViews', 'astronomyTitle')} color={color} />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>
         <motion.div
@@ -121,7 +126,7 @@ export default function AstronomyView() {
             <Telescope style={{ width: '36px', height: '36px', color }} />
           </div>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px', maxWidth: '500px', margin: '0 auto' }}>
-            Yulduzlar, galaktikalar va koinot sirlarini o'rganing
+            {t('learnViews', 'astronomyDesc')}
           </p>
         </motion.div>
 

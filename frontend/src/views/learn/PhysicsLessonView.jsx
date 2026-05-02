@@ -4,6 +4,7 @@ import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { physicsTopicsData } from '@/data/physicsTopicsData';
 import { PlayCircle } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const blockVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -15,6 +16,7 @@ const blockVariants = {
 
 function LessonPartBlock({ partNumber, lessonName, color, index, onClick }) {
   const [hovered, setHovered] = useState(false);
+  const { t } = useTranslation();
   const colorLight = `${color}1A`; // 10% opacity
   const colorBorder = `${color}40`; // 25% opacity
 
@@ -75,7 +77,7 @@ function LessonPartBlock({ partNumber, lessonName, color, index, onClick }) {
           }} 
         />
         <span style={{ marginTop: '8px', fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', zIndex: 1 }}>
-          Video
+          {t('lesson', 'videoLesson').split(' ')[0]}
         </span>
       </div>
 
@@ -87,20 +89,20 @@ function LessonPartBlock({ partNumber, lessonName, color, index, onClick }) {
             background: colorLight, color: color, 
             fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' 
           }}>
-            Qism {partNumber}
+            {t('learnViews', 'partN').replace('{partNumber}', partNumber)}
           </span>
           <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#fff' }}>
-            {lessonName} - {partNumber}-qism
+            {t('learnViews', 'lessonPartTitle').replace('{lessonName}', lessonName).replace('{partNumber}', partNumber)}
           </h3>
         </div>
         <p style={{ margin: 0, fontSize: '15px', lineHeight: '1.6', color: 'rgba(255,255,255,0.6)' }}>
           {
             [
-              `Bu qismda siz ${lessonName.toLowerCase()} mavzusining asosiy tushunchalari, qonuniyatlari va muhim formulalari bilan batafsil tanishasiz. Videodarsni ko'rib chiqing va bilimlaringizni mustahkamlang.`,
-              `${lessonName} bo'yicha amaliy masalalar yechish namunalari. Ushbu videoda asosiy qoidalarni amaliyotda qanday qo'llash kerakligini ko'rib chiqamiz va turli murakkablikdagi masalalarni tahlil qilamiz.`,
-              `Mavzuga oid chuqurlashtirilgan nazariy bilimlar. Tajribalar va vizual animatsiyalar yordamida ${lessonName.toLowerCase()} hodisalarini kuzatamiz. Bu sizga qoidalarni chuqurroq tushunishga yordam beradi.`,
-              `Murakkab masalalar va test savollari tahlili. ${lessonName} bo'yicha eng ko'p uchraydigan xatolar va ularni oldini olish usullarini o'rganamiz. Imtihonlarga tayyorgarlik ko'rish uchun maxsus tavsiyalar.`,
-              `${lessonName} mavzusini mustahkamlash uchun yakuniy qism. Oldingi qismlarda o'tilgan barcha bilimlarni umumlashtiramiz va haqiqiy hayotdagi tatbiqlarini ko'rib chiqamiz.`
+              t('learnViews', 'lessonDesc1').replace('{lessonName}', lessonName),
+              t('learnViews', 'lessonDesc2').replace('{lessonName}', lessonName),
+              t('learnViews', 'lessonDesc3').replace('{lessonName}', lessonName),
+              t('learnViews', 'lessonDesc4').replace('{lessonName}', lessonName),
+              t('learnViews', 'lessonDesc5').replace('{lessonName}', lessonName)
             ][index % 5]
           }
         </p>

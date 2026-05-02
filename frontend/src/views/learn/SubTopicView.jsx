@@ -6,6 +6,7 @@ import { interviewsTopicsData } from '@/data/interviewsTopicsData';
 import { creativityTopicsData } from '@/data/creativityTopicsData';
 import { BookOpen, Beaker } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const blockVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -17,6 +18,7 @@ const blockVariants = {
 
 function LessonBlock({ lesson, index, color, onClick }) {
   const [hovered, setHovered] = useState(false);
+  const { t } = useTranslation();
   const colorLight = `${color}1A`; 
   const colorBorder = `${color}40`;
 
@@ -79,7 +81,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
           }}
         >
           <BookOpen style={{ width: '16px', height: '16px' }} />
-          O'qish
+          {t('learnViews', 'readButton')}
         </button>
       </div>
     </motion.div>

@@ -11,8 +11,10 @@ import { useGamificationStore } from '@/store/useGamificationStore';
 import { useLikesStore } from '@/store/useLikesStore';
 import { useLearningStore } from '@/store/useLearningStore';
 import confetti from 'canvas-confetti';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function UniversalLessonView() {
+  const { t } = useTranslation();
   const { subject, topicId, subIdx, lessonIdx, partIdx } = useParams();
   const navigate = useNavigate();
   const addRewards = useGamificationStore(s => s.addRewards);
@@ -80,8 +82,8 @@ export default function UniversalLessonView() {
   if (!lesson) {
     return (
       <div className="pt-32 text-center">
-        <h1 className="text-2xl text-white/50">Dars topilmadi (Lesson not found)</h1>
-        <button onClick={() => navigate(-1)} className="mt-4 text-blue-400">Orqaga qaytish</button>
+        <h1 className="text-2xl text-white/50">{t('lesson', 'notFound')}</h1>
+        <button onClick={() => navigate(-1)} className="mt-4 text-blue-400">{t('lesson', 'goBack')}</button>
       </div>
     );
   }
@@ -100,7 +102,7 @@ export default function UniversalLessonView() {
     });
     setShowRewardModal(true);
     
-    setToast({ msg: "Progress saved locally!", type: 'success' });
+    setToast({ msg: t('lesson', 'progressSaved'), type: 'success' });
     setTimeout(() => setToast(null), 3000);
 
     confetti({
@@ -172,11 +174,11 @@ export default function UniversalLessonView() {
             <div style={{ marginBottom: '32px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                 <span style={{ padding: '6px 14px', borderRadius: '10px', background: `${color}20`, color: color, fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  Video Dars
+                  {t('lesson', 'videoLesson')}
                 </span>
                 {completed && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4ade80', fontSize: '14px', fontWeight: 600 }}>
-                    <CheckCircle2 size={18} /> Yakunlandi
+                    <CheckCircle2 size={18} /> {t('lesson', 'completed')}
                   </span>
                 )}
               </div>
@@ -184,9 +186,7 @@ export default function UniversalLessonView() {
                 {displayTitle}
               </h1>
               <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: '800px' }}>
-                Ushbu darsda siz {lessonName.toLowerCase()} mavzusini chuqur o'rganasiz. 
-                Videoda keltirilgan vizualizatsiyalar va tushuntirishlar sizga murakkab tushunchalarni oson o'zlashtirishga yordam beradi.
-                Dars yakunida siz koinot sirlariga bir qadam yaqinlashasiz.
+                {t('lesson', 'lessonDescription').replace('{lessonName}', lessonName)}
               </p>
             </div>
 
@@ -197,19 +197,19 @@ export default function UniversalLessonView() {
               border: '1px solid rgba(255,255,255,0.06)'
             }}>
               <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Info size={20} color={color} /> Mavzu tafsilotlari
+                <Info size={20} color={color} /> {t('lesson', 'topicDetails')}
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', color: 'rgba(255,255,255,0.5)', fontSize: '15px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span>Kategoriya</span>
+                  <span>{t('lesson', 'category')}</span>
                   <span style={{ color: '#fff', fontWeight: 600 }}>{subject.charAt(0).toUpperCase() + subject.slice(1)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span>Davomiyligi</span>
-                  <span style={{ color: '#fff', fontWeight: 600 }}>~15 daqiqa</span>
+                  <span>{t('lesson', 'duration')}</span>
+                  <span style={{ color: '#fff', fontWeight: 600 }}>{t('lesson', 'durationValue')}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Mukofot</span>
+                  <span>{t('lesson', 'reward')}</span>
                   <span style={{ color: '#fbbf24', fontWeight: 700 }}>25 XP + 25 Coins</span>
                 </div>
               </div>
@@ -248,7 +248,7 @@ export default function UniversalLessonView() {
               onMouseLeave={(e) => !completed && (e.currentTarget.style.transform = 'translateY(0) scale(1)')}
             >
               {completed ? <CheckCircle2 /> : <Play />}
-              {completed ? 'Yakunlandi' : 'Darsni tugatish'}
+              {completed ? t('lesson', 'completed') : t('lesson', 'finishLesson')}
             </button>
 
             <button
@@ -285,12 +285,12 @@ export default function UniversalLessonView() {
                 fill={liked ? '#f43f5e' : 'none'} 
                 color={liked ? '#f43f5e' : 'currentColor'} 
               />
-              {liked ? 'Yoqtirildi (Liked)' : 'Yoqtirish (Like)'}
+              {liked ? t('lesson', 'liked') : t('lesson', 'like')}
             </button>
 
             <div style={{ marginTop: '24px', textAlign: 'center' }}>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
-                Darsni to'liq ko'rib bo'lgach tugmani bosing va mukofotlarga ega bo'ling!
+                {t('lesson', 'finishPrompt')}
               </p>
             </div>
           </motion.div>
@@ -336,9 +336,9 @@ export default function UniversalLessonView() {
               }}>
                 <Trophy size={50} color={color} />
               </div>
-              <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#fff', marginBottom: '12px' }}>Ajoyib natija!</h2>
+              <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#fff', marginBottom: '12px' }}>{t('lesson', 'greatResult')}</h2>
               <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '17px', marginBottom: '40px' }}>
-                Siz darsni muvaffaqiyatli yakunladingiz va quyidagi mukofotlarga ega bo'ldingiz:
+                {t('lesson', 'successDesc')}
               </p>
               
               <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '40px' }}>
@@ -359,7 +359,7 @@ export default function UniversalLessonView() {
                   color: '#000', fontWeight: 800, fontSize: '16px', cursor: 'pointer'
                 }}
               >
-                Tushunarli
+                {t('lesson', 'gotIt')}
               </button>
             </motion.div>
           </motion.div>

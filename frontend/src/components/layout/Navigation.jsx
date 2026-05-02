@@ -175,6 +175,7 @@ export default function Navigation() {
   const [mobileSection, setMobileSection] = useState(null);
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
+  const { language, setLanguage } = useUserStore();
   const { t } = useTranslation();
 
   const { xp, level, fuel } = useGamificationStore();
@@ -417,7 +418,6 @@ export default function Navigation() {
                           {key === 'lang' ? (
                             <div className="flex flex-col gap-1">
                               {Object.entries(LANG_META).map(([code, { flag, label: lbl }]) => {
-                                const { language, setLanguage } = useUserStore();
                                 return (
                                   <button
                                     key={code}

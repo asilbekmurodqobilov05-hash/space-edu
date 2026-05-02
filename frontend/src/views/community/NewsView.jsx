@@ -4,6 +4,7 @@ import { ExternalLink, Calendar, RefreshCw, Loader, Newspaper } from 'lucide-rea
 import api from '@/lib/api';
 import GlassCard from '@/components/ui/GlassCard';
 import { useUserStore } from '@/store/useUserStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { newsData } from '@/data/mockData';
 
 const SPACE_FACTS = [
@@ -102,6 +103,7 @@ function NewsCard({ article, index }) {
 }
 
 export default function NewsView() {
+  const { t } = useTranslation();
   const [articles, setArticles] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [loading, setLoading] = useState(true);
@@ -133,12 +135,12 @@ export default function NewsView() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <p className="text-[11px] font-[800] tracking-[0.3em] uppercase text-neon-blue mb-3">Mission Dispatch</p>
+            <p className="text-[11px] font-[800] tracking-[0.3em] uppercase text-neon-blue mb-3">{t('news', 'dispatch')}</p>
             <h1 className="text-[clamp(36px,5vw,56px)] font-[900] tracking-tight text-white leading-[1]">
-              Space <span className="text-glow-purple text-violet">News</span>
+              {t('news', 'title')} <span className="text-glow-purple text-violet">{t('news', 'titleHighlight')}</span>
             </h1>
             <p className="text-white/40 mt-4 max-w-md font-[500]">
-              Latest discoveries, launches, and breakthroughs from across the cosmos.
+              {t('news', 'subtitle')}
             </p>
           </motion.div>
 
@@ -149,7 +151,7 @@ export default function NewsView() {
             className="max-w-sm p-5 rounded-2xl bg-white/[0.02] border border-white/5 border-l-2 border-l-neon-blue/50"
           >
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-[800] uppercase tracking-[0.2em] text-neon-blue">Daily Fact</p>
+              <p className="text-[10px] font-[800] uppercase tracking-[0.2em] text-neon-blue">{t('news', 'dailyFact')}</p>
               <button
                 onClick={() => setFact(SPACE_FACTS[Math.floor(Math.random() * SPACE_FACTS.length)])}
                 className="text-white/20 hover:text-white/60 transition-colors"
@@ -182,11 +184,11 @@ export default function NewsView() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <Loader className="w-8 h-8 text-violet-light animate-spin" />
-            <p className="text-[10px] font-[800] uppercase tracking-widest text-white/20">Loading dispatches...</p>
+            <p className="text-[10px] font-[800] uppercase tracking-widest text-white/20">{t('news', 'loadingDispatches')}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-32 border border-dashed border-white/5 rounded-3xl">
-            <p className="text-white/20 font-bold italic">No articles in this category yet.</p>
+            <p className="text-white/20 font-bold italic">{t('news', 'noArticles')}</p>
           </div>
         ) : (
           <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">

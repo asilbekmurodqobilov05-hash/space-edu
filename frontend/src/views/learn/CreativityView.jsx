@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Palette, ArrowRight } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { creativityTopicsData } from '@/data/creativityTopicsData';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 30, scale: 0.96 },
@@ -16,6 +17,7 @@ const cardVariants = {
 function TopicCard({ topic, index, color, colorLight, colorBorder }) {
   const [hovered, setHovered] = useState(false);
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   return (
     <motion.div
@@ -63,13 +65,15 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
             {topic.id === 1 ? '🪐' : '🚀'}
           </div>
           <div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: 700, color: '#fff' }}>{topic.title}</h3>
-            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{topic.titleEn}</span>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: 700, color: '#fff' }}>{i18n.language === 'en' ? (topic.titleEn || topic.title) : i18n.language === 'ru' ? (topic.titleRu || topic.title) : topic.title}</h3>
+            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{i18n.language === 'en' ? topic.title : topic.titleEn}</span>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)' }}>
-            <span style={{ color, fontWeight: 700 }}>{topic.lessons.length}</span> dars
+            {t('learnViews', 'lessonCount').split('{count}')[0]}
+            <span style={{ color, fontWeight: 700 }}>{topic.lessons.length}</span>
+            {t('learnViews', 'lessonCount').split('{count}')[1]}
           </span>
           <div
             style={{
@@ -97,10 +101,11 @@ export default function CreativityView() {
   const colorLight = 'rgba(244,114,182,0.10)';
   const colorBorder = 'rgba(244,114,182,0.25)';
   const topics = Object.values(creativityTopicsData);
+  const { t } = useTranslation();
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
-      <SectionPageHeader title="Ijodkorlik — Creativity" color={color} />
+      <SectionPageHeader title={t('learnViews', 'creativityTitle')} color={color} />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>
         <motion.div
@@ -120,7 +125,7 @@ export default function CreativityView() {
             <Palette style={{ width: '36px', height: '36px', color }} />
           </div>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px', maxWidth: '500px', margin: '0 auto' }}>
-            Kosmik san'at, loyihalash va ijodiy fikrlash
+            {t('learnViews', 'creativityDesc')}
           </p>
         </motion.div>
 

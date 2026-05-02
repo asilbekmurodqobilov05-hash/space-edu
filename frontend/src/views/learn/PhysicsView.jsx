@@ -3,22 +3,23 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { Atom, ArrowRight } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const topics = [
-  { id: 1,  title: 'Kinematika',                         titleEn: 'Kinematics',                    emoji: '🚀', lessonsCount: 12 },
-  { id: 2,  title: 'Dinamika',                            titleEn: 'Dynamics',                      emoji: '⚡', lessonsCount: 10 },
-  { id: 3,  title: 'Statika',                             titleEn: 'Statics',                       emoji: '⚖️', lessonsCount: 8 },
-  { id: 4,  title: 'Suyuqlik va gazlar mexanikasi',       titleEn: 'Mechanics of Fluids and Gases', emoji: '💧', lessonsCount: 9 },
-  { id: 5,  title: 'Tebranishlar va to\'lqinlar',         titleEn: 'Oscillations and Waves',        emoji: '🌊', lessonsCount: 11 },
-  { id: 6,  title: 'Molekulyar fizika',                   titleEn: 'Molecular Physics',             emoji: '🔬', lessonsCount: 10 },
-  { id: 7,  title: 'Termodinamika',                       titleEn: 'Thermodynamics',                emoji: '🌡️', lessonsCount: 8 },
-  { id: 8,  title: 'Elektrostatika',                      titleEn: 'Electrostatics',                emoji: '⚡', lessonsCount: 9 },
-  { id: 9,  title: 'O\'zgarmas tok qonunlari',            titleEn: 'Laws of Direct Current',        emoji: '🔋', lessonsCount: 10 },
-  { id: 10, title: 'Turli muhitlarda elektr qonunlari',   titleEn: 'Electrical Laws in Different Media', emoji: '🧲', lessonsCount: 7 },
-  { id: 11, title: 'Elektromagnit hodisalar',              titleEn: 'Electromagnetic Phenomena',     emoji: '🧭', lessonsCount: 8 },
-  { id: 12, title: 'Elektromagnit tebranishlar va to\'lqinlar', titleEn: 'Electromagnetic Oscillations and Waves', emoji: '📡', lessonsCount: 9 },
-  { id: 13, title: 'Optika',                              titleEn: 'Optics',                        emoji: '🔭', lessonsCount: 10 },
-  { id: 14, title: 'Atom va yadro fizikasi',              titleEn: 'Atomic and Nuclear Physics',    emoji: '⚛️', lessonsCount: 12 },
+  { id: 1,  title: 'Kinematika',                         titleEn: 'Kinematics', titleRu: 'Кинематика',                    emoji: '🚀', lessonsCount: 12 },
+  { id: 2,  title: 'Dinamika',                            titleEn: 'Dynamics', titleRu: 'Динамика',                      emoji: '⚡', lessonsCount: 10 },
+  { id: 3,  title: 'Statika',                             titleEn: 'Statics', titleRu: 'Статика',                       emoji: '⚖️', lessonsCount: 8 },
+  { id: 4,  title: 'Suyuqlik va gazlar mexanikasi',       titleEn: 'Mechanics of Fluids and Gases', titleRu: 'Механика жидкостей и газов', emoji: '💧', lessonsCount: 9 },
+  { id: 5,  title: 'Tebranishlar va to\'lqinlar',         titleEn: 'Oscillations and Waves', titleRu: 'Колебания и волны',        emoji: '🌊', lessonsCount: 11 },
+  { id: 6,  title: 'Molekulyar fizika',                   titleEn: 'Molecular Physics', titleRu: 'Молекулярная физика',             emoji: '🔬', lessonsCount: 10 },
+  { id: 7,  title: 'Termodinamika',                       titleEn: 'Thermodynamics', titleRu: 'Термодинамика',                emoji: '🌡️', lessonsCount: 8 },
+  { id: 8,  title: 'Elektrostatika',                      titleEn: 'Electrostatics', titleRu: 'Электростатика',                emoji: '⚡', lessonsCount: 9 },
+  { id: 9,  title: 'O\'zgarmas tok qonunlari',            titleEn: 'Laws of Direct Current', titleRu: 'Законы постоянного тока',        emoji: '🔋', lessonsCount: 10 },
+  { id: 10, title: 'Turli muhitlarda elektr qonunlari',   titleEn: 'Electrical Laws in Different Media', titleRu: 'Законы электрического тока в различных средах', emoji: '🧲', lessonsCount: 7 },
+  { id: 11, title: 'Elektromagnit hodisalar',              titleEn: 'Electromagnetic Phenomena', titleRu: 'Электромагнитные явления',     emoji: '🧭', lessonsCount: 8 },
+  { id: 12, title: 'Elektromagnit tebranishlar va to\'lqinlar', titleEn: 'Electromagnetic Oscillations and Waves', titleRu: 'Электромагнитные колебания и волны', emoji: '📡', lessonsCount: 9 },
+  { id: 13, title: 'Optika',                              titleEn: 'Optics', titleRu: 'Оптика',                        emoji: '🔭', lessonsCount: 10 },
+  { id: 14, title: 'Atom va yadro fizikasi',              titleEn: 'Atomic and Nuclear Physics', titleRu: 'Атомная и ядерная физика',    emoji: '⚛️', lessonsCount: 12 },
 ];
 
 const cardVariants = {
@@ -32,6 +33,7 @@ const cardVariants = {
 function TopicCard({ topic, index, color, colorLight, colorBorder }) {
   const [hovered, setHovered] = useState(false);
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   return (
     <motion.div
@@ -73,13 +75,15 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
           {String(topic.id).padStart(2, '0')}
         </div>
         <div>
-          <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#fff' }}>{topic.title}</h3>
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{topic.titleEn}</span>
+          <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#fff' }}>{i18n.language === 'en' ? (topic.titleEn || topic.title) : i18n.language === 'ru' ? (topic.titleRu || topic.title) : topic.title}</h3>
+          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{i18n.language === 'en' ? topic.title : topic.titleEn}</span>
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
-          <span style={{ color, fontWeight: 700 }}>{topic.lessonsCount}</span> dars
+          {t('learnViews', 'lessonCount').split('{count}')[0]}
+          <span style={{ color, fontWeight: 700 }}>{topic.lessonsCount}</span>
+          {t('learnViews', 'lessonCount').split('{count}')[1]}
         </span>
         <div
           style={{
@@ -105,10 +109,11 @@ export default function PhysicsView() {
   const color = '#a78bfa';
   const colorLight = 'rgba(167,139,250,0.10)';
   const colorBorder = 'rgba(167,139,250,0.20)';
+  const { t } = useTranslation();
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
-      <SectionPageHeader title="Fizika — Physics" color={color} />
+      <SectionPageHeader title={t('learnViews', 'physicsTitle')} color={color} />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>
         {/* Section intro */}
@@ -129,7 +134,7 @@ export default function PhysicsView() {
             <Atom style={{ width: '36px', height: '36px', color }} />
           </div>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px', maxWidth: '500px', margin: '0 auto' }}>
-            Fizika bo'yicha barcha mavzularni o'rganing — kinematikadan yadro fizikasigacha
+            {t('learnViews', 'physicsDesc')}
           </p>
         </motion.div>
 

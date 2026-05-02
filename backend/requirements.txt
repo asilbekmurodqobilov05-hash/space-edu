@@ -7,3 +7,6 @@ boto3==1.38.*
 Pillow==10.4.*
 python-decouple==3.8.*
 dj-database-url==2.2.*
+gunicorn==23.*
+whitenoise==6.*
+psycopg2-binary==2.9.*

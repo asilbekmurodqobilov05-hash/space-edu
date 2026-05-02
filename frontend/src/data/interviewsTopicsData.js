@@ -2,7 +2,7 @@ export const interviewsTopicsData = {
   1: {
     id: 1,
     title: 'Professorlar',
-    titleEn: 'Professors',
+    titleEn: 'Professors', titleRu: 'Профессора',
     color: '#3b82f6',
     sections: [
       {
@@ -36,7 +36,7 @@ export const interviewsTopicsData = {
   2: {
     id: 2,
     title: 'Kosmonavtlar',
-    titleEn: 'Cosmonauts',
+    titleEn: 'Cosmonauts', titleRu: 'Космонавты',
     color: '#3b82f6',
     lessons: [
       "Yuri Gagarin", "Neil Armstrong", "Buzz Aldrin", "Valentina Tereshkova"

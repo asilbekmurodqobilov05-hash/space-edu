@@ -73,7 +73,8 @@ function _setupAuth(get) {
   setupApiAuth(
     () => get().accessToken,
     () => get().refreshToken,
-    () => { useAuthStore.getState().logout(); window.location.href = '/login'; }
+    () => { useAuthStore.getState().logout(); window.location.href = '/login'; },
+    (newAccess) => { useAuthStore.setState({ accessToken: newAccess }); }
   );
 }
 
