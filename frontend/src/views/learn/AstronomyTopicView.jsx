@@ -122,6 +122,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
 }
 
 export default function AstronomyTopicView() {
+  const { i18n } = useTranslation();
   const { topicId } = useParams();
   const topic = astronomyTopicsData[topicId];
   const navigate = useNavigate();

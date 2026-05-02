@@ -110,6 +110,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
 }
 
 export default function PhysicsTopicView() {
+  const { i18n } = useTranslation();
   const { topicId } = useParams();
   const topic = physicsTopicsData[topicId];
   const navigate = useNavigate(); // ADDED: import useNavigate from react-router-dom above if not present

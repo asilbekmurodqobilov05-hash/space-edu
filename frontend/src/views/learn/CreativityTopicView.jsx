@@ -160,6 +160,7 @@ function CreativityLessonCard({ lesson, index, color, onClick }) {
 }
 
 export default function CreativityTopicView() {
+  const { i18n } = useTranslation();
   const { topicId } = useParams();
   const topic = creativityTopicsData[topicId];
   const navigate = useNavigate();

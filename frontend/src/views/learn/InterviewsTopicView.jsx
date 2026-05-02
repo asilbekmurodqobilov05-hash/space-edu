@@ -87,6 +87,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
 }
 
 export default function InterviewsTopicView() {
+  const { i18n } = useTranslation();
   const { topicId } = useParams();
   const topic = interviewsTopicsData[topicId];
   const navigate = useNavigate();
