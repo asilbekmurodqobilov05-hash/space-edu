@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin-panel
+
+Sitemap: https://uzcosmos.uz/sitemap.xml
