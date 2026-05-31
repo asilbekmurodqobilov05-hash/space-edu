@@ -76,11 +76,18 @@ class LoginView(APIView):
 class LogoutView(APIView):
     def post(self, request):
         refresh_token = request.data.get('refresh')
-        if refresh_token:
-            try:
-                RefreshToken(refresh_token).blacklist()
-            except Exception:
-                pass
+        if not refresh_token:
+            return Response(
+                {'detail': 'Refresh token is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            RefreshToken(refresh_token).blacklist()
+        except Exception as e:
+            return Response(
+                {'detail': 'Token is invalid, expired, or already blacklisted.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
