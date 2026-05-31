@@ -4,13 +4,10 @@ import {
   Send, X, BookOpen, HelpCircle, Microscope,
   MessageCircle, MessageSquare, Search, Smile, Sparkles
 } from "lucide-react";
-import { GoogleGenAI } from "@google/genai";
 import { useAIStore } from "@/store/useAIStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/api";
 import { getMockAIResponse } from "@/lib/mockAI";
-
-const GEMINI_MODEL = "gemini-2.0-flash";
 
 function UzbekDoppiMark({ className }) {
   const uid = useId().replace(/:/g, "");
@@ -138,18 +135,25 @@ export default function ChatSystem() {
     setSupportMessages(newMessages);
     setSupportQuery("");
     setIsTypingSupport(true);
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
     try {
       let replyText;
-      if (apiKey) {
-        const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({ model: GEMINI_MODEL, contents: messagesToContents(newMessages), config: { systemInstruction: buildSystemInstruction(context, supportMode), temperature: supportMode === "quiz" ? 0.45 : supportMode === "deep" ? 0.65 : 0.75, maxOutputTokens: 2048 } });
-        replyText = response.text || "I couldn't generate a reply.";
-      } else {
+      try {
+        const { data } = await api.post("/ai/chat/", {
+          messages: newMessages,
+          context: context,
+          mode: supportMode,
+        });
+        replyText = data.reply || "I couldn't generate a reply.";
+      } catch (err) {
+        console.error("AI Support Chat Backend Error, falling back to mock:", err);
         replyText = await getMockAIResponse(userMessage, context, supportMode);
       }
       setSupportMessages((p) => [...p, { role: "ai", text: replyText }]);
-    } catch { setSupportMessages((p) => [...p, { role: "ai", text: "API error. Please try again later." }]); } finally { setIsTypingSupport(false); }
+    } catch {
+      setSupportMessages((p) => [...p, { role: "ai", text: "API error. Please try again later." }]);
+    } finally {
+      setIsTypingSupport(false);
+    }
   };
 
   const otherName = activeConvo?.other_user ? (activeConvo.other_user.first_name || activeConvo.other_user.username) : '';
