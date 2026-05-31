@@ -2,6 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        try {
+          const lang = localStorage.getItem('i18nextLng');
+          if (lang) {
+            const shortLang = lang.split('-')[0].toLowerCase();
+            if (['en', 'uz', 'ru'].includes(shortLang)) {
+              document.documentElement.lang = shortLang;
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="UZ COSMOS — Cosmic Career Academy. Interactive space & astronomy education platform." />
     <link rel="icon" type="image/png" href="/astra-logo.png" />
