@@ -18,7 +18,7 @@ from .serializers import (
 
 class RoomListView(generics.ListAPIView):
     serializer_class = ChatRoomSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     queryset = ChatRoom.objects.all()
     pagination_class = None
 
