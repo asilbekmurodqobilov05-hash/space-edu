@@ -79,7 +79,6 @@ export default function App() {
             <Route path="/leaderboard"  element={<PT><LeaderboardView /></PT>} />
             <Route path="/history"      element={<PT><HistoryView /></PT>} />
             <Route path="/market"       element={<PT><MarketView /></PT>} />
-            <Route path="/store"        element={<PT><RewardsStoreView /></PT>} />
             <Route path="/space-game"   element={<PT><SpaceRunView /></PT>} />
             <Route path="/lab"          element={<PT><SpaceLabView /></PT>} />
             <Route path="/3d-solar-system" element={<PT><SolarSystemView /></PT>} />
@@ -110,11 +109,14 @@ export default function App() {
             <Route path="/unit/:unitId"                   element={<PT><UnitView /></PT>} />
             <Route path="/lesson/:unitId/:lessonId"       element={<PT><LessonView /></PT>} />
 
-            {/* Community + Profile */}
-            <Route path="/profile"   element={<PT><ProfileView /></PT>} />
-            <Route path="/portfolio" element={<PT><PortfolioView /></PT>} />
-            <Route path="/chat"      element={<PT><ChatView /></PT>} />
-            <Route path="/daily"     element={<PT><DailyChallengeView /></PT>} />
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/store"     element={<PT><RewardsStoreView /></PT>} />
+              <Route path="/profile"   element={<PT><ProfileView /></PT>} />
+              <Route path="/portfolio" element={<PT><PortfolioView /></PT>} />
+              <Route path="/chat"      element={<PT><ChatView /></PT>} />
+              <Route path="/daily"     element={<PT><DailyChallengeView /></PT>} />
+            </Route>
 
             {/* Admin */}
             <Route element={<ProtectedRoute />}>
