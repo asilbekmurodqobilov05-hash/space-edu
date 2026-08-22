@@ -1,3 +1,18 @@
+/*
+ * Authoring source for the Masalalar set. NOT part of the application bundle.
+ *
+ * This lived at `src/data/problemsData.js`, where `ProblemDetailView` imported
+ * it and graded answers in the browser — which put the whole solution key into
+ * every visitor's JavaScript, the same key `ProblemSerializer` had been
+ * hardened to keep out of the API. It sits outside `src/` now so that an
+ * `@/data/...` import cannot reach it by accident, and
+ * `src/bundleSecrets.test.js` fails the build if anything like it turns up in
+ * `dist/` again.
+ *
+ * `export-learn-content.mjs` reads this into the fixture; the server is what
+ * grades. Of the 145 entries here, 115 are generated placeholders and are not
+ * seeded — see the filter in the exporter.
+ */
 export const problemsData = {
   1: { question: "Mexanikaning asosiy vazifasini o'rganadigan bo'lim nima deyiladi?", answer: "Harakat", explanation: "Mexanika - jismlarning harakatini o'rganadi." },
   2: { question: "Moddiy nuqta radiusi 10 m bo'lgan aylana bo'ylab tekis harakatlanmoqda. 10 sekundda qancha masofani bosib o'tadi? (v=2 m/s)", answer: "20 m", explanation: "s = v * t = 2 * 10 = 20 m" },

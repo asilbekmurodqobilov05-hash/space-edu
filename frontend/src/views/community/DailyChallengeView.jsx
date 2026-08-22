@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { generateDailyChallenge } from '@/data/quizData';
+import api from '@/lib/api';
 import { useGamificationStore } from '@/store/useGamificationStore';
 import { Timer, Award, Zap, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -16,15 +16,48 @@ export default function DailyChallengeView() {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(15);
   const [isFinished, setIsFinished] = useState(false);
+  const [answers, setAnswers] = useState([]);
+  const [correctAnswers, setCorrectAnswers] = useState(null);
+  const [loadState, setLoadState] = useState('loading');
+  const [saveFailed, setSaveFailed] = useState(false);
 
+  /*
+   * The questions come from `/challenges/today/` and the grading from
+   * `/challenges/submit/`.
+   *
+   * They used to come from `generateDailyChallenge()` in `quizData.js`, which
+   * shipped the correct answer for every question into the browser bundle, and
+   * the score was computed here from that same key. The XP was never persisted
+   * either — `completeDailyChallenge` only writes to the local store.
+   *
+   * One consequence worth naming: the per-question green/red flash is gone. It
+   * needed the answer key in the browser, which is the thing being removed. You
+   * now find out what you got wrong on the results screen, from the server's
+   * answer.
+   */
   useEffect(() => {
+    let cancelled = false;
     checkStreak();
-    setQuestions(generateDailyChallenge());
+
+    api.get('/challenges/today/')
+      .then(({ data }) => {
+        if (cancelled) return;
+        const list = data.questions ?? [];
+        setQuestions(list);
+        setLoadState(list.length ? 'ready' : 'empty');
+      })
+      .catch(() => {
+        if (!cancelled) setLoadState('empty');
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [checkStreak]);
 
   useEffect(() => {
     if (isFinished || isAnswerChecked || dailyChallengeCompleted) return;
-    
+
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -42,10 +75,34 @@ export default function DailyChallengeView() {
     if (isAnswerChecked) return;
     setSelectedAnswer(index);
     setIsAnswerChecked(true);
-    
-    if (index === questions[currentIndex].correct) {
-      setScore(score + 1);
-    }
+    // Recorded, not graded. The server holds the answer key.
+    setAnswers((prev) => [
+      ...prev,
+      { question_id: questions[currentIndex].id, selected: index, time_spent: 15 - timeLeft },
+    ]);
+  };
+
+  const submit = (collected) => {
+    api.post('/challenges/submit/', {
+      answers: collected,
+      time_taken: collected.reduce((sum, a) => sum + a.time_spent, 0),
+    })
+      .then(({ data }) => {
+        setScore(data.result?.score ?? 0);
+        setCorrectAnswers(data.correct_answers ?? {});
+        // The profile is the truth; pull it rather than guess locally.
+        useGamificationStore.getState().pullFromServer();
+        completeDailyChallenge(0);
+      })
+      .catch((err) => {
+        // 400 means it was already completed today, which is not a failure the
+        // student needs to see as one.
+        if (err?.response?.status === 400) {
+          completeDailyChallenge(0);
+          return;
+        }
+        setSaveFailed(true);
+      });
   };
 
   const handleNext = () => {
@@ -56,8 +113,7 @@ export default function DailyChallengeView() {
       setTimeLeft(15);
     } else {
       setIsFinished(true);
-      const xpEarned = score * 50 + 100; // 50 XP per correct, 100 XP completion bonus
-      completeDailyChallenge(xpEarned);
+      submit(answers);
     }
   };
 
@@ -93,7 +149,7 @@ export default function DailyChallengeView() {
         >
           {/* Progress Bar */}
           <div className="absolute top-0 left-0 w-full h-1.5 bg-white/5">
-            <motion.div 
+            <motion.div
               className="h-full bg-violet"
               initial={{ width: `${(currentIndex / questions.length) * 100}%` }}
               animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
@@ -111,14 +167,17 @@ export default function DailyChallengeView() {
           </div>
 
           <h2 className="text-2xl md:text-3xl font-bold mb-8 leading-tight">
-            {currentQ.question}
+            {language === 'ru' ? (currentQ.question_ru || currentQ.question)
+              : language === 'en' ? (currentQ.question_en || currentQ.question)
+              : currentQ.question}
           </h2>
 
           <div className="space-y-4 mb-8">
-            {currentQ?.options?.[language === 'uz' ? 'uz' : language === 'ru' ? 'ru' : 'en']?.map((option, idx) => {
+            {(Array.isArray(currentQ?.options) ? currentQ.options : []).map((option, idx) => {
               let btnClass = "glass hover:bg-white/10 border-transparent";
               if (isAnswerChecked) {
-                if (idx === currentQ.correct) {
+                const correctIdx = correctAnswers?.[currentQ.id];
+                if (correctIdx !== undefined && idx === correctIdx) {
                   btnClass = "bg-green-500/20 border-green-500 text-green-400";
                 } else if (idx === selectedAnswer) {
                   btnClass = "bg-red-500/20 border-red-500 text-red-400";
@@ -137,8 +196,7 @@ export default function DailyChallengeView() {
                   className={`w-full text-left p-5 rounded-xl border-2 transition-all text-lg font-medium flex justify-between items-center ${btnClass}`}
                 >
                   {option}
-                  {isAnswerChecked && idx === currentQ.correct && <CheckCircle className="w-5 h-5" />}
-                  {isAnswerChecked && idx === selectedAnswer && idx !== currentQ.correct && <XCircle className="w-5 h-5" />}
+                  {isAnswerChecked && idx === selectedAnswer && <CheckCircle className="w-5 h-5" />}
                 </button>
               );
             })}
@@ -170,11 +228,11 @@ export default function DailyChallengeView() {
           className="glass p-8 md:p-12 rounded-3xl text-center relative overflow-hidden"
         >
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-64 bg-violet/10 blur-[100px] rounded-full pointer-events-none" />
-          
+
           <div className="w-24 h-24 mx-auto bg-white/[0.03] rounded-3xl flex items-center justify-center mb-8 border border-white/10 relative z-10 shadow-2xl">
             <Award className="w-12 h-12 text-violet" />
           </div>
-          
+
           <h2 className="text-4xl font-bold mb-2">Challenge Complete!</h2>
           <p className="text-gray-400 text-lg mb-8">Great job exploring the cosmos today.</p>
 

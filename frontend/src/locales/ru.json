@@ -636,7 +636,10 @@
     "achievementLearner": "Ученик",
     "achievementPerfect": "Идеальный результат",
     "achievementExpert": "Эксперт",
-    "achievementChallenger": "Претендент"
+    "achievementChallenger": "Претендент",
+    "scoreNotSaved": "Результат не сохранился. Проверьте соединение и попробуйте снова.",
+    "savingScore": "Сохраняем результат…",
+    "lessonQuiz": "Квиз по уроку"
   },
   "market": {
     "hub": "Магазин",
@@ -1058,7 +1061,10 @@
     "readButton": "Читать",
     "creativityModule": "МОДУЛЬ ТВОРЧЕСТВА",
     "lessonDescription": "Изучите инженерные и дизайнерские принципы {name}. Посмотрите видео, чтобы понять его роль в исследовании и освоении космоса.",
-    "fullScreenVideo": "Полноэкранное видео"
+    "fullScreenVideo": "Полноэкранное видео",
+    "loading": "Загрузка…",
+    "checkFailed": "Не удалось проверить ответ — попробуйте ещё раз.",
+    "checkTooFast": "Слишком много попыток. Подождите немного."
   },
   "admin": {
     "dashboard": "Панель управления",

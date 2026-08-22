@@ -72,13 +72,16 @@ jobs:
 
       - run: npm ci
 
-      - name: Tests
-        run: npm test
-
+      # Build first: src/bundleSecrets.test.js reads dist/ to check that no
+      # answer key or credential reached the browser, and has nothing to read
+      # if the bundle has not been produced yet.
       - name: Build
         env:
           VITE_API_URL: https://example.invalid/api/v1
         run: npm run build
+
+      - name: Tests
+        run: npm test
 
       - name: Learn content fixture is in sync
         # The backend seeds the /learn tree from a fixture generated out of

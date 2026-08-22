@@ -18,7 +18,6 @@ import { astronomyTopicsData } from './astronomyTopicsData';
 import { creativityTopicsData } from './creativityTopicsData';
 import { interviewsTopicsData } from './interviewsTopicsData';
 import { physicsTopicsData } from './physicsTopicsData';
-import { quizData } from './quizData';
 import newsViewSource from '../views/community/NewsView.jsx?raw';
 
 const TOPIC_SETS = {
@@ -108,31 +107,5 @@ describe('fallback news', () => {
   it('ids are unique', () => {
     const ids = newsData.map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
-  });
-});
-
-describe('quiz data', () => {
-  it('every correct-answer index is inside its own options array', () => {
-    for (const [category, questions] of Object.entries(quizData)) {
-      for (const q of questions) {
-        const options = q.options?.en ?? q.options;
-        if (!Array.isArray(options)) continue;
-        expect(
-          q.correctAnswer,
-          `${category}/${q.id}: index ${q.correctAnswer} is outside 0..${options.length - 1}`,
-        ).toBeLessThan(options.length);
-        expect(q.correctAnswer).toBeGreaterThanOrEqual(0);
-      }
-    }
-  });
-
-  it('every question carries all three languages', () => {
-    for (const [category, questions] of Object.entries(quizData)) {
-      for (const q of questions) {
-        for (const lang of ['en', 'uz', 'ru']) {
-          expect(q.text?.[lang], `${category}/${q.id} text.${lang}`).toBeTruthy();
-        }
-      }
-    }
   });
 });

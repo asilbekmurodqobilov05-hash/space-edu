@@ -1,45 +1,104 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Home, ArrowRight, Hourglass, Trophy, Star, Target, Zap } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { quizData } from "@/data/quizData";
+import api from "@/lib/api";
 import { useGamificationStore } from "@/store/useGamificationStore";
 
-// Map store language codes to quizData keys
+// Map store language codes to the suffixes the API uses
 const LANG_MAP = { ENG: "en", RUS: "ru", UZB: "uz" };
 
-// Helper to get time in seconds from difficulty (1 = 1m, 2 = 2m, 3 = 3m)
-const getTimeForDifficulty = (diff) => (diff || 1) * 60;
+/**
+ * Read a question in the reader's language, falling back to the Uzbek original.
+ *
+ * The API sends `question`, `question_en` and `question_ru` as separate fields
+ * rather than the nested object the static file used.
+ */
+const localised = (question, lang) => {
+  if (!question) return "";
+  if (lang === "en") return question.question_en || question.question;
+  if (lang === "ru") return question.question_ru || question.question;
+  return question.question;
+};
+
+const optionsOf = (question) => (Array.isArray(question?.options) ? question.options : []);
 
 export default function QuizSessionView() {
   const { category } = useParams();
+  const [searchParams] = useSearchParams();
+  const lesson = searchParams.get("lesson");
   const navigate = useNavigate();
   const { t, language } = useTranslation();
   const currentLang = LANG_MAP[language] || "en";
-  
-  // Object.hasOwn, not a truthiness check: quizData['constructor'] returns
-  // Object (truthy, and Object.length is 1, not 0), so /quiz/constructor
-  // slipped past the 'category not found' guard below and then crashed.
-  const hasCategory = Object.hasOwn(quizData, category);
-  const questions = hasCategory && Array.isArray(quizData[category]) ? quizData[category] : [];
-  
+
+  /*
+   * The questions and the grading both come from the server now.
+   *
+   * They used to come from `src/data/quizData.js`, which put the correct answer
+   * to all 24 questions inside the JavaScript bundle — readable from View
+   * Source by any student — and the score was computed in the browser from that
+   * same key. The XP it showed was never persisted either: `addXp` is a local
+   * optimistic update, so the number went up and the next profile fetch wiped
+   * it. The endpoints that do this properly already existed; nothing called
+   * them.
+   *
+   * `?lesson=<slug>` narrows the pool to one lesson's questions — ADR 0001,
+   * step 5, the half that had no screen.
+   */
+  const [sessionId, setSessionId] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [loadState, setLoadState] = useState("loading");
+  const [answers, setAnswers] = useState([]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-  
-  // Initialize timer for first question
+  const [result, setResult] = useState(null);
+  const [saveFailed, setSaveFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadState("loading");
+
+    api.post("/challenges/quiz/start/", lesson ? { lesson } : { category, count: 10 })
+      .then(({ data }) => {
+        if (cancelled) return;
+        const list = data.questions ?? [];
+        if (!list.length) {
+          setLoadState("empty");
+          return;
+        }
+        setSessionId(data.session_id);
+        setQuestions(list);
+        setLoadState("ready");
+      })
+      .catch(() => {
+        // An unknown category is a 400 from the ChoiceField and a lesson with
+        // no questions is a 404; both mean "nothing to show here". This is also
+        // what closes the /quiz/constructor hole for good — the category is
+        // checked against a fixed list on the server rather than looked up on
+        // an object whose prototype answers to `constructor`.
+        if (!cancelled) setLoadState("empty");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [category, lesson]);
+
+  // Initialize timer for the current question
   useEffect(() => {
     if (questions.length > 0 && !isCompleted) {
-      setTimeLeft(getTimeForDifficulty(questions[currentIndex]?.difficulty));
+      setTimeLeft(questions[currentIndex]?.time_seconds || 60);
     }
   }, [currentIndex, isCompleted, questions]);
 
   // Timer countdown
   useEffect(() => {
     if (isCompleted || timeLeft <= 0 || questions.length === 0) return;
-    
+
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -49,19 +108,33 @@ export default function QuizSessionView() {
         return prev - 1;
       });
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, [timeLeft, isCompleted, questions]);
 
   // Handlers
+  const record = useCallback((selectedIndex) => {
+    const question = questions[currentIndex];
+    if (!question) return;
+    setAnswers((prev) => [
+      ...prev,
+      {
+        question_id: question.id,
+        selected: selectedIndex,
+        time_spent: Math.max(0, (question.time_seconds || 60) - timeLeft),
+      },
+    ]);
+  }, [questions, currentIndex, timeLeft]);
+
   const handleAnswer = (selectedIndex) => {
-    const isCorrect = selectedIndex === (questions[currentIndex].correctAnswer !== undefined ? questions[currentIndex].correctAnswer : questions[currentIndex].correct);
-    if (isCorrect) setScore(s => s + 1);
+    record(selectedIndex);
     goToNextQuestion();
   };
 
   const handleTimeUp = () => {
-    // Time is up, move to next question automatically (no points)
+    // Running out of time is an answer nobody gave. -1 is not one of the option
+    // indices, so the server grades it wrong without needing a special case.
+    record(-1);
     goToNextQuestion();
   };
 
@@ -73,20 +146,38 @@ export default function QuizSessionView() {
     }
   };
 
-  // Grant XP once when completed
-  const hasGrantedRef = useRef(false);
+  // Submit once, and take the score from the answer.
+  const hasSubmittedRef = useRef(false);
   useEffect(() => {
-    if (isCompleted && !hasGrantedRef.current) {
-      hasGrantedRef.current = true;
-      const xpEarned = score * 50; // 50 XP per correct answer
-      if (xpEarned > 0) {
-        useGamificationStore.getState().addXp(xpEarned);
-      }
-    }
-  }, [isCompleted, score]);
+    if (!isCompleted || hasSubmittedRef.current || !sessionId) return;
+    hasSubmittedRef.current = true;
 
-  // If invalid category
-  if (!hasCategory || questions.length === 0) {
+    api.post(`/challenges/quiz/${sessionId}/submit/`, {
+      answers,
+      time_taken: answers.reduce((sum, a) => sum + a.time_spent, 0),
+    })
+      .then(({ data }) => {
+        setResult(data);
+        setScore(data.score ?? 0);
+        // The profile is the truth; pull it rather than guess locally.
+        useGamificationStore.getState().pullFromServer();
+      })
+      .catch(() => {
+        // The student did finish the quiz. Say the score did not save rather
+        // than invent one.
+        setSaveFailed(true);
+      });
+  }, [isCompleted, sessionId, answers]);
+
+  if (loadState === "loading") {
+    return (
+      <div className="min-h-screen pt-32 text-center text-white/40 text-sm">
+        {t("learnViews", "loading")}
+      </div>
+    );
+  }
+
+  if (loadState === "empty" || questions.length === 0) {
     return (
       <div className="min-h-screen pt-32 text-center">
         <h2 className="text-3xl text-red-400">Category not found or empty.</h2>
@@ -98,7 +189,7 @@ export default function QuizSessionView() {
   // Calculate stats for results
   const total = questions.length;
   const percentage = Math.round((score / total) * 100);
-  
+
   let feedback = t('quiz', 'goodEffort');
   let achievementIcon = Target;
   let achievementText = t('quiz', 'achievementLearner');
@@ -135,11 +226,11 @@ export default function QuizSessionView() {
   return (
     <div className="min-h-screen pt-24 pb-24 px-4 flex flex-col items-center relative">
       <div className="w-full max-w-4xl relative z-10">
-        
+
         {/* Header / Progress */}
         <div className="flex items-center justify-between mb-8 px-2">
           <h2 className="text-2xl font-bold uppercase tracking-widest text-white/80">
-            {t('quiz', category)}
+            {lesson ? t('quiz', 'lessonQuiz') : t('quiz', category)}
           </h2>
           {!isCompleted && (
             <div className="text-sm font-medium text-white/50">
@@ -151,7 +242,7 @@ export default function QuizSessionView() {
         {/* Progress bar */}
         {!isCompleted && (
           <div className="w-full h-1.5 bg-white/5 rounded-full mb-12 overflow-hidden">
-            <motion.div 
+            <motion.div
               className="h-full bg-violet-500 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${((currentIndex) / total) * 100}%` }}
@@ -172,11 +263,11 @@ export default function QuizSessionView() {
               className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl"
             >
               <h3 className="text-2xl md:text-3xl font-medium leading-relaxed text-white mb-10">
-                {(currentQ.text && currentQ.text[currentLang]) || (currentQ.question && currentQ.question[currentLang]) || currentQ.text || currentQ.question}
+                {localised(currentQ, currentLang)}
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(currentQ.options[currentLang] || currentQ.options).map((opt, i) => (
+                {optionsOf(currentQ).map((opt, i) => (
                   <button
                     key={i}
                     onClick={() => handleAnswer(i)}
@@ -202,18 +293,32 @@ export default function QuizSessionView() {
               animate={{ opacity: 1, scale: 1 }}
               className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-10 md:p-16 shadow-2xl text-center"
             >
-              <motion.div 
-                initial={{ scale: 0 }} animate={{ scale: 1 }} 
+              <motion.div
+                initial={{ scale: 0 }} animate={{ scale: 1 }}
                 transition={{ type: "spring", damping: 12, delay: 0.2 }}
                 className="w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6"
                 style={{ background: `${achievementColor}20`, border: `2px solid ${achievementColor}` }}
               >
                 {React.createElement(achievementIcon, { className: "w-12 h-12", style: { color: achievementColor } })}
               </motion.div>
-              
+
               <h2 className="text-4xl md:text-5xl font-bold mb-2 text-white">{t('quiz', 'testCompleted')}</h2>
               <p className="text-xl text-white/60 mb-8">{feedback}</p>
-              
+
+              {/* The XP shown here used to be invented in the browser and never
+                  persisted. It now comes back from the submit call, and if that
+                  call failed the student is told rather than shown a number
+                  that will vanish on their next page load. */}
+              {saveFailed ? (
+                <p className="text-sm text-rose-300/90 mb-6">{t('quiz', 'scoreNotSaved')}</p>
+              ) : result ? (
+                <p className="text-sm text-emerald-300/80 mb-6">
+                  +{result.xp_earned} XP
+                </p>
+              ) : (
+                <p className="text-sm text-white/30 mb-6">{t('quiz', 'savingScore')}</p>
+              )}
+
               <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto mb-12">
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                   <div className="text-sm text-white/50 uppercase tracking-wider mb-1">{t('quiz', 'score')}</div>
@@ -226,13 +331,13 @@ export default function QuizSessionView() {
               </div>
 
               <div className="flex items-center justify-center gap-4">
-                <button 
+                <button
                   onClick={() => window.location.reload()}
                   className="px-8 py-4 rounded-xl font-semibold text-white bg-white/10 hover:bg-white/20 transition-colors"
                 >
                   {t('quiz', 'retryTest')}
                 </button>
-                <button 
+                <button
                   onClick={() => navigate("/quiz")}
                   className="flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-white bg-violet-600 hover:bg-violet-500 transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]"
                 >
@@ -260,20 +365,20 @@ export default function QuizSessionView() {
             <div className="relative w-10 h-10 flex items-center justify-center">
               {/* Special hourglass animation */}
               <motion.div
-                animate={{ 
+                animate={{
                   rotate: timeLeft % 60 === 0 ? 180 : 0 // Flip every minute
                 }}
                 transition={{ duration: 0.8, ease: "backInOut" }}
                 className="relative z-10"
               >
-                <Hourglass 
-                  className="w-6 h-6" 
-                  style={{ color: timeLeft < 30 ? "#ef4444" : "#a78bfa" }} 
+                <Hourglass
+                  className="w-6 h-6"
+                  style={{ color: timeLeft < 30 ? "#ef4444" : "#a78bfa" }}
                 />
               </motion.div>
               {/* Pulse effect if low time */}
               {timeLeft <= 10 && (
-                <motion.div 
+                <motion.div
                   animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
                   transition={{ repeat: Infinity, duration: 1 }}
                   className="absolute inset-0 bg-red-500 rounded-full"
@@ -281,7 +386,7 @@ export default function QuizSessionView() {
               )}
             </div>
             <div className="flex flex-col">
-              <span className="text-xs uppercase tracking-wider font-semibold" 
+              <span className="text-xs uppercase tracking-wider font-semibold"
                     style={{ color: timeLeft < 30 ? "#fca5a5" : "rgba(255,255,255,0.5)" }}>
                 {t('quiz', 'timeLeft')}
               </span>

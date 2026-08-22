@@ -143,3 +143,10 @@ class SphereWriteSerializer(serializers.ModelSerializer):
         fields = ('id', 'slug', 'order', 'title', 'title_en', 'title_ru',
                   'description', 'description_en', 'color', 'icon', 'link',
                   'lessons_count', 'is_active')
+
+
+class ProblemCheckSerializer(serializers.Serializer):
+    """What a student submits for one problem. The answer never comes back up
+    from the client — only what they typed."""
+
+    answer = serializers.CharField(max_length=500, allow_blank=False, trim_whitespace=True)

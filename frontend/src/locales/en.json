@@ -636,7 +636,10 @@
     "achievementLearner": "Learner",
     "achievementPerfect": "Perfect Score",
     "achievementExpert": "Expert",
-    "achievementChallenger": "Challenger"
+    "achievementChallenger": "Challenger",
+    "scoreNotSaved": "Your score could not be saved. Check your connection and try again.",
+    "savingScore": "Saving your score…",
+    "lessonQuiz": "Lesson quiz"
   },
   "market": {
     "hub": "Shop",
@@ -1058,7 +1061,10 @@
     "readButton": "Read",
     "creativityModule": "CREATIVITY MODULE",
     "lessonDescription": "Explore the engineering and design principles behind {name}. Watch the video to understand its role in space exploration and development.",
-    "fullScreenVideo": "Full Screen Video"
+    "fullScreenVideo": "Full Screen Video",
+    "loading": "Loading…",
+    "checkFailed": "Could not check that answer — try again.",
+    "checkTooFast": "Too many attempts. Wait a little before trying again."
   },
   "admin": {
     "dashboard": "Dashboard",

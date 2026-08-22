@@ -48,7 +48,7 @@ class SeedLearnContentTests(TestCase):
         _seed('seed_learn_content')
         self.assertEqual(
             sorted(Sphere.objects.values_list('slug', flat=True)),
-            ['astronomy', 'creativity', 'interviews', 'physics'],
+            ['astronomy', 'creativity', 'interviews', 'physics', 'problems'],
         )
         # 23 topics is the count the ADR was written against.
         self.assertEqual(Topic.objects.count(), 23)
@@ -90,7 +90,9 @@ class SeedLearnContentTests(TestCase):
     def test_lessons_count_on_the_sphere_card_is_computed_not_typed(self):
         """The old seed hard-coded these and every one of them was wrong."""
         _seed('seed_learn_content')
-        for sphere in Sphere.objects.all():
+        # The Masalalar card counts problems rather than lessons; it has its
+        # own assertion in SeedProblemsTests.
+        for sphere in Sphere.objects.exclude(slug='problems'):
             leaves = TopicLesson.objects.filter(
                 topic__sphere=sphere, children__isnull=True,
             ).count()
@@ -148,3 +150,39 @@ class FixtureShapeTests(TestCase):
             for topic in sphere['topics']:
                 for field in ('title', 'title_en', 'title_ru'):
                     self.assertTrue(topic[field], f"{topic['slug']} is missing {field}")
+
+
+class SeedProblemsTests(TestCase):
+    """The Masalalar set had never been seeded — it lived only in
+    `problemsData.js`, which is also how its answers reached the browser."""
+
+    def test_it_loads_the_written_problems(self):
+        from .models import Problem
+
+        _seed('seed_learn_content')
+        self.assertEqual(Problem.objects.count(), 30)
+        self.assertTrue(Problem.objects.filter(answer='Harakat').exists())
+
+    def test_it_leaves_out_the_115_placeholders(self):
+        """`problemsData` holds 145 entries, 115 of them generated filler —
+        "Masala #47: Bu yerda fizika masalasi matni bo'ladi" with an answer
+        taken off a cycling list. Seeding those would put nonsense in front of
+        a student and make the site's "145 problems" claim true in the worst
+        possible way."""
+        from .models import Problem
+
+        _seed('seed_learn_content')
+        self.assertFalse(
+            Problem.objects.filter(question__startswith='Masala #').exists(),
+        )
+
+    def test_it_is_idempotent(self):
+        from .models import Problem
+
+        _seed('seed_learn_content')
+        _seed('seed_learn_content')
+        self.assertEqual(Problem.objects.count(), 30)
+
+    def test_the_sphere_card_counts_the_problems(self):
+        _seed('seed_learn_content')
+        self.assertEqual(Sphere.objects.get(slug='problems').lessons_count, 30)

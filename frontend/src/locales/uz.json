@@ -636,7 +636,10 @@
     "achievementLearner": "O'quvchi",
     "achievementPerfect": "Mukammal natija",
     "achievementExpert": "Ekspert",
-    "achievementChallenger": "Da'vogar"
+    "achievementChallenger": "Da'vogar",
+    "scoreNotSaved": "Natija saqlanmadi. Aloqani tekshirib, qayta urinib ko'ring.",
+    "savingScore": "Natija saqlanmoqda…",
+    "lessonQuiz": "Dars boʻyicha test"
   },
   "market": {
     "hub": "Do'kon",
@@ -1058,7 +1061,10 @@
     "readButton": "O'qish",
     "creativityModule": "IJODKORLIK MODULI",
     "lessonDescription": "{name} ning muhandislik va dizayn tamoyillarini o'rganing. Koinotni o'rganish va rivojlantirishdagi uning rolini tushunish uchun videoni tomosha qiling.",
-    "fullScreenVideo": "To'liq ekran"
+    "fullScreenVideo": "To'liq ekran",
+    "loading": "Yuklanmoqda…",
+    "checkFailed": "Javobni tekshirib bo'lmadi — qayta urinib ko'ring.",
+    "checkTooFast": "Juda ko’p urinish. Biroz kuting."
   },
   "admin": {
     "dashboard": "Boshqaruv paneli",

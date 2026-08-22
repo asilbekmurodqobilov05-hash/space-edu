@@ -21,7 +21,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from apps.courses.models import Sphere, Topic, TopicLesson
+from apps.courses.models import Problem, Sphere, Topic, TopicLesson
 
 FIXTURE = Path(__file__).resolve().parents[2] / 'fixtures' / 'learn_content.json'
 
@@ -53,7 +53,7 @@ class Command(BaseCommand):
 
         self.seen_topics = set()
         self.seen_lessons = set()
-        counts = {'spheres': 0, 'topics': 0, 'lessons': 0}
+        counts = {'spheres': 0, 'topics': 0, 'lessons': 0, 'problems': 0}
 
         for sphere_data in data['spheres']:
             sphere = self._sync_sphere(sphere_data)
@@ -62,6 +62,8 @@ class Command(BaseCommand):
                 topic = self._sync_topic(sphere, topic_data)
                 counts['topics'] += 1
                 counts['lessons'] += self._sync_lessons(topic, None, topic_data['lessons'])
+
+        counts['problems'] = self._sync_problems(data.get('problems'))
 
         if options['prune']:
             self._prune(counts)
@@ -77,7 +79,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f'  {counts["spheres"]} spheres, {counts["topics"]} topics, '
-            f'{counts["lessons"]} lesson nodes'
+            f'{counts["lessons"]} lesson nodes, {counts["problems"]} problems'
         ))
 
     # ──────────────────────────────────────────────────────────────────
@@ -118,6 +120,33 @@ class Command(BaseCommand):
             )
             self.seen_lessons.add(lesson.pk)
             written += 1 + self._sync_lessons(topic, lesson, node.get('children', []))
+        return written
+
+    def _sync_problems(self, block):
+        """The Masalalar set. Keyed on (sphere, number), which is its natural key.
+
+        The answers live here and nowhere else now: they used to ship inside
+        `problemsData.js`, which put the whole solution key in every visitor's
+        browser even after the API stopped serving it.
+        """
+        if not block:
+            return 0
+
+        sphere, _ = Sphere.objects.update_or_create(
+            slug=block['sphere']['slug'],
+            defaults={k: v for k, v in block['sphere'].items() if k != 'slug'},
+        )
+        written = 0
+        for item in block['items']:
+            Problem.objects.update_or_create(
+                sphere=sphere, number=item['number'],
+                defaults={k: v for k, v in item.items() if k != 'number'},
+            )
+            written += 1
+
+        # The sphere card counts problems, not lessons, for this one.
+        sphere.lessons_count = Problem.objects.filter(sphere=sphere).count()
+        sphere.save(update_fields=['lessons_count'])
         return written
 
     def _prune(self, counts):

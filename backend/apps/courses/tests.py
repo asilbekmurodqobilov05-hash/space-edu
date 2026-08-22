@@ -201,3 +201,83 @@ class SphereTreeTests(TestCase):
     def test_an_unknown_sphere_is_404(self):
         r = self.anon.get('/api/v1/courses/spheres/nope/tree/')
         self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class ProblemCheckTests(TestCase):
+    """The answer key used to be graded in the browser.
+
+    `ProblemSerializer` was hardened so anonymous callers could not read
+    `answer` — and then `problemsData.js` shipped the whole solution set to
+    every visitor anyway, with `userAnswer.trim() === problem.answer` doing the
+    grading. Closing one door and leaving the other open is not closing it.
+    """
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.sphere = Sphere.objects.create(slug='problems', title='Masalalar',
+                                            title_en='Problems')
+        self.problem = Problem.objects.create(
+            sphere=self.sphere, number=1,
+            question="Massasi 2 kg jismga 3 m/s² tezlanish beruvchi kuch?",
+            answer='6 N', explanation='F = m * a = 6 N',
+        )
+        self.anon = APIClient()
+
+    def _check(self, answer):
+        return self.anon.post(
+            f'/api/v1/courses/problems/{self.problem.id}/check/',
+            {'answer': answer}, format='json',
+        )
+
+    def test_a_correct_answer_is_graded_correct(self):
+        r = self._check('6 N')
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertTrue(r.data['correct'])
+
+    def test_a_wrong_answer_is_graded_wrong(self):
+        self.assertFalse(self._check('7 N').data['correct'])
+
+    def test_the_answer_is_not_in_the_listing(self):
+        """The whole point: reading the list must not hand over the key."""
+        r = self.anon.get('/api/v1/courses/problems/')
+        rows = r.data['results'] if isinstance(r.data, dict) else r.data
+        for row in rows:
+            self.assertNotIn('answer', row)
+            self.assertNotIn('explanation', row)
+
+    def test_grading_tolerates_case_and_spacing(self):
+        """The browser used ===, so "6n" and "6 N " were marked wrong."""
+        for given in ('6 N', '6n', ' 6 N ', '6N', '6 n'):
+            self.assertTrue(self._check(given).data['correct'], given)
+
+    def test_grading_accepts_a_comma_decimal_mark(self):
+        """Uzbek and Russian keyboards produce "14,81"; the data says "14.81"."""
+        problem = Problem.objects.create(
+            sphere=self.sphere, number=2, question='?', answer='14.81 m/s',
+        )
+        r = self.anon.post(
+            f'/api/v1/courses/problems/{problem.id}/check/',
+            {'answer': '14,81 m/s'}, format='json',
+        )
+        self.assertTrue(r.data['correct'])
+
+    def test_an_empty_answer_is_rejected(self):
+        self.assertEqual(self._check('').status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_an_unknown_problem_is_404(self):
+        r = self.anon.post('/api/v1/courses/problems/99999/check/',
+                           {'answer': 'x'}, format='json')
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_walking_the_set_is_rate_limited(self):
+        """Grading server-side stops the bundle leak; the limit stops a script
+        collecting the same key one request at a time."""
+        codes = {self._check('guess').status_code for _ in range(70)}
+        self.assertIn(status.HTTP_429_TOO_MANY_REQUESTS, codes)
+
+    def test_an_ordinary_caller_still_cannot_write_a_problem(self):
+        r = self.anon.patch(
+            f'/api/v1/courses/problems/{self.problem.id}/', {'answer': '0'}, format='json',
+        )
+        self.assertIn(r.status_code, (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN))

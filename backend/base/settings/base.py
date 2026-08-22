@@ -175,6 +175,9 @@ REST_FRAMEWORK = {
         'chat': '20/min',
         'dm': '20/min',
         'report': '30/hour',
+        # Grading is server-side now; this bounds walking the set
+        # one submission at a time.
+        'problem_check': '60/hour',
     },
 }
 

@@ -1,12 +1,15 @@
 from django.db.models import Count
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import SimpleRateThrottle
 
 from apps.permissions import AdminWriteOrReadOnly
 
 from .models import Problem, Sphere, Topic, TopicLesson
 from .serializers import (
+    ProblemCheckSerializer,
     ProblemFullSerializer, ProblemSerializer, ProblemWriteSerializer,
     SphereDetailSerializer, SphereListSerializer, SphereWriteSerializer,
     TopicDetailSerializer, TopicLessonSerializer, TopicLessonWriteSerializer,
@@ -160,9 +163,88 @@ class TopicLessonViewSet(viewsets.ModelViewSet):
         return TopicLessonSerializer
 
 
+class ProblemCheckThrottle(SimpleRateThrottle):
+    """Bound how fast the whole set can be walked.
+
+    Grading on the server closes the front door — the answers no longer ship in
+    `problemsData.js` — but a student can still submit once per problem and read
+    the answer back. Thirty problems is thirty requests; this makes that take
+    long enough to be pointless and stops a script doing it for a whole class.
+    """
+
+    scope = 'problem_check'
+
+    def get_cache_key(self, request, view):
+        ident = (
+            f'user-{request.user.pk}' if request.user.is_authenticated
+            else self.get_ident(request)
+        )
+        return self.cache_format % {'scope': self.scope, 'ident': ident}
+
+
 class ProblemViewSet(viewsets.ModelViewSet):
     queryset = Problem.objects.all()
     permission_classes = [AdminWriteOrReadOnly]
+
+    def get_permissions(self):
+        # `check` is a POST but it is a read: it grades what the caller typed
+        # and writes nothing. AdminWriteOrReadOnly would refuse it, which would
+        # put the problem set behind a login it has never had.
+        if self.action == 'check':
+            return [AllowAny()]
+        return super().get_permissions()
+
+    def get_throttles(self):
+        if self.action == 'check':
+            return [ProblemCheckThrottle()]
+        return super().get_throttles()
+
+    @action(detail=True, methods=['post'])
+    def check(self, request, pk=None):
+        """POST /courses/problems/<id>/check/  {"answer": "..."}
+
+        The comparison used to happen in the browser, against an answer key
+        bundled into `problemsData.js` — so the whole Masalalar solution set was
+        one View Source away, which is the same hole `ProblemSerializer` was
+        hardened to close on the server side. The answer now lives only in the
+        database.
+
+        The result carries the correct answer and the explanation, because that
+        is what the screen has always shown after an attempt and a problem set
+        with no worked answer teaches nothing. If that turns out to be too
+        generous, gate the reveal behind a second attempt — the shape is here
+        for it.
+        """
+        problem = self.get_object()
+        serializer = ProblemCheckSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        given = serializer.validated_data['answer']
+        correct = self._matches(given, problem.answer)
+
+        return Response({
+            'correct': correct,
+            'answer': problem.answer,
+            'explanation': problem.explanation,
+        }, status=status.HTTP_200_OK)
+
+    @staticmethod
+    def _matches(given, expected):
+        """Forgiving on whitespace, case and the comma/point decimal mark.
+
+        The browser used `userAnswer.trim() === problem.answer`, so "20 M",
+        "20m" and "14,81 m/s" were all marked wrong against "20 m" and
+        "14.81 m/s". Uzbek and Russian keyboards produce the comma form.
+        """
+        def normalise(value):
+            return (
+                str(value).strip().casefold()
+                .replace(',', '.')
+                .replace(' ', ' ')
+                .replace(' ', '')
+            )
+
+        return normalise(given) == normalise(expected)
 
     def get_queryset(self):
         qs = Problem.objects.all()
