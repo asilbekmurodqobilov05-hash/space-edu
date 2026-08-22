@@ -19,3 +19,7 @@ Thumbs.db
 
 # Playwright MCP scratch output
 .playwright-mcp/
+
+# AI tooling copied into the working tree, not part of the app.
+.agent/
+.claude/

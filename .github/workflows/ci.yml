@@ -151,7 +151,7 @@ jobs:
 
           echo "$over"
           biggest=$(echo "$over" | head -1 | cut -f1)
-          total=$(echo "$over" | cut -f1 | paste -sd+ | bc)
+          total=$(echo "$over" | awk -F'	' '{s+=$1} END {print s+0}')
           echo "Biggest: $biggest bytes (budget $BIGGEST_ALLOWED)"
           echo "Total:   $total bytes (budget $TOTAL_ALLOWED)"
 

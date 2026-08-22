@@ -12,8 +12,8 @@
  * They are smoke tests. They assert the view mounts, survives an empty API and
  * a failing API, and unmounts without throwing — not what it looks like.
  */
-import { render, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/api', () => ({
@@ -122,5 +122,162 @@ describe.each(VIEWS)('$name', ({ load }) => {
     const { unmount } = renderView(Component);
     await waitFor(() => expect(true).toBe(true));
     expect(() => unmount()).not.toThrow();
+  });
+});
+
+
+/**
+ * The learn screens, at the routes they are actually reached by.
+ *
+ * These carry a visual redesign merged from `main` on top of the move to the
+ * API (ADR 0001), so both halves meet here for the first time. The shapes the
+ * adapter emits differ per subject — a flat list for physics, `subLessons` for
+ * astronomy and creativity, `sections` for interviews — and a screen that reads
+ * the wrong one throws, or silently renders nothing.
+ *
+ * The API is answered with a real tree rather than an empty one on purpose. An
+ * empty sphere makes the hook fall back to the static file, which means the
+ * adapter is never exercised and the test passes no matter what the adapter
+ * does. Each case asserts a name that can only have come through the adapter.
+ */
+const node = (slug, name, children = []) => ({
+  id: slug, slug, order: 0, name, name_en: name, name_ru: '',
+  video_url: '', content: '', xp_reward: 25, fuel_reward: 25,
+  question_count: 0, children,
+});
+
+const tree = (slug, topicTitle, lessons) => ({
+  slug, title: slug, title_en: slug, title_ru: slug, color: '#8b5cf6',
+  topics: [{
+    id: 1, slug: `${slug}-1`, order: 1,
+    title: topicTitle, title_en: topicTitle, title_ru: topicTitle,
+    color: '#8b5cf6', lessons,
+  }],
+});
+
+/** One tree per subject, at the depth that subject really uses. */
+const TREES = {
+  physics: tree('physics', 'TOPIC-PHYSICS', [
+    node('p-a', 'LESSON-FLAT-A'), node('p-b', 'LESSON-FLAT-B'),
+  ]),
+  astronomy: tree('astronomy', 'TOPIC-ASTRONOMY', [
+    node('a-sun', 'LESSON-GROUP', [node('a-1', 'PART-ONE'), node('a-2', 'PART-TWO')]),
+  ]),
+  creativity: tree('creativity', 'TOPIC-CREATIVITY', [
+    node('c-mod', 'LESSON-GROUP', [node('c-1', 'PART-ONE')]),
+  ]),
+  interviews: tree('interviews', 'TOPIC-INTERVIEWS', [
+    node('i-sec', 'SECTION-NAME', [
+      node('i-person', 'PERSON-NAME', [node('i-1', 'PART-ONE')]),
+    ]),
+  ]),
+};
+
+function answerWithTrees() {
+  api.get.mockImplementation((url) => {
+    const match = /\/courses\/spheres\/([a-z]+)\/tree\//.exec(String(url));
+    if (match && TREES[match[1]]) return Promise.resolve({ data: TREES[match[1]] });
+    return Promise.resolve({ data: [] });
+  });
+}
+
+const LEARN_ROUTES = [
+  {
+    name: 'LearnView', path: '/learn', at: '/learn',
+    load: () => import('./learn/LearnView'), expect: null,
+  },
+  {
+    name: 'ProblemsView', path: '/learn/problems', at: '/learn/problems',
+    load: () => import('./learn/ProblemsView'), expect: null,
+  },
+  {
+    name: 'PhysicsView', path: '/learn/physics', at: '/learn/physics',
+    load: () => import('./learn/PhysicsView'), expect: 'TOPIC-PHYSICS',
+  },
+  {
+    name: 'AstronomyView', path: '/learn/astronomy', at: '/learn/astronomy',
+    load: () => import('./learn/AstronomyView'), expect: 'TOPIC-ASTRONOMY',
+  },
+  {
+    name: 'CreativityView', path: '/learn/creativity', at: '/learn/creativity',
+    load: () => import('./learn/CreativityView'), expect: 'TOPIC-CREATIVITY',
+  },
+  {
+    name: 'InterviewsView', path: '/learn/interviews', at: '/learn/interviews',
+    load: () => import('./learn/InterviewsView'), expect: 'TOPIC-INTERVIEWS',
+  },
+  {
+    name: 'PhysicsTopicView', path: '/learn/physics/:topicId', at: '/learn/physics/1',
+    load: () => import('./learn/PhysicsTopicView'), expect: 'LESSON-FLAT-A',
+  },
+  {
+    name: 'SubTopicView (astronomy, subLessons)', path: '/learn/:subject/:topicId/sub/:subIdx',
+    at: '/learn/astronomy/1/sub/0', load: () => import('./learn/SubTopicView'),
+    expect: 'PART-ONE',
+  },
+  {
+    name: 'SubTopicView (interviews, sections)', path: '/learn/:subject/:topicId/sub/:subIdx',
+    at: '/learn/interviews/1/sub/0', load: () => import('./learn/SubTopicView'),
+    expect: 'PART-ONE',
+  },
+  {
+    name: 'UniversalLessonView (physics, flat)', path: '/learn/:subject/:topicId/lesson/:lessonIdx',
+    at: '/learn/physics/1/lesson/0', load: () => import('./learn/UniversalLessonView'),
+    expect: 'LESSON-FLAT-A',
+  },
+  {
+    name: 'UniversalLessonView (astronomy, one deep)',
+    path: '/learn/:subject/:topicId/sub/:subIdx/lesson/:lessonIdx',
+    at: '/learn/astronomy/1/sub/0/lesson/1', load: () => import('./learn/UniversalLessonView'),
+    expect: 'PART-TWO',
+  },
+  {
+    name: 'UniversalLessonView (interviews, two deep)',
+    path: '/learn/:subject/:topicId/sub/:subIdx/lesson/:lessonIdx',
+    at: '/learn/interviews/1/sub/0/lesson/0', load: () => import('./learn/UniversalLessonView'),
+    expect: 'PART-ONE',
+  },
+];
+
+function renderAt(Component, path, at) {
+  return render(
+    <MemoryRouter initialEntries={[at]}>
+      <Routes>
+        <Route path={path} element={<Component />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+describe.each(LEARN_ROUTES)('$name', ({ path, at, load, expect: expected }) => {
+  it('renders what the API sent', async () => {
+    answerWithTrees();
+    const { default: Component } = await load();
+    const { container } = renderAt(Component, path, at);
+
+    if (expected) {
+      // Proves the adapter output reached the DOM. Without this the hook's
+      // static fallback would carry the test on its own.
+      // findAll, not find: a card shows the same name as both title and
+      // subtitle when a topic has no separate translation.
+      const found = await screen.findAllByText(
+        (_, element) => element?.textContent === expected, {}, { timeout: 3000 },
+      );
+      expect(found.length).toBeGreaterThan(0);
+    } else {
+      await waitFor(() => expect(container.firstChild).toBeTruthy());
+    }
+    expect(renderErrors()).toEqual([]);
+  });
+
+  it('renders the static fallback when the API is unreachable', async () => {
+    // The hook hands back the static file first and swaps in the API answer
+    // when it lands, so both shapes have to render.
+    api.get.mockRejectedValue(new Error('offline'));
+
+    const { default: Component } = await load();
+    const { container } = renderAt(Component, path, at);
+    await waitFor(() => expect(container.firstChild).toBeTruthy());
+    expect(renderErrors()).toEqual([]);
   });
 });
