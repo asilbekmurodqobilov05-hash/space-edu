@@ -5,6 +5,7 @@ import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { useSpaceRunHud } from "./spaceRunHudStore";
 import { useSpaceArcadeStore } from "./spaceArcadeStore";
 import { playCoinSound, playExplosionSound } from "./spaceRunSounds";
@@ -64,6 +65,23 @@ const _camQ = new THREE.Quaternion();
 const _powerCol = new THREE.Color();
 const TEXTURE_LOADING_MANAGER = new THREE.LoadingManager();
 const TEXTURE_CACHE = new Map();
+
+/**
+ * A GLTFLoader that can read Draco-compressed geometry.
+ *
+ * The .glb files are Draco-compressed (ticket Q3): 126 MB of raw geometry came
+ * down to 49 MB, with rocket.glb alone going from 55.6 MB to 0.32 MB. A plain
+ * GLTFLoader cannot read them — it needs the decoder, which we serve from
+ * /draco/ rather than a CDN so the Content-Security-Policy does not have to
+ * allow a third-party script host.
+ */
+function createGltfLoader() {
+  const loader = new GLTFLoader(TEXTURE_LOADING_MANAGER);
+  const draco = new DRACOLoader();
+  draco.setDecoderPath("/draco/");
+  loader.setDRACOLoader(draco);
+  return loader;
+}
 
 /**
  * Free every texture the game has loaded.
@@ -1061,7 +1079,7 @@ function CinematicPlanets() {
   
   useEffect(() => {
     let cancelled = false;
-    const loader = new GLTFLoader(TEXTURE_LOADING_MANAGER);
+    const loader = createGltfLoader();
     const loadSafe = (path, key) => {
       loader.load(path, (gltf) => {
         if (!cancelled) setModels((m) => ({ ...m, [key]: gltf.scene }));
@@ -1593,7 +1611,7 @@ export function SpaceRunScene({ inputRef, runningRef }) {
 
   useEffect(() => {
     let cancelled = false;
-    const loader = new GLTFLoader(TEXTURE_LOADING_MANAGER);
+    const loader = createGltfLoader();
 
     // Load Rocket (complex scene, not just geometry)
     loader.load("/models/space-run/spaceship_colaid1_50k.glb", (gltf) => {
