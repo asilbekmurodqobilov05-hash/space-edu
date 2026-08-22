@@ -1,4 +1,3 @@
-from datetime import date
 
 from django.db.models import Avg, Count, Max, Sum
 from rest_framework import generics, status
@@ -103,23 +102,20 @@ class AllBadgesView(generics.ListAPIView):
 
 
 class StreakUpdateView(APIView):
+    """POST /gamification/streak/ — claim today's streak and its bonus.
+
+    The decision and the write happen inside one row lock; see
+    `UserGamificationProfile.claim_daily_streak`.
+    """
+
     def post(self, request):
         profile, _ = UserGamificationProfile.objects.get_or_create(user=request.user)
-        today = date.today()
-
-        if profile.last_play_date == today:
-            return Response({'streak': profile.streak, 'updated': False})
-
-        if profile.last_play_date and (today - profile.last_play_date).days == 1:
-            profile.streak += 1
-        else:
-            profile.streak = 1
-
-        profile.last_play_date = today
-        profile.save(update_fields=['streak', 'last_play_date'])
-        profile.add_fuel(10)
-
-        return Response({'streak': profile.streak, 'updated': True, 'fuel_bonus': 10})
+        streak, fuel_bonus = profile.claim_daily_streak()
+        return Response({
+            'streak': streak,
+            'updated': bool(fuel_bonus),
+            'fuel_bonus': fuel_bonus,
+        })
 
 
 class QuizLeaderboardView(APIView):
@@ -286,7 +282,7 @@ class MissionClaimView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        today = timezone.now().date()
+        today = timezone.localdate()
         with transaction.atomic():
             user_mission, _ = UserMission.objects.select_for_update().get_or_create(
                 user=request.user, mission=mission

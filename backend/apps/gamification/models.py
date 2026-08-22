@@ -2,6 +2,7 @@ import math
 
 from django.conf import settings
 from django.db import models, transaction
+from django.utils import timezone
 
 
 class UserGamificationProfile(models.Model):
@@ -64,6 +65,42 @@ class UserGamificationProfile(models.Model):
             locked.save(update_fields=['fuel'])
         self.refresh_from_db(fields=['fuel'])
         return self
+
+    def claim_daily_streak(self, bonus_fuel=10, today=None):
+        """Advance the streak and pay the once-a-day bonus, atomically.
+
+        Returns `(streak, fuel_awarded)`; `fuel_awarded` is 0 when today has
+        already been claimed.
+
+        The view used to read `last_play_date`, decide, and only then write —
+        with nothing holding the row in between. Two requests arriving together
+        both saw an unclaimed day and both paid the bonus, and `streak += 1` on
+        a loaded instance lost one of the two increments. Same shape as the
+        finding `add_xp` was fixed for; this award path was simply missed.
+
+        `timezone.localdate()`, not `date.today()`: the site runs on
+        Asia/Tashkent and the server on UTC, so the naive version rolled the day
+        over at 05:00 local and filed an evening session under yesterday.
+        """
+        today = today or timezone.localdate()
+        with transaction.atomic():
+            locked = (
+                UserGamificationProfile.objects
+                .select_for_update()
+                .get(pk=self.pk)
+            )
+            if locked.last_play_date == today:
+                self.refresh_from_db(fields=['streak', 'last_play_date', 'fuel'])
+                return self.streak, 0
+
+            yesterday = today - timezone.timedelta(days=1)
+            locked.streak = locked.streak + 1 if locked.last_play_date == yesterday else 1
+            locked.last_play_date = today
+            locked.fuel = min(locked.fuel + int(bonus_fuel), self.FUEL_CAP)
+            locked.save(update_fields=['streak', 'last_play_date', 'fuel'])
+
+        self.refresh_from_db(fields=['streak', 'last_play_date', 'fuel'])
+        return self.streak, int(bonus_fuel)
 
     def spend_fuel(self, amount):
         """Debit the balance, refusing to go negative.

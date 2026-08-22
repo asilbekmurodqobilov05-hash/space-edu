@@ -1,4 +1,5 @@
 from django.db.models import Avg, Max, Sum, Count
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -121,11 +122,22 @@ class SubmitChallengeView(APIView):
         xp_earned = score * challenge.xp_per_correct + challenge.xp_completion_bonus
         fuel_earned = challenge.fuel_reward
 
-        result = UserChallengeResult.objects.create(
-            user=request.user, challenge=challenge,
-            score=score, total=total,
-            xp_earned=xp_earned, fuel_earned=fuel_earned, time_taken=time_taken,
-        )
+        try:
+            # The `exists()` check above is not the guard — two submissions
+            # arriving together both pass it. `unique_together (user, challenge)`
+            # is the guard, and without this the loser of that race got a 500
+            # instead of the same "already completed" answer as everyone else.
+            with transaction.atomic():
+                result = UserChallengeResult.objects.create(
+                    user=request.user, challenge=challenge,
+                    score=score, total=total,
+                    xp_earned=xp_earned, fuel_earned=fuel_earned, time_taken=time_taken,
+                )
+        except IntegrityError:
+            return Response(
+                {'detail': "You already completed today's challenge."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         streak, _ = UserStreak.objects.get_or_create(user=request.user)
         streak.update_streak()

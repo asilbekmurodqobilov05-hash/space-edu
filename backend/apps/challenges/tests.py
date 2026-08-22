@@ -1,6 +1,7 @@
 """Regression tests for findings from the 2026-08-22 audit."""
 from django.core.cache import cache
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -310,3 +311,110 @@ class LessonQuizTests(TestCase):
         }
         self.assertEqual(counts['kin-one'], 1)
         self.assertEqual(counts['kin-two'], 0)
+
+
+class DailyChallengeConcurrencyTests(TestCase):
+    """Second-pass findings, 22 Aug 2026."""
+
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(username='dc', email='dc@e.com', password='x')
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+        for i in range(5):
+            _question(i, difficulty=['easy', 'medium', 'medium', 'hard', 'hard'][i])
+        self.challenge = DailyChallenge.get_or_create_today()
+
+    def _submit(self):
+        answers = [
+            {'question_id': q.id, 'selected': q.correct_answer}
+            for q in self.challenge.questions.all()
+        ]
+        return self.client.post(
+            '/api/v1/challenges/submit/', {'answers': answers, 'time_taken': 30}, format='json',
+        )
+
+    def test_a_first_submission_is_accepted(self):
+        self.assertEqual(self._submit().status_code, status.HTTP_201_CREATED)
+
+    def test_a_second_submission_is_refused(self):
+        self._submit()
+        self.assertEqual(self._submit().status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_losing_the_race_gives_400_not_500(self):
+        """The `exists()` check is not the guard — two submissions arriving
+        together both pass it, and `unique_together` catches the second. That
+        used to surface as an unhandled IntegrityError."""
+        from unittest.mock import patch
+
+        from apps.challenges.models import UserChallengeResult
+
+        self._submit()
+        # Re-run with the pre-flight check blinded, which is what the loser of
+        # the race sees.
+        with patch.object(
+            UserChallengeResult.objects.__class__, 'filter',
+            side_effect=lambda *a, **k: UserChallengeResult.objects.none(),
+        ):
+            response = self._submit()
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_the_challenge_day_is_the_users_day(self):
+        import inspect
+
+        from apps.challenges import models as challenge_models
+
+        source = inspect.getsource(challenge_models.DailyChallenge.get_or_create_today)
+        self.assertIn('timezone.localdate()', source)
+
+
+class UserStreakTests(TestCase):
+    """`update_streak` was a read-modify-write on a loaded instance."""
+
+    def setUp(self):
+        from apps.challenges.models import UserStreak
+
+        self.user = User.objects.create_user(username='st', email='st@e.com', password='x')
+        self.streak = UserStreak.objects.create(user=self.user)
+        self.UserStreak = UserStreak
+
+    def test_a_first_completion_starts_the_streak(self):
+        self.streak.update_streak()
+        self.streak.refresh_from_db()
+        self.assertEqual(self.streak.current_streak, 1)
+        self.assertEqual(self.streak.longest_streak, 1)
+
+    def test_a_second_call_the_same_day_does_nothing(self):
+        self.streak.update_streak()
+        self.streak.update_streak()
+        self.streak.refresh_from_db()
+        self.assertEqual(self.streak.current_streak, 1)
+
+    def test_it_is_atomic_against_a_stale_copy(self):
+        stale = self.UserStreak.objects.get(pk=self.streak.pk)
+        self.streak.update_streak()
+        stale.update_streak()
+
+        self.streak.refresh_from_db()
+        self.assertEqual(self.streak.current_streak, 1, 'the day was counted twice')
+
+    def test_a_consecutive_day_extends_it(self):
+        self.streak.last_completed = timezone.localdate() - timezone.timedelta(days=1)
+        self.streak.current_streak = 3
+        self.streak.save()
+
+        self.streak.update_streak()
+        self.streak.refresh_from_db()
+        self.assertEqual(self.streak.current_streak, 4)
+        self.assertEqual(self.streak.longest_streak, 4)
+
+    def test_a_missed_day_resets_it_but_keeps_the_record(self):
+        self.streak.last_completed = timezone.localdate() - timezone.timedelta(days=4)
+        self.streak.current_streak = 7
+        self.streak.longest_streak = 7
+        self.streak.save()
+
+        self.streak.update_streak()
+        self.streak.refresh_from_db()
+        self.assertEqual(self.streak.current_streak, 1)
+        self.assertEqual(self.streak.longest_streak, 7)

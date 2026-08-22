@@ -31,8 +31,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value.lower()
 
     def validate_date_of_birth(self, value):
-        from datetime import date
-        if value >= date.today():
+        # localdate, not date.today(): the server runs on UTC and the site on
+        # Asia/Tashkent, so for five hours a day they disagree about the date.
+        from django.utils import timezone
+        if value >= timezone.localdate():
             raise serializers.ValidationError('Date of birth must be in the past.')
         return value
 

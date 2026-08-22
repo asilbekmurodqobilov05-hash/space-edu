@@ -2,6 +2,7 @@
 import math
 
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -171,3 +172,90 @@ class LeaderboardPrivacyTests(TestCase):
         body = str(r.data)
         self.assertNotIn('Aziz', body)
         self.assertNotIn('Karimov', body)
+
+
+class DailyStreakClaimTests(TestCase):
+    """Findings from the second pass, 22 Aug 2026.
+
+    `StreakUpdateView` read `last_play_date`, decided, and only then wrote, with
+    nothing holding the row in between — so it was the one award path the first
+    audit's row-lock sweep missed. It also used `date.today()`, which on a UTC
+    server is not the date in Asia/Tashkent.
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='streaker', email='s@e.com', password='x')
+        self.profile = UserGamificationProfile.objects.get(user=self.user)
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def test_claiming_pays_the_bonus_and_starts_the_streak(self):
+        r = self.client.post('/api/v1/gamification/streak/')
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data['streak'], 1)
+        self.assertEqual(r.data['fuel_bonus'], 10)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.fuel, 110)
+
+    def test_claiming_twice_in_a_day_pays_once(self):
+        self.client.post('/api/v1/gamification/streak/')
+        second = self.client.post('/api/v1/gamification/streak/')
+        self.assertEqual(second.data['fuel_bonus'], 0)
+        self.assertFalse(second.data['updated'])
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.fuel, 110)
+
+    def test_the_bonus_is_atomic_against_a_stale_copy(self):
+        """Two requests that both read the row before either wrote used to pay
+        the bonus twice and lose one of the two streak increments."""
+        stale = UserGamificationProfile.objects.get(pk=self.profile.pk)
+
+        self.profile.claim_daily_streak()
+        streak, awarded = stale.claim_daily_streak()
+
+        self.assertEqual(awarded, 0)
+        self.assertEqual(streak, 1)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.fuel, 110)
+        self.assertEqual(self.profile.streak, 1)
+
+    def test_a_consecutive_day_extends_the_streak(self):
+        yesterday = timezone.localdate() - timezone.timedelta(days=1)
+        self.profile.claim_daily_streak(today=yesterday)
+        streak, awarded = self.profile.claim_daily_streak()
+        self.assertEqual(streak, 2)
+        self.assertEqual(awarded, 10)
+
+    def test_a_missed_day_resets_the_streak(self):
+        long_ago = timezone.localdate() - timezone.timedelta(days=5)
+        self.profile.claim_daily_streak(today=long_ago)
+        streak, _ = self.profile.claim_daily_streak()
+        self.assertEqual(streak, 1)
+
+    def test_the_bonus_respects_the_fuel_cap(self):
+        UserGamificationProfile.objects.filter(pk=self.profile.pk).update(
+            fuel=UserGamificationProfile.FUEL_CAP,
+        )
+        self.profile.refresh_from_db()
+        self.profile.claim_daily_streak()
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.fuel, UserGamificationProfile.FUEL_CAP)
+
+    def test_the_day_is_the_users_day_not_the_servers(self):
+        """The site runs on Asia/Tashkent and the server on UTC, so between
+        local midnight and 05:00 `date.today()` still says yesterday."""
+        import datetime
+        import inspect
+
+        from apps.gamification import models as gamification_models
+
+        source = inspect.getsource(gamification_models.UserGamificationProfile.claim_daily_streak)
+        self.assertIn('timezone.localdate()', source)
+        self.assertNotIn('date.today()', source.split('"""')[-1])
+
+        # And the two really do differ for a Tashkent evening.
+        tashkent_evening = datetime.datetime(2026, 8, 22, 23, 30, tzinfo=datetime.timezone.utc)
+        with self.settings(TIME_ZONE='Asia/Tashkent'):
+            self.assertNotEqual(
+                timezone.localdate(tashkent_evening), tashkent_evening.date(),
+            )
