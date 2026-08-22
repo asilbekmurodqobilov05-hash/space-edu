@@ -10,7 +10,7 @@ These tests pin a budget that does not grow with the number of rows. The exact
 number matters less than the shape: doubling the data must not double the
 queries.
 """
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
@@ -64,6 +64,7 @@ class SphereListQueryBudgetTests(TestCase):
         return len(ctx)
 
 
+@override_settings(DM_ENABLED=True)
 class ConversationListQueryBudgetTests(TestCase):
     """ConversationSerializer resolved other_user, last_message and unread_count
     with a separate query each, so a list of N conversations cost 3N + 1."""
@@ -79,7 +80,9 @@ class ConversationListQueryBudgetTests(TestCase):
             other = User.objects.create_user(
                 username=f'peer{i}', email=f'p{i}@e.com', password='x'
             )
-            convo = Conversation.objects.create()
+            convo = Conversation.objects.create(
+                initiator=other, status=Conversation.ACCEPTED,
+            )
             convo.participants.add(self.me, other)
             DirectMessage.objects.create(
                 conversation=convo, sender=other, content=f'Salom {i}'

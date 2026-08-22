@@ -936,7 +936,16 @@
     "selectingRoom": "Xona tanlanmoqda...",
     "initializing": "Aloqa o'rnatilmoqda...",
     "quietChannel": "Kanal jim",
-    "composePlaceholder": "Jamoaga xabar yozing..."
+    "composePlaceholder": "Jamoaga xabar yozing...",
+    "tooFast": "Siz juda tez xabar yuboryapsiz. Biroz kuting.",
+    "notSent": "Xabar yuborilmadi.",
+    "reportPrompt": "Nima uchun shikoyat qilyapsiz?",
+    "reportSent": "Shikoyat yuborildi. Moderator ko'rib chiqadi.",
+    "alreadyReported": "Siz bu xabarga allaqachon shikoyat qilgansiz.",
+    "reportFailed": "Shikoyatni yuborib bo‘lmadi.",
+    "blocked": "Bloklandi. Siz ularning xabarlarini, ular esa sizniknni ko'rmaydi.",
+    "blockFailed": "Bu foydalanuvchini bloklab bo‘lmadi.",
+    "cancel": "Bekor qilish"
   },
   "notFound": {
     "lostInSpace": "Fazoda adashib qoldingiz",

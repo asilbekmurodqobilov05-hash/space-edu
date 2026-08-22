@@ -170,6 +170,11 @@ REST_FRAMEWORK = {
         'register': '20/day',
         'ai': '40/hour',
         'write': '300/day',
+        # Chat had no limit at all. These are set for a classroom, not a
+        # newsroom: a burst is fine, a flood is not.
+        'chat': '20/min',
+        'dm': '20/min',
+        'report': '30/hour',
     },
 }
 
@@ -182,3 +187,13 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000').split(',')
+
+# ── Direct messages ───────────────────────────────────────────────────────────
+# Off by default, and deliberately so. The product is used by 10-to-18-year-olds
+# and private messaging between minors is the single largest thing on this
+# system that can go wrong. The moderation floor is now in place — screening,
+# reporting, blocking, moderator deletion, rate limits and a consent step before
+# a stranger's second message — but nobody has yet reviewed the feature as a
+# whole against the duty of care it implies. Turn it on deliberately, with
+# DM_ENABLED=true, when that review has happened. See ticket B1.
+DM_ENABLED = config('DM_ENABLED', default=False, cast=bool)

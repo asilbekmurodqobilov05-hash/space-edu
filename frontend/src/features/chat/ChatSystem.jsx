@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useId } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Send, X, BookOpen, HelpCircle, Microscope,
-  MessageCircle, MessageSquare, Search, Smile, Sparkles
+  MessageCircle, MessageSquare, Search, Smile, Sparkles,
+  Flag, Ban, ShieldAlert, Check
 } from "lucide-react";
 import { useAIStore } from "@/store/useAIStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -68,12 +69,31 @@ export default function ChatSystem() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  // Ticket B1. `dmEnabled` starts null so nothing DM-shaped renders until the
+  // server has said whether the feature is on; the endpoints refuse regardless,
+  // but flashing a Messages tab that then 403s is its own kind of broken.
+  const [dmEnabled, setDmEnabled] = useState(null);
+  const [reportReasons, setReportReasons] = useState([]);
+  const [dmError, setDmError] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [moderationNote, setModerationNote] = useState(null);
   const chatEndRef = useRef(null);
   const pollRef = useRef(null);
   const searchTimerRef = useRef(null);
 
   useEffect(() => { if (activeWindow === 'support') supportEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [supportMessages, isTypingSupport, activeWindow]);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [dmMessages]);
+
+  // What this site allows. One place decides, and it is the server.
+  useEffect(() => {
+    if (!user) { setDmEnabled(false); return; }
+    api.get('/chat/settings/')
+      .then(({ data }) => {
+        setDmEnabled(Boolean(data.dm_enabled));
+        setReportReasons(data.report_reasons ?? []);
+      })
+      .catch(() => setDmEnabled(false));
+  }, [user]);
 
   // Load conversations when chat opens
   useEffect(() => {
@@ -96,36 +116,106 @@ export default function ChatSystem() {
   // User search with debounce
   useEffect(() => {
     clearTimeout(searchTimerRef.current);
-    if (searchQuery.trim().length < 2) { setSearchResults([]); return; }
+    // Three characters, and the server matches a whole name rather than a
+    // fragment: a two-letter prefix search over a site full of children is a
+    // directory of children.
+    if (searchQuery.trim().length < 3) { setSearchResults([]); return; }
     setSearching(true);
     searchTimerRef.current = setTimeout(() => {
       api.get(`/chat/dm/users/?q=${encodeURIComponent(searchQuery.trim())}`).then(({ data }) => setSearchResults(data)).catch(() => { }).finally(() => setSearching(false));
     }, 400);
   }, [searchQuery]);
 
+  const refreshConversations = async () => {
+    try {
+      const { data } = await api.get('/chat/dm/conversations/');
+      setConversations(data);
+      return data;
+    } catch {
+      return null;
+    }
+  };
+
   const startConvoWith = async (userId) => {
+    setDmError(null);
     try {
       const { data } = await api.post('/chat/dm/conversations/start/', { user_id: userId });
       setSearchQuery("");
       setSearchResults([]);
-      // Refresh conversations list and select new one
-      const { data: convos } = await api.get('/chat/dm/conversations/');
-      setConversations(convos);
+      await refreshConversations();
       setActiveConvo(data);
-    } catch { /* ignore */ }
+    } catch (err) {
+      setDmError(err.response?.data?.detail ?? 'Could not start that conversation.');
+    }
+  };
+
+  const respondToConvo = async (decision) => {
+    if (!activeConvo) return;
+    try {
+      const { data } = await api.post(`/chat/dm/conversations/${activeConvo.id}/${decision}/`);
+      await refreshConversations();
+      setActiveConvo(decision === 'decline' ? null : data);
+    } catch (err) {
+      setDmError(err.response?.data?.detail ?? 'Could not answer that request.');
+    }
+  };
+
+  const reportMessage = async (reason) => {
+    if (!reportTarget) return;
+    try {
+      await api.post('/chat/reports/', {
+        message_type: 'direct', message_id: reportTarget.id, reason,
+      });
+      setModerationNote('Reported. A moderator will look at it.');
+    } catch (err) {
+      setModerationNote(
+        err.response?.status === 409
+          ? 'You have already reported that message.'
+          : 'Could not send that report.',
+      );
+    } finally {
+      setReportTarget(null);
+    }
+  };
+
+  const blockOther = async () => {
+    const other = activeConvo?.other_user;
+    if (!other) return;
+    try {
+      await api.post('/chat/blocks/', { user_id: other.id });
+      setModerationNote(`${other.first_name || other.username} can no longer message you.`);
+      setActiveConvo(null);
+      await refreshConversations();
+    } catch {
+      setModerationNote('Could not block that person.');
+    }
   };
 
   const sendDm = async (e) => {
     e?.preventDefault();
     if (!dmText.trim() || !activeConvo || dmSending) return;
     setDmSending(true);
+    setDmError(null);
     try {
       const { data } = await api.post(`/chat/dm/conversations/${activeConvo.id}/messages/`, { content: dmText.trim() });
       setDmMessages((prev) => [...prev, data]);
       setDmText("");
-      // Refresh conversation list to update last message
-      api.get('/chat/dm/conversations/').then(({ data: c }) => setConversations(c)).catch(() => { });
-    } catch { /* ignore */ } finally { setDmSending(false); }
+      refreshConversations();
+    } catch (err) {
+      // This used to be `catch { }`. A message screened out for language, or
+      // held back because the other side has not accepted yet, simply vanished
+      // from the box with no explanation.
+      const body = err.response?.data;
+      setDmError(
+        body?.content?.[0]
+        ?? body?.detail
+        ?? (err.response?.status === 429
+          ? 'You are sending messages too quickly. Wait a moment.'
+          : 'Message not sent.'),
+      );
+    } finally {
+      setDmSending(false);
+    }
   };
 
   const handleSupportSend = async () => {
@@ -165,10 +255,12 @@ export default function ChatSystem() {
         <AnimatePresence>
           {menuOpen && (
             <motion.div initial={{ opacity: 0, y: 10, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.9 }} className="glass rounded-2xl p-2 shadow-2xl border border-white/10 flex flex-col gap-1 min-w-[160px]">
-              <button onClick={() => { setActiveWindow('chat'); setMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-colors text-sm font-medium">
+{dmEnabled && (
+                            <button onClick={() => { setActiveWindow('chat'); setMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-colors text-sm font-medium">
                 <div className="w-8 h-8 rounded-lg bg-indigo/20 flex items-center justify-center text-indigo"><MessageSquare className="w-4 h-4" /></div>
                 <span>Chat</span>
               </button>
+              )}
               <button onClick={() => { setActiveWindow('support'); setMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-colors text-sm font-medium">
                 <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400"><Sparkles className="w-4 h-4" /></div>
                 <span>Support Chat</span>
@@ -230,7 +322,7 @@ export default function ChatSystem() {
               <div className="p-3 md:p-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                  <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search users..." className="w-full bg-white/5 border border-white/5 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-indigo/50" />
+                  <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Full name or username" className="w-full bg-white/5 border border-white/5 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-indigo/50" />
                 </div>
                 {/* Search Results Dropdown */}
                 {searchResults.length > 0 && (
@@ -299,8 +391,46 @@ export default function ChatSystem() {
                     <p className="text-sm text-white/30">Select a conversation</p>
                   )}
                 </div>
-                <button onClick={() => setActiveWindow(null)} className="p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all"><X className="w-5 h-5" /></button>
+                <div className="flex items-center gap-1">
+                  {activeConvo?.other_user && (
+                    <button
+                      onClick={blockOther}
+                      title="Block this person"
+                      className="p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-rose-400 transition-all"
+                    >
+                      <Ban className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button onClick={() => setActiveWindow(null)} className="p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all"><X className="w-5 h-5" /></button>
+                </div>
               </div>
+
+              {/* One message, then wait. Starting a conversation with a stranger
+                  used to put the message straight into their inbox with no way
+                  to refuse the next twenty. */}
+              {activeConvo?.awaiting_my_consent && (
+                <div className="px-4 md:px-6 py-3 bg-amber-500/10 border-b border-amber-400/20 flex items-center justify-between gap-3">
+                  <p className="text-xs text-amber-100/80 leading-snug">
+                    <ShieldAlert className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+                    {otherName} wants to message you. They cannot send more until you answer.
+                  </p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => respondToConvo('accept')} className="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-xs font-bold hover:bg-emerald-500/30 transition-colors">
+                      <Check className="w-3.5 h-3.5 inline -mt-0.5 mr-1" />Accept
+                    </button>
+                    <button onClick={() => respondToConvo('decline')} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 text-xs font-bold hover:bg-white/10 transition-colors">
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {moderationNote && (
+                <div className="px-4 md:px-6 py-2.5 bg-white/5 border-b border-white/10 flex items-center justify-between gap-3">
+                  <p className="text-xs text-white/60">{moderationNote}</p>
+                  <button onClick={() => setModerationNote(null)} className="text-white/30 hover:text-white/70"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
 
               <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
                 {!activeConvo && <div className="flex-1 flex items-center justify-center h-full text-white/15 text-xs font-bold uppercase tracking-widest">Search and select a user to start</div>}
@@ -316,7 +446,18 @@ export default function ChatSystem() {
                       )}
                       <div className="max-w-[70%]">
                         <div className={`p-3 md:p-4 rounded-2xl text-sm leading-relaxed shadow-xl ${isMe ? 'bg-indigo text-white rounded-br-none shadow-indigo/20' : 'bg-white/5 border border-white/10 text-white/90 rounded-bl-none'}`}>{msg.content}</div>
-                        <div className={`mt-1 text-[9px] font-bold text-white/15 tracking-tighter ${isMe ? 'text-right' : 'text-left'}`}>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div className={`mt-1 flex items-center gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                          <span className="text-[9px] font-bold text-white/15 tracking-tighter">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          {!isMe && (
+                            <button
+                              onClick={() => setReportTarget(msg)}
+                              title="Report this message"
+                              className="text-white/15 hover:text-rose-400 transition-colors"
+                            >
+                              <Flag className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   );
@@ -324,8 +465,31 @@ export default function ChatSystem() {
                 <div ref={chatEndRef} />
               </div>
 
+              {reportTarget && (
+                <div className="p-4 md:p-6 border-t border-white/5 bg-space-900/80">
+                  <p className="text-xs font-bold text-white/70 mb-3">Why are you reporting this?</p>
+                  <div className="flex flex-wrap gap-2">
+                    {reportReasons.map((reason) => (
+                      <button
+                        key={reason.value}
+                        onClick={() => reportMessage(reason.value)}
+                        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/70 hover:bg-white/10 transition-colors"
+                      >
+                        {reason.label}
+                      </button>
+                    ))}
+                    <button onClick={() => setReportTarget(null)} className="px-3 py-1.5 rounded-lg text-xs text-white/30 hover:text-white/60">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {activeConvo && (
                 <div className="p-4 md:p-6 border-t border-white/5 bg-space-900/50">
+                  {dmError && (
+                    <p className="mb-3 text-xs text-rose-300/90 leading-snug">{dmError}</p>
+                  )}
                   <form onSubmit={sendDm} className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-2 focus-within:border-indigo/50 transition-colors">
                     <input value={dmText} onChange={(e) => setDmText(e.target.value)} placeholder={`Message ${otherName}...`} className="flex-1 bg-transparent py-3 text-sm text-white focus:outline-none" />
                     <button type="submit" disabled={!dmText.trim() || dmSending} className="w-10 h-10 bg-indigo rounded-xl flex items-center justify-center text-white disabled:opacity-20 transition-all hover:scale-105 active:scale-95"><Send className="w-4 h-4" /></button>

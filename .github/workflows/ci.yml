@@ -87,7 +87,7 @@ jobs:
         run: node scripts/export-learn-content.mjs --check
 
       - name: Locale parity
-        # All three locale files must carry the same keys. We are at 1008 with
+        # All three locale files must carry the same keys. We are at 1017 with
         # perfect parity; a missing key silently shows English to a Russian or
         # Uzbek reader instead of failing.
         run: node scripts/check-locales.mjs

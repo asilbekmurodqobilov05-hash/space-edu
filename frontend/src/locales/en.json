@@ -936,7 +936,16 @@
     "selectingRoom": "Selecting room...",
     "initializing": "Initializing Comms...",
     "quietChannel": "The channel is quiet",
-    "composePlaceholder": "Compose a message for the crew..."
+    "composePlaceholder": "Compose a message for the crew...",
+    "tooFast": "You are sending messages too quickly. Wait a moment.",
+    "notSent": "Message not sent.",
+    "reportPrompt": "Why are you reporting this?",
+    "reportSent": "Reported. A moderator will look at it.",
+    "alreadyReported": "You have already reported that message.",
+    "reportFailed": "Could not send that report.",
+    "blocked": "Blocked. You will not see their messages, and they will not see yours.",
+    "blockFailed": "Could not block that person.",
+    "cancel": "Cancel"
   },
   "notFound": {
     "lostInSpace": "Lost in Space",
