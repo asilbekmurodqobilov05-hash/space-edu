@@ -314,7 +314,22 @@ fragments and locations do not belong in anonymous endpoints.
 > a link to the child's photo in a public bucket, with a username generated from
 > their email address.
 
-### C-12. Delete dead code the moment you notice it
+### C-12. Anything a child can send to another child needs four things
+
+Screening, a way to report, a way to block, and a rate limit — before it ships,
+not after. A feature that lets one user put text in front of another is a
+moderation surface, whatever else it is. If any of the four is missing, the
+feature ships turned off behind a flag on the endpoints, not just on the UI.
+
+Deletion is soft. A moderator has to be able to read what an account actually
+sent after the fact, and a hard delete lets the author erase the evidence for a
+report against them.
+
+> **Where it bit us:** the app shipped a public room and private messaging to
+> 10-to-18-year-olds with none of the four, and a two-character name search that
+> turned the membership list into a directory of children anyone could browse.
+
+### C-13. Delete dead code the moment you notice it
 
 Unreachable code is not free. It gets read, trusted, and eventually re-enabled
 by someone who assumes it works.

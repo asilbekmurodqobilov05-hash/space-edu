@@ -1,6 +1,6 @@
 # Handover — state of the work on 22 August 2026
 
-Branch `fix/audit-critical`, 11 commits ahead of `main`, **not merged, not
+Branch `fix/audit-critical`, 19 commits ahead of `main`, **not merged, not
 pushed**. Everything below is committed on that branch.
 
 ---
@@ -11,14 +11,14 @@ pushed**. Everything below is committed on that branch.
 |---|---|
 | `docs/SECURITY-INCIDENT-2026-08-22.md` | The one thing that is still urgent |
 | `CONTRIBUTING.md` | Team rules: AI use, code, process, the five roles |
-| `docs/adr/0001-content-model.md` | The biggest architectural decision, awaiting a call |
+| `docs/adr/0001-content-model.md` | The content model, now decided and built |
 
 Verify the state in one go:
 
 ```bash
-cd backend  && python manage.py test apps base   # expect 131 OK
-cd frontend && npm test                          # expect 71 OK
-cd frontend && npm run build && npm run check:locales
+cd backend  && python manage.py test apps base   # expect 252 OK
+cd frontend && npm test                          # expect 137 OK
+cd frontend && npm run build && npm run check:locales && npm run content:check
 ```
 
 ---
@@ -26,7 +26,7 @@ cd frontend && npm run build && npm run check:locales
 ## What changed
 
 An audit on 22 August found 42 defects across ~30 000 lines; 20 were reproduced
-by running the code. The project had **zero tests**. It now has **202**, and CI
+by running the code. The project had **zero tests**. It now has **389**, and CI
 that blocks a red merge.
 
 ### Security
@@ -53,6 +53,7 @@ that blocks a red merge.
 - `cosmic-silk-road.html` reported a successful login for any password and took
   its API base from `?api=`. Both holes closed; the page no longer ships.
 - The public leaderboard published children's real names and photos.
+- **Chat had no moderation of any kind** — see B1 below.
 
 ### Correctness
 
@@ -64,8 +65,7 @@ that blocks a red merge.
 - Eight endpoints returned `500` on ordinary bad input; the admin Missions tab
   raised `NameError` on every request.
 - `manage.py seed` had **never** worked (unpacked 9 values from 8-element
-  tuples, inside `@transaction.atomic`). It now produces 3 levels, 6 units,
-  12 lessons, 13 questions, 8 badges.
+  tuples, inside `@transaction.atomic`).
 - Production `STORAGES` had no `default` alias, so every upload raised
   `InvalidStorageError` once R2 was unconfigured.
 
@@ -82,6 +82,41 @@ that blocks a red merge.
   count (18→38 queries became a flat 14; 3N+1 became a flat 9).
 - `admin_api` rebuilt on DRF serializers: 706 lines → 481.
 
+### The content model, and the tickets that hung off it
+
+**ADR 0001 accepted as Option A and built.** The project carried two complete
+content models: the one with an admin UI had no readers, the one with readers
+had no editor, and the content lived in neither. An administrator could spend an
+afternoon writing lessons in the panel and nothing changed on the site.
+
+- `Level`, `Unit`, `Lesson`, `LessonSection` and `courses.QuizQuestion` are
+  gone, with their viewsets, serializers, routes, admin, seeds, and the two
+  orphan frontend routes that reached them. Progress points at `TopicLesson`
+  and `Topic`.
+- `SubLesson` is gone too, replaced by a nullable `TopicLesson.parent`. Four
+  levels was not one too many, it was also one too *few* — `interviewsTopicsData`
+  nests topic → section → lesson → sub-lesson, which the fixed tree could not
+  hold. Measured depths across the four subjects: 1, 2, 2, 3.
+- Content had **four** copies (static files, a hand-written copy inside
+  `seed_learn_data`, and an inline list in `PhysicsView`). It has one:
+  `npm run content:export` turns `src/data/*TopicsData.js` into a fixture,
+  `manage.py seed_learn_content` loads it keyed on slug, and CI fails if the
+  committed fixture is stale.
+- The learn screens read `GET /courses/spheres/<slug>/tree/` — the whole subject
+  in three queries — through an adapter that reshapes it into the exact shape
+  the static files gave. Each screen changed by one import, and the static file
+  remains the fallback when the API is unreachable.
+- XP is server-decided: `TopicLesson.xp_reward`/`fuel_reward` plus a `Topic`
+  bonus paid once when every leaf is done, all editable per row. Only leaves are
+  completable; a node with children is a heading.
+- **R2 closed.** Finishing a static lesson now posts to
+  `POST /progress/lessons/<slug>/complete/`. The other award path —
+  `LiveSpaceView` granting 20 XP on mount, for the page rendering rather than
+  for watching anything — was removed rather than given an endpoint; there is
+  nothing to verify server-side.
+- Quiz questions can attach to a lesson (`ChallengeQuestion.lesson`), and
+  `POST /challenges/quiz/start/` takes a lesson slug.
+
 ---
 
 ## Open, and why
@@ -90,18 +125,18 @@ that blocks a red merge.
 
 | | |
 |---|---|
-| **Q1 — credential exposure** | The repository is **public** and history holds a database with two superuser password hashes. **Step 1 of `docs/SECURITY-INCIDENT-2026-08-22.md` needs doing today**; it depends on nothing. Steps 2–3 rewrite history and should wait until this branch is merged. |
-| **C1 — content model** | Approve or reject `docs/adr/0001-content-model.md`. It recommends keeping the Sphere branch, deleting the Level branch, and deleting `seed_courses` rather than repairing it. |
-| **B1 — chat moderation** | The project ships a public chat *and* private messaging for 10–18 year-olds with no moderation of any kind: no profanity filter, no reporting, no blocking, no admin delete, no rate limit, and no consent step before a DM. Any account can find any other by a two-character name search and message them. This is the largest remaining risk and it needs product decisions, not code. Until it ships, keep DMs off. |
+| **Q1 — credential exposure** | The repository is **public** and history holds a database with two superuser password hashes. **Step 1 of `docs/SECURITY-INCIDENT-2026-08-22.md` needs doing today**; it is now one command, `manage.py rotate_leaked_credentials`, and depends on nothing. It deliberately will not set the two superuser passwords — run `changepassword` for those. Steps 2–3 rewrite history and should wait until this branch is merged. |
+| **B1 — review, then decide about DMs** | The moderation floor is built and DMs are **off** (`DM_ENABLED=false`). Turning them on is a product decision about a duty of care to 10-to-18-year-olds, not a code change. Before flipping it: decide who reads `GET /chat/reports/queue/` and how often, and what happens to an account after a report is actioned — there is no suspension mechanism, only message deletion. |
 
 ### Free to pick up
 
 | | |
 |---|---|
-| **Q3 (tail)** | Working tree is 20 MB but history still carries the originals, so a fresh clone is ~250 MB. Bundle with Q1. Also: 30 texture files the game references and does not have, and texture compression inside the remaining texture-heavy models (libvips fails on Windows — run it on Linux or in CI). |
-| **F4** | Extend the frontend suite past the five regression files: the auth store, the market paging helper, a first render test for each of the four largest views. |
-| **R2** | Two award paths have no server endpoint at all — watching a live stream, and finishing a static lesson. Since `grant/` was removed they no longer persist. Propose the endpoints, or propose dropping the rewards. |
-| **C2 (tail)** | `physicsTopicsData` has 14 topics and no sub-lessons while the other three subjects use them. Decide whether `SubLesson` survives before writing the content migration — see the open questions in the ADR. |
+| **Q3 (tail)** | History still carries the originals, so a fresh clone is ~250 MB — bundle that with Q1 step 2. Ten `.glb` models still hold 48 MB of uncompressed texture data; `npm run assets:compress` does it, **on Linux or WSL only** (libvips fails on Windows). CI now fails if that total grows. |
+| **C2 (tail)** | 31 assets the game references and does not have are pinned in `spaceRunAssets.test.js`; loading degrades rather than 404-ing, but the art is still missing. |
+| **Step 5, client half** | Lesson quizzes work server-side but no screen offers one: `QuizSessionView` runs entirely off the static `quizData` and never calls the API. Moving it over is the remaining work, plus attaching actual questions to lessons in the admin panel. |
+| **Lesson text** | `TopicLesson.content` is a bare `TextField` described as "text/markdown" and nobody renders markdown. Decide what a lesson body is before anyone writes into it. |
+| **SpaceLabView's textures** | It loads three Earth textures from `unpkg.com` at runtime, on every visit. That is a third-party dependency in the render path and a CSP problem waiting to happen. Host them, or accept it deliberately. |
 
 ---
 
@@ -115,14 +150,25 @@ that blocks a red merge.
 - **Two contracts the admin panel depends on.** Responses must stay bare arrays
   (the dashboard does `items.map(...)`; turning DRF pagination on empties every
   table silently), and it posts `sphere_id` / `topic_id`, not `sphere` / `topic`.
-  Both are covered by tests in `apps/admin_api/tests.py`.
-- **`grant/` is gone, so two client-side award paths silently do nothing now.**
-  That is ticket R2, not a regression.
-- **Locale parity is enforced by CI** at 1007 keys across `en`/`uz`/`ru`.
+  Both are covered by tests in `apps/admin_api/tests.py`. The panel also posts
+  no slug — `Topic` and `TopicLesson` derive one from the title on save, which
+  is what keeps that contract working.
+- **Editing content now changes the site.** That was the point of ADR 0001, and
+  it means a mistake in the admin panel is visible immediately. `seed_learn_content`
+  will not delete admin-authored rows unless you pass `--prune`.
+- **Locale parity is enforced by CI** at 1017 keys across `en`/`uz`/`ru`.
+- **The learn fixture is generated.** Edit `src/data/*TopicsData.js`, then run
+  `npm run content:export` and commit the result, or CI fails.
 - **`gltf-transform --texture-compress` fails on Windows** with a libvips
   colourspace error. Geometry compression works fine.
 - **`CACHES` falls back to the database** when `REDIS_URL` is absent, and the
-  table is created by a migration. Set `REDIS_URL` on Railway when you can.
+  table is created by a migration. Set `REDIS_URL` on Railway when you can — the
+  chat rate limits are cache-backed, and a database cache makes them slower than
+  they need to be.
+- **The profanity filter is a floor, not a solution.** It catches the lazy case
+  and it has a documented limit (a swapped vowel) with a test of its own. What
+  it misses is what the report queue is for, and the report queue only works if
+  somebody reads it.
 
 ---
 
