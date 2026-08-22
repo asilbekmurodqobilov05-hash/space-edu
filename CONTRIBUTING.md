@@ -379,13 +379,19 @@ the ticket.
 CI runs all of this; run it yourself first, it is faster than waiting:
 
 ```bash
-cd backend  && python manage.py test apps base        # 131/131
+cd backend  && python manage.py test apps base        # 296/296
 cd backend  && python manage.py check --deploy
 cd backend  && python manage.py makemigrations --check --dry-run
-cd frontend && npm test                               # 71/71
-cd frontend && npm run build
+cd frontend && npm run build                          # before the tests, see below
+cd frontend && npm test                               # 193/193
 cd frontend && npm run check:locales
+cd frontend && npm run content:check
 ```
+
+Build **before** you test: `src/bundleSecrets.test.js` reads `dist/` to check
+that no answer key or credential reached the browser, and has nothing to read
+otherwise. `content:check` fails if `learn_content.json` has drifted from
+`src/data/*TopicsData.js`.
 
 ## Tickets
 
