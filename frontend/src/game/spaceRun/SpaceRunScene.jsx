@@ -64,6 +64,24 @@ const _camQ = new THREE.Quaternion();
 const _powerCol = new THREE.Color();
 const TEXTURE_LOADING_MANAGER = new THREE.LoadingManager();
 const TEXTURE_CACHE = new Map();
+
+/**
+ * Free every texture the game has loaded.
+ *
+ * TEXTURE_CACHE is module-level and shared between components on purpose — the
+ * same albedo map is used by several meshes and must not be uploaded twice. But
+ * nothing ever emptied it, so the GPU kept every map for the lifetime of the
+ * tab even after the player left the game. Call this when the scene unmounts.
+ *
+ * Worth knowing: 30 of the paths this cache is asked for do not exist in the
+ * repository (ticket Q3), so some entries hold a fallback for a failed load.
+ */
+export function releaseTextureCache() {
+  TEXTURE_CACHE.forEach((tex) => {
+    try { tex?.dispose?.(); } catch { /* already disposed */ }
+  });
+  TEXTURE_CACHE.clear();
+}
 const GEOMETRY_CACHE = new Map();
 
 function clamp01(x) {
@@ -675,6 +693,9 @@ function CosmicSkyDome({ speedRef }) {
       fog: false,
     });
   }, []);
+  // A ShaderMaterial holds a compiled GPU program. Leaving the game without
+  // disposing it kept that program alive for the rest of the tab's life.
+  useEffect(() => () => mat.dispose(), [mat]);
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.position.copy(state.camera.position);
@@ -886,6 +907,9 @@ function StarMotionLines({ speedRef }) {
 
 function LeftAsteroidCluster() {
   const rockMap = useMemo(() => createCraterCanvasTexture(11), []);
+  // Canvas textures are uploaded to the GPU; without this the upload survives
+  // every unmount and a player who enters the game repeatedly keeps paying.
+  useEffect(() => () => rockMap?.dispose?.(), [rockMap]);
   const g = useRef(null);
   useFrame((state) => {
     const t = state.clock.elapsedTime;
