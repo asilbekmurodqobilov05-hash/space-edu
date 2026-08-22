@@ -734,7 +734,8 @@
       "cpu": "Protsessor",
       "ram": "Tezkor xotira",
       "accuracy": "Aniqlik"
-    }
+    },
+    "offlineSample": "Do‘konga ulanib bo‘lmadi. Namunaviy katalog ko‘rsatilmoqda."
   },
   "common": {
     "loading": "Yuklanmoqda...",

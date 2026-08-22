@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from apps.courses.models import Level, Unit, Lesson, LessonSection, QuizQuestion
 
 UNITS = [
@@ -103,6 +103,27 @@ class Command(BaseCommand):
     help = 'Seed courses with rich educational content'
 
     def handle(self, *args, **options):
+        # This command silently created nothing for months: every entry below
+        # names a planet slug (mercury, venus, ...) while the only Level rows the
+        # project ever creates are solar-system, stars-galaxies and
+        # space-exploration. `if not level: continue` swallowed all 15 units, the
+        # 33 lessons and the 10 questions that depend on them, then printed
+        # "Seed complete" and exited 0.
+        #
+        # Deciding the real mapping is a content decision (ticket C1), not
+        # something this command should guess. Until it is made, fail loudly.
+        wanted = {row[0] for row in UNITS}
+        missing = sorted(wanted - set(Level.objects.filter(slug__in=wanted)
+                                      .values_list('slug', flat=True)))
+        if missing:
+            raise CommandError(
+                'These Level slugs do not exist, so nothing would be created: '
+                + ', '.join(missing)
+                + '. Existing levels: '
+                + (', '.join(Level.objects.values_list('slug', flat=True)) or '(none)')
+                + '. Run `manage.py seed` first, or fix the slugs in this file.'
+            )
+
         # Add units
         created_u = 0
         for lslug, uslug, order, ten, tuz, tru, xp, fuel in UNITS:

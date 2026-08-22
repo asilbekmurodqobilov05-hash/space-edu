@@ -115,6 +115,17 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    def validate_avatar(self, value):
+        """Bound the size, the pixel count and the format.
+
+        ImageField alone only runs Pillow.verify(), which accepts a PNG-headed
+        polyglot and never bounds anything.
+        """
+        from apps.validators import validate_image_upload
+
+        validate_image_upload(value)
+        return value
+
     class Meta:
         model = User
         fields = ('first_name', 'last_name', 'avatar', 'astronaut_name', 'bio', 'selected_spaceship', 'language')

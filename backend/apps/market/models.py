@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+
+from apps.validators import image_upload_to
 from django.db.models import Avg, Count
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
@@ -82,7 +84,7 @@ class MarketItem(models.Model):
     # Tags (comma-separated for simplicity)
     tags = models.CharField(max_length=500, blank=True, default='', help_text='Comma-separated tags')
 
-    image = models.ImageField(upload_to='market/', blank=True)
+    image = models.ImageField(upload_to=image_upload_to('market'), blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

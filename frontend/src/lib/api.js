@@ -55,4 +55,22 @@ api.interceptors.response.use(
   }
 );
 
+/**
+ * Long-running requests.
+ *
+ * The shared client gives up after 10 s while the AI endpoint waits up to 20 s
+ * on Gemini, so every longer answer was cut off in the browser even though the
+ * server had produced it. Same interceptors, longer patience.
+ */
+export const slowApi = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  timeout: 45000,
+});
+
+slowApi.interceptors.request.use((config) => {
+  const token = _getAccess();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
 export default api;

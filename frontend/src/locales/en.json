@@ -734,7 +734,8 @@
       "cpu": "CPU",
       "ram": "RAM",
       "accuracy": "Accuracy"
-    }
+    },
+    "offlineSample": "Could not reach the store. Showing a sample catalogue."
   },
   "common": {
     "loading": "Loading...",

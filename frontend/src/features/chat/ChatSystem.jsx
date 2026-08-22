@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useAIStore } from "@/store/useAIStore";
 import { useAuthStore } from "@/store/useAuthStore";
-import api from "@/lib/api";
+import api, { slowApi } from '@/lib/api';
 import { getMockAIResponse } from "@/lib/mockAI";
 
 function UzbekDoppiMark({ className }) {
@@ -138,7 +138,7 @@ export default function ChatSystem() {
     try {
       let replyText;
       try {
-        const { data } = await api.post("/ai/chat/", {
+        const { data } = await slowApi.post("/ai/chat/", {
           messages: newMessages,
           context: context,
           mode: supportMode,

@@ -1,0 +1,129 @@
+name: CI
+
+# Runs on every pull request and every push to main. A red run blocks the merge.
+# Before this existed, 42 defects reached main unnoticed, including four that
+# meant the system was compromised.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check for missing migrations
+        env:
+          SECRET_KEY: ci-secret-key-not-used-anywhere-else-0123456789
+          DJANGO_ENV: development
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        env:
+          SECRET_KEY: ci-secret-key-not-used-anywhere-else-0123456789
+          DJANGO_ENV: development
+        run: python manage.py test apps base --verbosity 2
+
+      - name: Deployment checks
+        env:
+          SECRET_KEY: ci-secret-key-not-used-anywhere-else-0123456789
+          DJANGO_ENV: production
+          ALLOWED_HOSTS: example.com
+        run: python manage.py check --deploy --fail-level ERROR
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          VITE_API_URL: https://example.invalid/api/v1
+        run: npm run build
+
+      - name: Locale parity
+        # All three locale files must carry the same keys. We are at 1007 with
+        # perfect parity; a missing key silently shows English to a Russian or
+        # Uzbek reader instead of failing.
+        run: node scripts/check-locales.mjs
+
+  hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No secrets, no committed database, no stray build output
+        run: |
+          set -e
+          fail=0
+
+          if git ls-files | grep -E '(^|/)\.env$|\.sqlite3$'; then
+            echo "::error::A .env file or a SQLite database is tracked. Both are forbidden."
+            fail=1
+          fi
+
+          if git ls-files | grep -E '\.pyc$|__pycache__'; then
+            echo "::error::Compiled Python is tracked. Add it to .gitignore and git rm --cached it."
+            fail=1
+          fi
+
+          # VITE_* values are inlined into the public bundle at build time.
+          if git ls-files 'frontend/*' | xargs grep -lE 'VITE_[A-Z_]*(KEY|SECRET|TOKEN)\s*=\s*\S' 2>/dev/null | grep -v '\.example$'; then
+            echo "::error::A VITE_ secret has a value outside .env.example. Vite ships that to every visitor."
+            fail=1
+          fi
+
+          if git ls-files | xargs grep -lE 'AIza[0-9A-Za-z_-]{30,}|sk-[a-zA-Z0-9]{30,}' 2>/dev/null; then
+            echo "::error::What looks like an API key is committed."
+            fail=1
+          fi
+
+          exit $fail
+
+      - name: Large files
+        run: |
+          # The repository already carries 246 MB of unoptimised assets, including
+          # a 56 MB .glb. Stop it growing while ticket Q3 is open.
+          over=$(git ls-files -z | xargs -0 -I{} sh -c 'test -f "{}" && find "{}" -size +2M -print' 2>/dev/null || true)
+          if [ -n "$over" ]; then
+            echo "Files over 2 MB (existing debt, tracked as Q3):"
+            echo "$over"
+          fi

@@ -400,6 +400,28 @@ function ProductModal({ item, onClose, onBuy, buying }) {
   );
 }
 
+/**
+ * Walk a DRF-paginated list endpoint to the end.
+ *
+ * `/market/items/` is a ViewSet, so it paginates at PAGE_SIZE=20. The old code
+ * read `.results` and stopped, which silently capped the shop at 20 products —
+ * item 21 onwards simply did not exist as far as the UI was concerned.
+ */
+const MAX_PAGES = 50;
+
+async function fetchAllPages(url) {
+  const collected = [];
+  let next = url;
+  for (let page = 0; next && page < MAX_PAGES; page += 1) {
+    const { data } = await api.get(next);
+    if (Array.isArray(data)) return data;
+    collected.push(...(data.results || []));
+    next = data.next || null;
+  }
+  return collected;
+}
+
+
 export default function MarketView() {
   const { t, language } = useTranslation();
   const { isAuthenticated } = useAuthStore();
@@ -407,6 +429,7 @@ export default function MarketView() {
   const [items, setItems] = useState([]);
   const [inventory, setInventory] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [buying, setBuying] = useState(null);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -419,18 +442,22 @@ export default function MarketView() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [itemsRes, inventoryRes] = await Promise.all([
-          api.get('/market/items/'),
+        const [itemsData, inventoryRes] = await Promise.all([
+          fetchAllPages('/market/items/'),
           isAuthenticated ? api.get('/market/inventory/') : Promise.resolve({ data: [] }),
         ]);
-        
-        // Handle paginated or non-paginated response
-        const itemsData = Array.isArray(itemsRes.data) ? itemsRes.data : itemsRes.data.results || [];
-        setItems(itemsData.length > 0 ? itemsData : MOCK_ITEMS);
-        
-        const invData = Array.isArray(inventoryRes.data) ? inventoryRes.data : inventoryRes.data.results || [];
+
+        // Only fall back to the mock catalogue when the request itself failed.
+        // Showing mock products for a legitimately empty catalogue means nobody
+        // ever notices the catalogue is empty.
+        setItems(itemsData);
+
+        const invData = Array.isArray(inventoryRes.data)
+          ? inventoryRes.data
+          : inventoryRes.data.results || [];
         setInventory(new Set(invData.map((i) => i.item?.slug).filter(Boolean)));
       } catch (err) {
+        setLoadError(true);
         setItems(MOCK_ITEMS);
       } finally {
         setLoading(false);
@@ -667,6 +694,13 @@ export default function MarketView() {
               ) : (
                 /* Search / Filter / Category Grid View */
                 <div>
+                  {/* The catalogue falls back to a sample list when the request
+                      fails. Say so, rather than passing samples off as stock. */}
+                  {loadError && (
+                    <div className="mb-4 border border-amber-500/40 bg-amber-500/10 text-amber-200/90 text-sm rounded-lg px-4 py-2.5">
+                      {t('market', 'offlineSample')}
+                    </div>
+                  )}
                   <div className="mb-6 flex items-center justify-between">
                     <h2 className="text-2xl font-[900] text-white">
                       {searchQuery ? `${t('market', 'results')}: "${searchQuery}"` : t('market', 'catalog')}

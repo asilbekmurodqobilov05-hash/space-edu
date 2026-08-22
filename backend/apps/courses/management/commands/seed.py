@@ -262,7 +262,10 @@ class Command(BaseCommand):
             content_uz={'text': uz_text},
             content_ru={'text': ru_text},
         )
-        for i, (qid, qen, quz, qru, opts, correct, exp_en, exp_uz, exp_ru) in enumerate(questions or []):
+        # The tuples in this file carry 8 values; this used to unpack 9 (a
+        # leading `qid` with no source), so the command raised ValueError on
+        # its first question and @transaction.atomic rolled everything back.
+        for i, (qen, quz, qru, opts, correct, exp_en, exp_uz, exp_ru) in enumerate(questions or []):
             QuizQuestion.objects.create(
                 lesson=lesson, order=i + 1,
                 text_en=qen, text_uz=quz, text_ru=qru,
