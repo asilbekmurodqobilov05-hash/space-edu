@@ -18,7 +18,11 @@ export default function QuizSessionView() {
   const { t, language } = useTranslation();
   const currentLang = LANG_MAP[language] || "en";
   
-  const questions = quizData[category] || [];
+  // Object.hasOwn, not a truthiness check: quizData['constructor'] returns
+  // Object (truthy, and Object.length is 1, not 0), so /quiz/constructor
+  // slipped past the 'category not found' guard below and then crashed.
+  const hasCategory = Object.hasOwn(quizData, category);
+  const questions = hasCategory && Array.isArray(quizData[category]) ? quizData[category] : [];
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -82,7 +86,7 @@ export default function QuizSessionView() {
   }, [isCompleted, score]);
 
   // If invalid category
-  if (!quizData[category] || questions.length === 0) {
+  if (!hasCategory || questions.length === 0) {
     return (
       <div className="min-h-screen pt-32 text-center">
         <h2 className="text-3xl text-red-400">Category not found or empty.</h2>

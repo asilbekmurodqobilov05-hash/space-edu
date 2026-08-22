@@ -4,6 +4,7 @@ All views require `is_staff` or `is_superuser`.
 """
 from datetime import timedelta
 
+from django.db import IntegrityError
 from django.db.models import Count, Sum, Q, Max
 from django.utils import timezone
 from rest_framework import status
@@ -19,7 +20,69 @@ from apps.news.models import NewsArticle
 from apps.events.models import SpaceEvent
 from apps.challenges.models import ChallengeQuestion, DailyChallenge, UserChallengeResult
 from apps.chat.models import ChatRoom, ChatMessage, Conversation, DirectMessage
+from apps.gamification.models import Mission
 from apps.progress.models import UserLessonProgress
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  INPUT HANDLING
+#
+#  This module hand-rolls serialisation with dict literals and setattr loops
+#  instead of using DRF serializers, so bad input surfaced as an unhandled
+#  IntegrityError or ValueError -> 500: a duplicate slug, a missing foreign key,
+#  a non-numeric price. These helpers give the same endpoints a 400 instead.
+#  Replacing them with real ModelSerializers is the proper fix and is tracked
+#  separately; this keeps the surface honest in the meantime.
+# ──────────────────────────────────────────────────────────────────────────────
+class BadInput(Exception):
+    """Raised for caller error; turned into 400 by @validated."""
+
+
+def to_int(value, field, default=None, minimum=None, maximum=None):
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return default
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        raise BadInput(f'{field}: must be a whole number.')
+    if minimum is not None and parsed < minimum:
+        raise BadInput(f'{field}: must be at least {minimum}.')
+    if maximum is not None and parsed > maximum:
+        raise BadInput(f'{field}: must be at most {maximum}.')
+    return parsed
+
+
+def to_bool(value, default=False):
+    """Coerce a JSON or form value to a real boolean.
+
+    Raw setattr stored the *string* "false", which is truthy — so sending
+    {"is_staff": "false"} granted staff rather than removing it.
+    """
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def validated(handler):
+    """Turn caller mistakes into 400 responses instead of 500s."""
+    from functools import wraps
+
+    @wraps(handler)
+    def wrapper(*args, **kwargs):
+        try:
+            return handler(*args, **kwargs)
+        except BadInput as exc:
+            return Response({'detail': str(exc)}, status=400)
+        except IntegrityError as exc:
+            return Response(
+                {'detail': f'Conflicts with existing data: {exc}'}, status=400
+            )
+        except (ValueError, TypeError) as exc:
+            return Response({'detail': f'Invalid value: {exc}'}, status=400)
+
+    return wrapper
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -123,15 +186,39 @@ class UserDetailView(APIView):
             data['gamification'] = None
         return Response(data)
 
+    # Editable by any staff member.
+    SAFE_FIELDS = ('first_name', 'last_name', 'astronaut_name', 'bio', 'language')
+    # Editable by superusers only. IsAdminUser means plain is_staff, so before
+    # this split any staff member could grant themselves or anyone else staff,
+    # and could set is_active=False on a superuser and lock the owner out.
+    PRIVILEGED_FIELDS = ('is_staff', 'is_active')
+
+    LANGUAGES = {'en', 'uz', 'ru'}
+
+    @validated
     def patch(self, request, pk):
         try:
             u = User.objects.get(pk=pk)
         except User.DoesNotExist:
             return Response({'detail': 'Not found.'}, status=404)
-        allowed = ['first_name', 'last_name', 'is_staff', 'is_active', 'astronaut_name', 'bio', 'language']
-        for field in allowed:
+
+        requested_privileged = [f for f in self.PRIVILEGED_FIELDS if f in request.data]
+        if requested_privileged and not request.user.is_superuser:
+            return Response(
+                {'detail': f'Only a superuser may change {", ".join(requested_privileged)}.'},
+                status=403,
+            )
+
+        for field in self.SAFE_FIELDS:
             if field in request.data:
-                setattr(u, field, request.data[field])
+                value = request.data[field]
+                if field == 'language' and value not in self.LANGUAGES:
+                    raise BadInput(f'language: must be one of {sorted(self.LANGUAGES)}.')
+                setattr(u, field, value)
+
+        for field in requested_privileged:
+            setattr(u, field, to_bool(request.data[field]))
+
         u.save()
         return Response(_serialize_user(u))
 
@@ -166,6 +253,7 @@ class NewsListView(APIView):
     def get(self, request):
         return Response([_serialize_news(n) for n in NewsArticle.objects.all()[:100]])
 
+    @validated
     def post(self, request):
         d = request.data
         n = NewsArticle.objects.create(
@@ -181,6 +269,7 @@ class NewsListView(APIView):
 class NewsDetailView(APIView):
     permission_classes = [IsAdminUser]
 
+    @validated
     def patch(self, request, pk):
         try:
             n = NewsArticle.objects.get(pk=pk)
@@ -219,6 +308,7 @@ class EventsListView(APIView):
     def get(self, request):
         return Response([_serialize_event(e) for e in SpaceEvent.objects.all()[:100]])
 
+    @validated
     def post(self, request):
         d = request.data
         e = SpaceEvent.objects.create(
@@ -234,6 +324,7 @@ class EventsListView(APIView):
 class EventDetailView(APIView):
     permission_classes = [IsAdminUser]
 
+    @validated
     def patch(self, request, pk):
         try:
             e = SpaceEvent.objects.get(pk=pk)
@@ -275,6 +366,7 @@ class QuestionsListView(APIView):
             qs = qs.filter(category=cat)
         return Response([_serialize_question(q) for q in qs[:200]])
 
+    @validated
     def post(self, request):
         d = request.data
         q = ChallengeQuestion.objects.create(
@@ -290,6 +382,7 @@ class QuestionsListView(APIView):
 class QuestionDetailView(APIView):
     permission_classes = [IsAdminUser]
 
+    @validated
     def patch(self, request, pk):
         try:
             q = ChallengeQuestion.objects.get(pk=pk)
@@ -325,14 +418,17 @@ class SpheresListView(APIView):
             })
         return Response(data)
 
+    @validated
     def post(self, request):
         d = request.data
+        if not str(d.get('slug', '')).strip():
+            raise BadInput('slug: required.')
         order = d.get('order')
         if order is None or str(order).strip() == '':
             max_order = Sphere.objects.aggregate(Max('order'))['order__max']
             order = (max_order or 0) + 1
         else:
-            order = int(order)
+            order = to_int(order, 'order', minimum=0, maximum=32767)
             
         s = Sphere.objects.create(
             slug=d.get('slug', ''), title=d.get('title', ''), title_en=d.get('title_en', ''),
@@ -345,6 +441,7 @@ class SpheresListView(APIView):
 class SphereDetailView(APIView):
     permission_classes = [IsAdminUser]
 
+    @validated
     def patch(self, request, pk):
         try:
             s = Sphere.objects.get(pk=pk)
@@ -368,17 +465,23 @@ class TopicListView(APIView):
         if sphere_id: qs = qs.filter(sphere_id=sphere_id)
         return Response([{'id': t.id, 'sphere_id': t.sphere_id, 'title': t.title, 'title_en': t.title_en, 'order': t.order, 'color': t.color} for t in qs])
 
+    @validated
     def post(self, request):
         d = request.data
+        sphere_id = to_int(d.get('sphere_id'), 'sphere_id', minimum=1)
+        if sphere_id is None:
+            raise BadInput('sphere_id: required.')
+        if not Sphere.objects.filter(pk=sphere_id).exists():
+            raise BadInput('sphere_id: no such sphere.')
         order = d.get('order')
         if order is None or str(order).strip() == '':
-            max_order = Topic.objects.filter(sphere_id=d.get('sphere_id')).aggregate(Max('order'))['order__max']
+            max_order = Topic.objects.filter(sphere_id=sphere_id).aggregate(Max('order'))['order__max']
             order = (max_order or 0) + 1
         else:
-            order = int(order)
+            order = to_int(order, 'order', minimum=0, maximum=32767)
             
         t = Topic.objects.create(
-            sphere_id=d.get('sphere_id'), title=d.get('title', ''), title_en=d.get('title_en', ''),
+            sphere_id=sphere_id, title=d.get('title', ''), title_en=d.get('title_en', ''),
             title_ru=d.get('title_ru', ''), color=d.get('color', ''), description=d.get('description', ''),
             order=order
         )
@@ -387,6 +490,7 @@ class TopicListView(APIView):
 class TopicDetailView(APIView):
     permission_classes = [IsAdminUser]
 
+    @validated
     def patch(self, request, pk):
         try:
             t = Topic.objects.get(pk=pk)
@@ -410,17 +514,23 @@ class TopicLessonListView(APIView):
         if topic_id: qs = qs.filter(topic_id=topic_id)
         return Response([{'id': l.id, 'topic_id': l.topic_id, 'name': l.name, 'name_en': l.name_en, 'order': l.order, 'video_url': l.video_url} for l in qs])
 
+    @validated
     def post(self, request):
         d = request.data
+        topic_id = to_int(d.get('topic_id'), 'topic_id', minimum=1)
+        if topic_id is None:
+            raise BadInput('topic_id: required.')
+        if not Topic.objects.filter(pk=topic_id).exists():
+            raise BadInput('topic_id: no such topic.')
         order = d.get('order')
         if order is None or str(order).strip() == '':
-            max_order = TopicLesson.objects.filter(topic_id=d.get('topic_id')).aggregate(Max('order'))['order__max']
+            max_order = TopicLesson.objects.filter(topic_id=topic_id).aggregate(Max('order'))['order__max']
             order = (max_order or 0) + 1
         else:
-            order = int(order)
+            order = to_int(order, 'order', minimum=0, maximum=32767)
             
         l = TopicLesson.objects.create(
-            topic_id=d.get('topic_id'), name=d.get('name', ''), name_en=d.get('name_en', ''),
+            topic_id=topic_id, name=d.get('name', ''), name_en=d.get('name_en', ''),
             name_ru=d.get('name_ru', ''), video_url=d.get('video_url', ''), content=d.get('content', ''),
             order=order
         )
@@ -429,6 +539,7 @@ class TopicLessonListView(APIView):
 class TopicLessonDetailView(APIView):
     permission_classes = [IsAdminUser]
 
+    @validated
     def patch(self, request, pk):
         try:
             l = TopicLesson.objects.get(pk=pk)
@@ -459,20 +570,28 @@ class MarketItemListView(APIView):
     def get(self, request):
         return Response([_serialize_market_item(m) for m in MarketItem.objects.all()[:100]])
 
+    @validated
     def post(self, request):
         d = request.data
+        if not str(d.get('slug', '')).strip():
+            raise BadInput('slug: required.')
         m = MarketItem.objects.create(
             slug=d.get('slug', ''), title_en=d.get('title_en', ''), title_uz=d.get('title_uz', ''),
             title_ru=d.get('title_ru', ''), description_en=d.get('description_en', ''),
             description_uz=d.get('description_uz', ''), description_ru=d.get('description_ru', ''),
-            item_type=d.get('item_type', 'other'), price=int(d.get('price') or 0), cost_fuel=int(d.get('cost_fuel') or 0),
-            stock=int(d.get('stock') or 0), is_active=d.get('is_active', True), is_bestseller=d.get('is_bestseller', False)
+            item_type=d.get('item_type', 'other'),
+            price=to_int(d.get('price'), 'price', default=0, minimum=0),
+            cost_fuel=to_int(d.get('cost_fuel'), 'cost_fuel', default=0, minimum=0),
+            stock=to_int(d.get('stock'), 'stock', default=0, minimum=0),
+            is_active=to_bool(d.get('is_active'), True),
+            is_bestseller=to_bool(d.get('is_bestseller'), False),
         )
         return Response(_serialize_market_item(m), status=201)
 
 class MarketItemDetailView(APIView):
     permission_classes = [IsAdminUser]
 
+    @validated
     def patch(self, request, pk):
         try:
             m = MarketItem.objects.get(pk=pk)
@@ -499,6 +618,7 @@ class ChatRoomsView(APIView):
             for r in rooms
         ])
 
+    @validated
     def post(self, request):
         d = request.data
         r = ChatRoom.objects.create(
@@ -521,28 +641,32 @@ class MissionsListView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        return Response([_serialize_mission(m) for m in apps.gamification.models.Mission.objects.all().order_by('order')])
+        return Response([_serialize_mission(m) for m in Mission.objects.all().order_by('order')])
 
+    @validated
     def post(self, request):
-        import apps.gamification.models as gm
         d = request.data
-        m = gm.Mission.objects.create(
+        m = Mission.objects.create(
             slug=d.get('slug', ''), title_en=d.get('title_en', ''), title_uz=d.get('title_uz', ''), title_ru=d.get('title_ru', ''),
             description_en=d.get('description_en', ''), description_uz=d.get('description_uz', ''), description_ru=d.get('description_ru', ''),
-            mission_type=d.get('mission_type', 'custom'), target_value=int(d.get('target_value') or 1),
-            reward_xp=int(d.get('reward_xp') or 0), reward_fuel=int(d.get('reward_fuel') or 10),
-            is_active=d.get('is_active', True), is_daily=d.get('is_daily', False), order=int(d.get('order') or 0)
+            mission_type=d.get('mission_type', 'custom'),
+            target_value=to_int(d.get('target_value'), 'target_value', default=1, minimum=1),
+            reward_xp=to_int(d.get('reward_xp'), 'reward_xp', default=0, minimum=0),
+            reward_fuel=to_int(d.get('reward_fuel'), 'reward_fuel', default=10, minimum=0),
+            is_active=to_bool(d.get('is_active'), True),
+            is_daily=to_bool(d.get('is_daily'), False),
+            order=to_int(d.get('order'), 'order', default=0, minimum=0, maximum=32767)
         )
         return Response(_serialize_mission(m), status=201)
 
 class MissionDetailView(APIView):
     permission_classes = [IsAdminUser]
 
+    @validated
     def patch(self, request, pk):
-        import apps.gamification.models as gm
         try:
-            m = gm.Mission.objects.get(pk=pk)
-        except gm.Mission.DoesNotExist:
+            m = Mission.objects.get(pk=pk)
+        except Mission.DoesNotExist:
             return Response(status=404)
         fields = ['slug', 'title_en', 'title_uz', 'title_ru', 'description_en', 'description_uz', 'description_ru',
                   'mission_type', 'target_value', 'reward_xp', 'reward_fuel', 'is_active', 'is_daily', 'order']
@@ -552,6 +676,5 @@ class MissionDetailView(APIView):
         return Response(_serialize_mission(m))
 
     def delete(self, request, pk):
-        import apps.gamification.models as gm
-        gm.Mission.objects.filter(pk=pk).delete()
+        Mission.objects.filter(pk=pk).delete()
         return Response(status=204)

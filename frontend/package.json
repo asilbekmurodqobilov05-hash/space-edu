@@ -4,16 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "cosmic:sync": "node ./scripts/sync-cosmic.mjs",
-    "predev": "node ./scripts/sync-cosmic.mjs",
-    "prebuild": "node ./scripts/sync-cosmic.mjs",
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@google/genai": "^1.29.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",
@@ -29,7 +25,6 @@
     "react-router-dom": "^7.14.0",
     "satellite.js": "^4.1.4",
     "three": "^0.183.2",
-    "vite": "^6.2.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

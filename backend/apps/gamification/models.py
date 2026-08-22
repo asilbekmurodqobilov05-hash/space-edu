@@ -1,7 +1,7 @@
 import math
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 
 
 class UserGamificationProfile(models.Model):
@@ -23,20 +23,69 @@ class UserGamificationProfile(models.Model):
     def __str__(self):
         return f'{self.user.username} — Level {self.level}'
 
+    FUEL_CAP = 1000
+
+    @staticmethod
+    def level_for_xp(xp):
+        return math.floor(math.sqrt(max(xp, 0) / 100)) + 1
+
     def add_xp(self, amount):
-        self.xp += amount
-        self.level = math.floor(math.sqrt(self.xp / 100)) + 1
-        self.save(update_fields=['xp', 'level'])
+        """Add XP and recompute the level, atomically.
+
+        Was a read-modify-write on a loaded instance, so two concurrent awards
+        both read the same starting value and the second overwrote the first.
+        Several call sites also wrote `profile.xp += n` directly and skipped the
+        level recompute entirely, which is why quiz XP never levelled anyone up.
+        """
+        if amount <= 0:
+            return self
+        with transaction.atomic():
+            locked = (
+                UserGamificationProfile.objects
+                .select_for_update()
+                .get(pk=self.pk)
+            )
+            locked.xp = locked.xp + int(amount)
+            locked.level = self.level_for_xp(locked.xp)
+            locked.save(update_fields=['xp', 'level'])
+        self.refresh_from_db(fields=['xp', 'level'])
+        return self
 
     def add_fuel(self, amount):
-        self.fuel = min(self.fuel + amount, 1000)
-        self.save(update_fields=['fuel'])
+        if amount <= 0:
+            return self
+        with transaction.atomic():
+            locked = (
+                UserGamificationProfile.objects
+                .select_for_update()
+                .get(pk=self.pk)
+            )
+            locked.fuel = min(locked.fuel + int(amount), self.FUEL_CAP)
+            locked.save(update_fields=['fuel'])
+        self.refresh_from_db(fields=['fuel'])
+        return self
 
     def spend_fuel(self, amount):
-        if self.fuel < amount:
-            return False
-        self.fuel -= amount
-        self.save(update_fields=['fuel'])
+        """Debit the balance, refusing to go negative.
+
+        The check and the write must happen under the same row lock, otherwise
+        two concurrent purchases both pass the balance check and the user gets
+        both items for the price of one.
+        """
+        amount = int(amount)
+        if amount <= 0:
+            return True
+        with transaction.atomic():
+            locked = (
+                UserGamificationProfile.objects
+                .select_for_update()
+                .get(pk=self.pk)
+            )
+            if locked.fuel < amount:
+                return False
+            locked.fuel = locked.fuel - amount
+            locked.save(update_fields=['fuel'])
+        self.refresh_from_db(fields=['fuel'])
         return True
 
 

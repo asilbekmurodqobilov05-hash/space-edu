@@ -6,6 +6,11 @@ from .models import (
 )
 
 
+def _is_staff(context):
+    request = context.get('request')
+    return bool(request and request.user.is_authenticated and request.user.is_staff)
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  NEW SPHERE-BASED SERIALIZERS
 # ══════════════════════════════════════════════════════════════════════════════
@@ -63,6 +68,21 @@ class TopicWriteSerializer(serializers.ModelSerializer):
 
 # ── Problem ──
 class ProblemSerializer(serializers.ModelSerializer):
+    """Public problem.
+
+    `answer` and `explanation` used to be in this list, under a permission that
+    allows anonymous reads — the solution key for the whole Masalalar set was one
+    unauthenticated GET away. Staff get ProblemFullSerializer instead.
+    """
+
+    class Meta:
+        model = Problem
+        fields = ('id', 'number', 'question', 'question_en', 'question_ru', 'difficulty')
+
+
+class ProblemFullSerializer(serializers.ModelSerializer):
+    """Staff view — includes the solution."""
+
     class Meta:
         model = Problem
         fields = ('id', 'number', 'question', 'question_en', 'question_ru',
@@ -139,6 +159,16 @@ class SectionSerializer(serializers.ModelSerializer):
 
 
 class QuizQuestionSerializer(serializers.ModelSerializer):
+    """Public question — no answer, no explanation."""
+
+    class Meta:
+        model = QuizQuestion
+        fields = ('id', 'lesson', 'order', 'text_en', 'text_uz', 'text_ru', 'options')
+
+
+class QuizQuestionFullSerializer(serializers.ModelSerializer):
+    """Staff view — includes the answer key."""
+
     class Meta:
         model = QuizQuestion
         fields = ('id', 'lesson', 'order', 'text_en', 'text_uz', 'text_ru',
@@ -155,7 +185,15 @@ class LessonListSerializer(serializers.ModelSerializer):
 
 class LessonDetailSerializer(serializers.ModelSerializer):
     sections = SectionSerializer(many=True, read_only=True)
-    questions = QuizQuestionSerializer(many=True, read_only=True)
+    # Nesting the serializer directly re-exposed correct_answer to anonymous
+    # callers through the lesson endpoint, bypassing the split above.
+    questions = serializers.SerializerMethodField()
+
+    def get_questions(self, obj):
+        serializer = (
+            QuizQuestionFullSerializer if _is_staff(self.context) else QuizQuestionSerializer
+        )
+        return serializer(obj.questions.all(), many=True, context=self.context).data
 
     class Meta:
         model = Lesson

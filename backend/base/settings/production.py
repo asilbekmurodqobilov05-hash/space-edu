@@ -18,7 +18,12 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
 ] + [m for m in MIDDLEWARE if m != 'django.middleware.security.SecurityMiddleware']
 
+# `default` must always be present. base.py only defines STORAGES when Cloudflare
+# R2 is configured, so without it this dict used to end up with `staticfiles`
+# alone and every ImageField save raised InvalidStorageError — silently, because
+# `manage.py check` does not look at storage aliases.
 STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     **globals().get('STORAGES', {}),
     'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
 }

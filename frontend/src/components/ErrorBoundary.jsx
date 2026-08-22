@@ -23,14 +23,23 @@ export default class ErrorBoundary extends Component {
   }
 
   resetAndReload = () => {
+    // These must match the `name` of every zustand persist() in src/store and
+    // src/game. The old list named 'auth-storage' and 'uz-cosmos-storage',
+    // neither of which exists, and missed the real auth key — so "Reset app
+    // data" left the corrupt state in place and the crash loop continued.
     const keys = [
-      'auth-storage',
-      'uz-cosmos-storage',
-      'gamification-storage',
-      'uz-cosmos-learning-storage',
-      'space-edu-arcade',
+      'uz-cosmos-auth',            // useAuthStore
+      'gamification-storage',      // useGamificationStore
+      'uz-cosmos-learning-storage',// useLearningStore
+      'space-edu-likes-storage',   // useLikesStore
+      'space-edu-problems',        // useProblemsStore
+      'star-collection-storage',   // useStarStore
+      'space-edu-arcade',          // spaceArcadeStore
+      'space-edu-last-crash',
     ];
-    for (const key of keys) localStorage.removeItem(key);
+    for (const key of keys) {
+      try { localStorage.removeItem(key); } catch { /* private mode */ }
+    }
     window.location.assign('/');
   };
 

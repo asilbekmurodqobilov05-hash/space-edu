@@ -27,35 +27,51 @@ export const useGamificationStore = create()(
 
       reset: () => set(initialState),
 
+      // These three used to POST /gamification/grant/, which let the browser
+      // tell the server how much XP and fuel to award — one request produced
+      // level 101. That endpoint is gone. What remains here is a purely
+      // OPTIMISTIC local update so a number moves the moment the user earns
+      // something; the next pullFromServer() overwrites it with the truth.
+      //
+      // Never treat these as authoritative and never send them anywhere.
       addXp: (amount) => {
         const newXp = get().xp + amount;
         set({ xp: newXp, level: calcLevel(newXp) });
         get().checkBadges();
-        api.post('/gamification/grant/', { xp: amount }).catch(() => {});
       },
 
       addFuel: (amount) => {
         set((s) => ({ fuel: Math.min(1000, s.fuel + amount) }));
-        api.post('/gamification/grant/', { fuel: amount }).catch(() => {});
       },
 
       addRewards: (xp, fuel) => {
         const newXp = get().xp + xp;
-        set((s) => ({ 
-          xp: newXp, 
+        set((s) => ({
+          xp: newXp,
           level: calcLevel(newXp),
-          fuel: Math.min(1000, s.fuel + fuel)
+          fuel: Math.min(1000, s.fuel + fuel),
         }));
         get().checkBadges();
-        api.post('/gamification/grant/', { xp, fuel }).catch(() => {});
       },
 
       spendFuel: (amount) => {
         const cur = get().fuel;
         if (cur < amount) return false;
         set({ fuel: cur - amount });
-        // NOTE: Negative fuel not supported by grant yet, but could be added later
         return true;
+      },
+
+      // Re-read the real totals. Call after anything the server rewards:
+      // finishing a quiz, submitting the daily challenge, completing a lesson,
+      // buying from the store.
+      pullFromServer: async () => {
+        try {
+          const { data } = await api.get('/gamification/profile/');
+          get().syncFromAPI(data);
+          return data;
+        } catch {
+          return null;
+        }
       },
 
       buyItem: (itemId, cost) => {
@@ -135,12 +151,14 @@ export const useGamificationStore = create()(
         get().checkBadges();
       },
 
-      // Sync state from backend API response but preserve local progression if it's higher
+      // The server is the source of truth. This used to keep whichever value was
+      // HIGHER, so anything inflated locally survived every sync and could never
+      // be corrected — an offline XP faucet on top of the grant/ one.
       syncFromAPI: ({ xp, level, fuel, streak, last_play_date, skills }) =>
         set((s) => ({
-          xp: Math.max(s.xp || 0, xp || 0),
-          level: Math.max(s.level || 1, level || 1),
-          fuel: Math.max(s.fuel || 0, fuel || 0),
+          xp: xp ?? s.xp,
+          level: level ?? s.level,
+          fuel: fuel ?? s.fuel,
           streak: streak ?? s.streak,
           lastPlayDate: last_play_date ?? s.lastPlayDate,
           skills: skills ?? s.skills,

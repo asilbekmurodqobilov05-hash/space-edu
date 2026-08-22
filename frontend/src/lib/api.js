@@ -9,7 +9,7 @@ const api = axios.create({
 let _getAccess = () => null;
 let _getRefresh = () => null;
 let _onLogout = () => {};
-let _onTokenRefresh = (_newAccess) => {};
+let _onTokenRefresh = (_newAccess, _newRefresh) => {};
 
 export const setupApiAuth = (getAccess, getRefresh, onLogout, onTokenRefresh) => {
   _getAccess = getAccess;
@@ -40,8 +40,12 @@ api.interceptors.response.use(
         `${import.meta.env.VITE_API_URL}/auth/token/refresh/`,
         { refresh }
       );
-      // Persist new access token in store — do NOT reassign _getAccess (breaks dynamic reads)
-      _onTokenRefresh(data.access);
+      // The backend runs ROTATE_REFRESH_TOKENS with BLACKLIST_AFTER_ROTATION, so
+      // this response carries a NEW refresh token and the one we just sent is
+      // now blacklisted. Dropping data.refresh meant the next refresh went out
+      // with a dead token and every user was forced back to /login about an
+      // hour after signing in. Persist both.
+      _onTokenRefresh(data.access, data.refresh);
       error.config.headers.Authorization = `Bearer ${data.access}`;
       return api(error.config);
     } catch {

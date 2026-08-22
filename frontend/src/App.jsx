@@ -5,6 +5,7 @@ import Navigation from '@/components/layout/Navigation';
 import ParticleBackground from '@/components/layout/ParticleBackground';
 import PageTransition from '@/components/layout/PageTransition';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import StaffRoute from '@/components/StaffRoute';
 import Footer from '@/components/layout/Footer';
 import CosmicLoader from '@/components/ui/CosmicLoader';
 import ChatSystem from '@/features/chat/ChatSystem';
@@ -118,8 +119,8 @@ export default function App() {
               <Route path="/daily"     element={<PT><DailyChallengeView /></PT>} />
             </Route>
 
-            {/* Admin */}
-            <Route element={<ProtectedRoute />}>
+            {/* Admin — staff only, not merely signed in */}
+            <Route element={<StaffRoute />}>
               <Route path="/admin-panel" element={<PT><AdminDashboard /></PT>} />
             </Route>
 

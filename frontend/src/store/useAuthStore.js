@@ -18,21 +18,32 @@ export const useAuthStore = create()(
       login: (user, accessToken, refreshToken) => {
         _resetAllStores();
         set({ user, accessToken, refreshToken, isAuthenticated: true });
-        _setupAuth(get);
+        _setupAuth();
       },
 
       setTokens: (accessToken, refreshToken) => {
         set({ accessToken, refreshToken, isAuthenticated: Boolean(accessToken) });
-        _setupAuth(get);
+        _setupAuth();
       },
 
       updateUser: (data) =>
         set((s) => ({ user: { ...s.user, ...data } })),
 
       logout: () => {
+        // Tell the server to blacklist the refresh token; without this it stayed
+        // valid for its full 7 days after the user pressed "log out".
+        const refresh = get().refreshToken;
+        if (refresh) {
+          api.post('/auth/logout/', { refresh }).catch(() => {});
+        }
         _resetAllStores();
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
-        setupApiAuth(() => null, () => null, () => { window.location.href = '/login'; });
+        setupApiAuth(
+          () => null,
+          () => null,
+          () => { window.location.href = '/login'; },
+          () => {},
+        );
       },
 
       // Called on app mount to verify token is still valid
@@ -51,8 +62,13 @@ export const useAuthStore = create()(
             useLearningStore.getState().syncProgressFromAPI(progressData);
           } catch (e) { }
           return true;
-        } catch {
-          get().logout();
+        } catch (err) {
+          // Only a rejected credential ends the session. This used to catch
+          // everything, so one flaky request or a 502 from a cold-starting
+          // backend logged the user out.
+          if (err?.response?.status === 401) {
+            get().logout();
+          }
           return false;
         }
       },
@@ -69,23 +85,22 @@ function _resetAllStores() {
   useProblemsStore.getState().resetProblems();
 }
 
-function _setupAuth(get) {
+function _setupAuth() {
   setupApiAuth(
-    () => get().accessToken,
-    () => get().refreshToken,
+    () => useAuthStore.getState().accessToken,
+    () => useAuthStore.getState().refreshToken,
     () => { useAuthStore.getState().logout(); window.location.href = '/login'; },
-    (newAccess) => { useAuthStore.setState({ accessToken: newAccess }); }
+    (newAccess, newRefresh) => {
+      useAuthStore.setState((s) => ({
+        accessToken: newAccess,
+        refreshToken: newRefresh ?? s.refreshToken,
+      }));
+    }
   );
 }
 
-// Wire up interceptors on store creation (handles page reload with persisted tokens)
-setTimeout(() => {
-  const { accessToken, logout } = useAuthStore.getState();
-  if (accessToken) {
-    setupApiAuth(
-      () => useAuthStore.getState().accessToken,
-      () => useAuthStore.getState().refreshToken,
-      () => { logout(); window.location.href = '/login'; }
-    );
-  }
-}, 0);
+// Wire up the interceptors on module load, so a page reload with persisted
+// tokens gets the same wiring as a fresh login. The old version passed only
+// three arguments here, leaving the token-refresh callback as a no-op — so
+// after any reload the rotated tokens were thrown away.
+_setupAuth();

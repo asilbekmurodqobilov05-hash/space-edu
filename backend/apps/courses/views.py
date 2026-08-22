@@ -14,13 +14,36 @@ from .serializers import (
     TopicListSerializer, TopicDetailSerializer, TopicWriteSerializer,
     TopicLessonSerializer, TopicLessonWriteSerializer,
     SubLessonSerializer, SubLessonWriteSerializer,
-    ProblemSerializer, ProblemWriteSerializer,
+    ProblemSerializer, ProblemFullSerializer, ProblemWriteSerializer,
     # Legacy
     LevelSerializer, LevelWriteSerializer,
     UnitListSerializer, UnitDetailSerializer, UnitWriteSerializer,
     LessonListSerializer, LessonDetailSerializer, LessonWriteSerializer,
-    SectionSerializer, QuizQuestionSerializer,
+    SectionSerializer, QuizQuestionSerializer, QuizQuestionFullSerializer,
 )
+
+
+def _is_staff(request):
+    return bool(request.user.is_authenticated and request.user.is_staff)
+
+
+def _first_match_by_slug(self):
+    """Resolve `lookup_field = 'slug'` when the slug is not globally unique.
+
+    DRF's default calls .get(slug=...), which explodes with MultipleObjectsReturned
+    the moment two parents reuse a slug. Filtering and taking the first keeps the
+    endpoint answering instead of returning 500; the query params these viewsets
+    already support (?level=, ?unit=) narrow it to one row.
+    """
+    from django.shortcuts import get_object_or_404
+
+    queryset = self.filter_queryset(self.get_queryset())
+    slug = self.kwargs[self.lookup_field]
+    obj = queryset.filter(**{self.lookup_field: slug}).first()
+    if obj is None:
+        get_object_or_404(queryset, **{self.lookup_field: slug})
+    self.check_object_permissions(self.request, obj)
+    return obj
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -120,7 +143,7 @@ class ProblemViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method in ('POST', 'PUT', 'PATCH'):
             return ProblemWriteSerializer
-        return ProblemSerializer
+        return ProblemFullSerializer if _is_staff(self.request) else ProblemSerializer
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -149,6 +172,11 @@ class UnitViewSet(viewsets.ModelViewSet):
     permission_classes = [AdminWriteOrReadOnly]
     lookup_field = 'slug'
 
+    # Unit.slug is only unique together with its level, so a bare slug lookup
+    # raised MultipleObjectsReturned -> 500 as soon as two levels had a unit with
+    # the same name. Narrow by ?level= when given, else take the first by order.
+    get_object = _first_match_by_slug
+
     def get_queryset(self):
         qs = Unit.objects.all()
         level = self.request.query_params.get('level')
@@ -168,6 +196,9 @@ class LessonViewSet(viewsets.ModelViewSet):
     queryset = Lesson.objects.all()
     permission_classes = [AdminWriteOrReadOnly]
     lookup_field = 'slug'
+
+    # Lesson.slug is unique per unit only — same problem as UnitViewSet above.
+    get_object = _first_match_by_slug
 
     def get_queryset(self):
         qs = Lesson.objects.all()
@@ -197,8 +228,10 @@ class SectionViewSet(viewsets.ModelViewSet):
 
 
 class QuizQuestionViewSet(viewsets.ModelViewSet):
-    serializer_class = QuizQuestionSerializer
     permission_classes = [AdminWriteOrReadOnly]
+
+    def get_serializer_class(self):
+        return QuizQuestionFullSerializer if _is_staff(self.request) else QuizQuestionSerializer
 
     def get_queryset(self):
         qs = QuizQuestion.objects.all()
