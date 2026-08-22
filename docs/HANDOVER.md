@@ -1,6 +1,6 @@
 # Handover — state of the work on 22 August 2026
 
-Branch `fix/audit-critical`, 20 commits ahead of `origin/main`, **not merged
+Branch `fix/audit-critical`, 22 commits ahead of `origin/main`, **not merged
 back, not pushed**. `origin/main` has been merged *in*, so the branch contains
 everyone's work. Everything below is committed on it.
 
@@ -17,8 +17,8 @@ everyone's work. Everything below is committed on it.
 Verify the state in one go:
 
 ```bash
-cd backend  && python manage.py test apps base   # expect 252 OK
-cd frontend && npm test                          # expect 161 OK
+cd backend  && python manage.py test apps base   # expect 268 OK
+cd frontend && npm test                          # expect 172 OK
 cd frontend && npm run build && npm run check:locales && npm run content:check
 ```
 
@@ -27,7 +27,7 @@ cd frontend && npm run build && npm run check:locales && npm run content:check
 ## What changed
 
 An audit on 22 August found 42 defects across ~30 000 lines; 20 were reproduced
-by running the code. The project had **zero tests**. It now has **413**, and CI
+by running the code. The project had **zero tests**. It now has **440**, and CI
 that blocks a red merge.
 
 ### Security
@@ -117,6 +117,31 @@ afternoon writing lessons in the panel and nothing changed on the site.
   nothing to verify server-side.
 - Quiz questions can attach to a lesson (`ChallengeQuestion.lesson`), and
   `POST /challenges/quiz/start/` takes a lesson slug.
+
+### Second audit pass, after the merge
+
+Six findings, five of them in code the first pass had already been through.
+
+- **The daily streak bonus could be claimed twice.** `StreakUpdateView` read,
+  decided, then wrote with nothing holding the row — the one award path the
+  first pass's row-lock sweep missed. `UserStreak.update_streak()` in the
+  challenges app had the identical shape.
+- **The day was the server's, not the student's.** `TIME_ZONE` is Asia/Tashkent
+  and the server runs on UTC, so the daily reset landed at 05:00 local and an
+  evening session was filed under yesterday — which silently broke streaks for
+  anyone studying after dinner. Five call sites moved to `timezone.localdate()`.
+- **Submitting the daily challenge twice at once returned 500.** The `exists()`
+  check is not the guard; `unique_together` is, and the loser of the race saw an
+  unhandled IntegrityError.
+- **The /learn cards understated every subject by three to six times** — physics
+  advertised 24 lessons against 144. They now read `Sphere.lessons_count`.
+- **The admin panel said nothing when anything failed.** Nine call sites either
+  discarded the error or had no rejection handler at all.
+
+All six have tests, and the ones where a test could pass for the wrong reason
+were checked by mutation.
+
+---
 
 ### The redesign merged from `main`
 
