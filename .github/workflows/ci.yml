@@ -72,6 +72,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Tests
+        run: npm test
+
       - name: Build
         env:
           VITE_API_URL: https://example.invalid/api/v1
