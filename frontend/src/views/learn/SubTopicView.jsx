@@ -4,23 +4,61 @@ import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { astronomyTopicsData } from '@/data/astronomyTopicsData';
 import { interviewsTopicsData } from '@/data/interviewsTopicsData';
 import { creativityTopicsData } from '@/data/creativityTopicsData';
-import { BookOpen, Beaker } from 'lucide-react';
+import { BookOpen, FlaskConical } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const blockVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden:  { opacity: 0, y: 16 },
   visible: (i) => ({
     opacity: 1, y: 0,
-    transition: { delay: i * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+    transition: { delay: i * 0.045, duration: 0.4, ease: [0.22, 1, 0.36, 1] },
   }),
 };
 
+/* Reusable pill button */
+function FuiButton({ icon: Icon, label, accentColor, onClick }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '7px',
+        padding: '9px 18px',
+        borderRadius: '9999px',
+        background: hov ? accentColor : 'transparent',
+        border: `1.5px solid ${accentColor}`,
+        color: hov ? '#0a0a14' : accentColor,
+        fontFamily: "'Orbitron', sans-serif",
+        fontSize: '11px',
+        fontWeight: 800,
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        transition: 'all 0.25s cubic-bezier(0.22,1,0.36,1)',
+        boxShadow: hov ? `0 0 14px ${accentColor}55` : `0 0 6px ${accentColor}15`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <Icon style={{ width: '13px', height: '13px', flexShrink: 0 }} />
+      {label}
+    </button>
+  );
+}
+
 function LessonBlock({ lesson, index, color, onClick }) {
   const [hovered, setHovered] = useState(false);
-  const { t, i18n } = useTranslation();
-  const colorLight = `${color}1A`; 
-  const colorBorder = `${color}40`;
+  const { t } = useTranslation();
+
+  const tealColor = '#2dd4bf';
+  const blueColor = '#60a5fa';
+  const badgeColor = tealColor;
+
+  const lessonName = typeof lesson === 'object' ? lesson.name : lesson;
 
   return (
     <motion.div
@@ -35,54 +73,69 @@ function LessonBlock({ lesson, index, color, onClick }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '20px 24px',
-        borderRadius: '16px',
-        border: `1px solid ${hovered ? colorBorder : 'rgba(255,255,255,0.06)'}`,
-        background: hovered ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
-        backdropFilter: 'blur(12px)',
-        transition: 'all 0.3s ease',
+        gap: '16px',
+        padding: '16px 20px',
+        borderRadius: '14px',
+        background: hovered ? 'rgba(45,212,191,0.04)' : 'rgba(255,255,255,0.025)',
+        border: `1px solid ${hovered ? 'rgba(45,212,191,0.25)' : 'rgba(255,255,255,0.06)'}`,
         cursor: 'pointer',
-        boxShadow: hovered ? `0 4px 20px rgba(0,0,0,0.2), 0 0 15px ${colorLight}` : 'none',
+        transition: 'all 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+        transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
+        boxShadow: hovered
+          ? `0 10px 28px rgba(0,0,0,0.5), 0 0 14px rgba(45,212,191,0.12)`
+          : '0 2px 8px rgba(0,0,0,0.2)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {/* Badge + title */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: 0 }}>
         <div style={{
-          width: '32px', height: '32px', borderRadius: '8px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: colorLight, border: `1px solid ${colorBorder}`,
-          color: color, fontSize: '13px', fontWeight: 800
+          width: '38px',
+          height: '38px',
+          borderRadius: '50%',
+          background: 'rgba(45,212,191,0.12)',
+          border: `1.5px solid ${badgeColor}55`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: "'Orbitron', sans-serif",
+          fontSize: '13px',
+          fontWeight: 900,
+          color: badgeColor,
+          flexShrink: 0,
+          boxShadow: `0 0 8px ${badgeColor}20`,
         }}>
-          {index + 1}
+          {String(index + 1).padStart(2, '0')}
         </div>
-        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 500, color: hovered ? '#fff' : 'rgba(255,255,255,0.85)', transition: 'color 0.2s ease' }}>
-          {lesson.name}
+        <h3 style={{
+          margin: 0,
+          fontSize: '15px',
+          fontWeight: 700,
+          color: hovered ? '#fff' : 'rgba(255,255,255,0.88)',
+          letterSpacing: '0.01em',
+          lineHeight: 1.35,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          transition: 'color 0.2s ease',
+        }}>
+          {lessonName}
         </h3>
       </div>
-      
-      <div style={{ display: 'flex', gap: '12px' }}>
-        <button
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '8px 16px', borderRadius: '10px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: '#fff', fontSize: '14px', fontWeight: 600,
-            cursor: 'pointer', transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = color;
-            e.currentTarget.style.borderColor = color;
-            e.currentTarget.style.color = '#000';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-            e.currentTarget.style.color = '#fff';
-          }}
-        >
-          <BookOpen style={{ width: '16px', height: '16px' }} />
-          {t('learnViews', 'readButton')}
-        </button>
+
+      {/* Buttons */}
+      <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+        <FuiButton
+          icon={BookOpen}
+          label={t('learnViews', 'readButton') || 'Read'}
+          accentColor={tealColor}
+          onClick={onClick}
+        />
+        <FuiButton
+          icon={FlaskConical}
+          label={t('learnViews', 'labButton') || 'Lab'}
+          accentColor={blueColor}
+          onClick={onClick}
+        />
       </div>
     </motion.div>
   );
@@ -93,14 +146,14 @@ export default function SubTopicView() {
   const navigate = useNavigate();
 
   let dataSource = null;
-  let backPath = "/learn";
+  let backPath = '/learn';
 
-  if (subject === 'astronomy') { dataSource = astronomyTopicsData; backPath = `/learn/astronomy/${topicId}`; }
+  if (subject === 'astronomy')  { dataSource = astronomyTopicsData;  backPath = `/learn/astronomy/${topicId}`; }
   else if (subject === 'interviews') { dataSource = interviewsTopicsData; backPath = `/learn/interviews/${topicId}`; }
   else if (subject === 'creativity') { dataSource = creativityTopicsData; backPath = `/learn/creativity/${topicId}`; }
 
   const topic = dataSource ? dataSource[topicId] : null;
-  
+
   let subTopic = null;
   if (topic) {
     if (topic.sections) {
@@ -119,15 +172,15 @@ export default function SubTopicView() {
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
       <SectionPageHeader title={subTopic.name} color={topic.color} backPath={backPath} />
 
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ maxWidth: '860px', margin: '0 auto', padding: '32px 20px 80px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {subTopic.subLessons.map((lesson, i) => (
-            <LessonBlock 
-              key={i} 
-              lesson={lesson} 
-              index={i} 
-              color={topic.color} 
-              onClick={() => navigate(`/learn/${subject}/${topicId}/sub/${subIdx}/lesson/${i}`)} 
+            <LessonBlock
+              key={i}
+              lesson={lesson}
+              index={i}
+              color={topic.color}
+              onClick={() => navigate(`/learn/${subject}/${topicId}/sub/${subIdx}/lesson/${i}`)}
             />
           ))}
         </div>

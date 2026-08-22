@@ -539,3 +539,235 @@
     }
   }
 }
+
+/* ─────────────────── LEARN PAGE REDESIGN STYLES ─────────────────── */
+
+@keyframes spin-ring {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.orbit-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  border-top-color: var(--ring-color);
+  border-right-color: var(--ring-color);
+  animation: spin-ring 6s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.planet-icon {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.course-card {
+  opacity: 0;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.course-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 20px var(--accent-color);
+  transition: all 0.25s ease;
+}
+
+.course-card:hover .card-arrow-btn {
+  background: var(--accent-color) !important;
+  color: #07080f !important;
+  transform: scale(1.05);
+}
+
+.learn-bento-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "physics problems astronomy"
+    "physics creativity astronomy"
+    ". interviews interviews";
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.physics-card { grid-area: physics; }
+.problems-card { grid-area: problems; }
+.astronomy-card { grid-area: astronomy; }
+.creativity-card { grid-area: creativity; }
+.interviews-card { grid-area: interviews; }
+
+@media (max-width: 900px) {
+  .learn-bento-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "physics"
+      "astronomy"
+      "problems"
+      "creativity"
+      "interviews";
+    gap: 16px;
+  }
+}
+
+/* ─────────────────── HUD / FUI REDESIGN CLASSES ─────────────────── */
+
+.fui-dark-card {
+  background: #05050c !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.02) !important;
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.fui-dark-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px) 0 0 / 16px 16px,
+    linear-gradient(0deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px) 0 0 / 16px 16px;
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+/* Corner decorators for FUI panels */
+.fui-corners {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.fui-corners::before,
+.fui-corners::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--fui-accent, #8b5cf6);
+  border-style: solid;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.fui-corners::before {
+  top: 8px;
+  left: 8px;
+  border-width: 2px 0 0 2px;
+}
+
+.fui-corners::after {
+  bottom: 8px;
+  right: 8px;
+  border-width: 0 2px 2px 0;
+}
+
+/* Orbit Ring Rotations */
+@keyframes spin-ring {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spin-ring-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+.orbit-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-top-color: var(--ring-color, #8b5cf6);
+  border-right-color: var(--ring-color, #8b5cf6);
+  animation: spin-ring 5s linear infinite;
+  opacity: 0.7;
+}
+
+.fui-orbit-ring-reverse {
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  border: 1px dashed transparent;
+  border-bottom-color: var(--ring-color);
+  border-left-color: var(--ring-color);
+  animation: spin-ring-reverse 8s linear infinite;
+  opacity: 0.45;
+}
+
+/* FUI Video container corners */
+.fui-video-frame {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+}
+
+.fui-video-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  border: 1.5px solid var(--fui-accent, #8b5cf6);
+  border-radius: 24px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 0 20px rgba(var(--fui-accent-rgb, 139, 92, 246), 0.15);
+}
+
+.fui-hud-corners {
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+}
+.fui-hud-corners::before,
+.fui-hud-corners::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: rgba(255, 255, 255, 0.25);
+  border-style: solid;
+}
+.fui-hud-corners::before {
+  top: 0; left: 0; border-width: 2px 0 0 2px;
+}
+.fui-hud-corners::after {
+  bottom: 0; right: 0; border-width: 0 2px 2px 0;
+}
+
+.fui-hud-corners-2 {
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+}
+.fui-hud-corners-2::before,
+.fui-hud-corners-2::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: rgba(255, 255, 255, 0.25);
+  border-style: solid;
+}
+.fui-hud-corners-2::before {
+  bottom: 0; left: 0; border-width: 0 0 2px 2px;
+}
+.fui-hud-corners-2::after {
+  top: 0; right: 0; border-width: 2px 2px 0 0;
+}
+
+

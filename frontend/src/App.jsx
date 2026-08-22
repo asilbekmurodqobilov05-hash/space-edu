@@ -62,7 +62,8 @@ export default function App() {
   const isGame  = location.pathname === GAME_PATH;
   const isAuth  = ['/login', '/register'].includes(location.pathname);
   const isAdmin = location.pathname === '/admin-panel';
-  const shouldHideFooter = ['/history', '/live'].includes(location.pathname) || isAdmin;
+  const isHome  = location.pathname === '/';
+  const shouldHideFooter = ['/history', '/live', '/'].includes(location.pathname) || isAdmin;
 
   return (
     <div className="relative min-h-screen text-white font-sans">
@@ -129,7 +130,7 @@ export default function App() {
         </Suspense>
       </main>
 
-      {!isGame && !isAuth && !isAdmin && <ChatSystem />}
+      {!isGame && !isAuth && !isAdmin && !isHome && <ChatSystem />}
       {!isGame && !isAuth && !isAdmin && !shouldHideFooter && <Footer />}
     </div>
   );

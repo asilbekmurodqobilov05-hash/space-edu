@@ -21,32 +21,144 @@ export default function ProblemsView() {
   }
 
   const { t, i18n } = useTranslation();
+  const solvedCount = Object.values(solvedProblems).filter((status) => status === 'correct').length;
 
   return (
     <div className="pt-24 pb-20" style={{ minHeight: '100vh', background: 'transparent' }}>
       <SectionPageHeader title={t('learnViews', 'problemsTitle')} color={color} />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px 80px' }}>
-        {/* Intro */}
+        {/* Large Hero */}
         <motion.div
-          initial={{ opacity: 0, y: -16 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.5 }}
+          transition={{ delay: 0.08, duration: 0.55 }}
           style={{ textAlign: 'center', marginBottom: '48px' }}
+        >
+          {/* HelpCircle icon with spinning orbit ring */}
+          <div style={{
+            position: 'relative',
+            width: '96px',
+            height: '96px',
+            margin: '0 auto 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {/* Outer spinning ring */}
+            <div style={{
+              position: 'absolute',
+              inset: '-14px',
+              borderRadius: '50%',
+              border: '2px solid transparent',
+              borderTopColor: color,
+              borderRightColor: `${color}60`,
+              animation: 'spin-ring 4s linear infinite',
+            }} />
+            {/* Inner counter-spin dashed ring */}
+            <div style={{
+              position: 'absolute',
+              inset: '-7px',
+              borderRadius: '50%',
+              border: '1px dashed rgba(74, 222, 128, 0.3)',
+              animation: 'spin-ring 9s linear infinite reverse',
+            }} />
+            {/* Icon container */}
+            <div style={{
+              width: '96px',
+              height: '96px',
+              borderRadius: '50%',
+              background: `radial-gradient(circle at 35% 30%, rgba(74, 222, 128, 0.25) 0%, rgba(22, 101, 52, 0.1) 100%)`,
+              border: `2px solid ${colorBorder}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: `0 0 40px ${color}25, 0 0 80px ${color}10`,
+            }}>
+              <HelpCircle style={{ width: '44px', height: '44px', color }} />
+            </div>
+          </div>
+
+          {/* Title in Orbitron */}
+          <h1 style={{
+            fontFamily: "'Orbitron', sans-serif",
+            fontSize: 'clamp(22px, 3vw, 32px)',
+            fontWeight: 900,
+            color: '#fff',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            margin: '0 0 12px 0',
+            textShadow: `0 0 20px rgba(74, 222, 128, 0.50)`,
+          }}>
+            PROBLEMS
+          </h1>
+
+          {/* Subtitle */}
+          <p style={{
+            color: 'rgba(74, 222, 128, 0.7)',
+            fontSize: '15px',
+            maxWidth: '480px',
+            margin: '0 auto',
+            lineHeight: 1.65,
+          }}>
+            Masalalar
+          </p>
+
+          {/* Divider */}
+          <div style={{
+            width: '60px',
+            height: '2px',
+            background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+            margin: '24px auto 0',
+            borderRadius: '2px',
+          }} />
+        </motion.div>
+
+        {/* Stats bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.5 }}
+          style={{
+            textAlign: 'center',
+            marginBottom: '32px',
+          }}
         >
           <div
             style={{
-              width: '72px', height: '72px', borderRadius: '20px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: colorLight, border: `1px solid ${colorBorder}`,
-              margin: '0 auto 20px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '8px 20px',
+              borderRadius: '9999px',
+              background: 'rgba(74, 222, 128, 0.05)',
+              border: '1px solid rgba(74, 222, 128, 0.2)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25), 0 0 15px rgba(74, 222, 128, 0.05)',
             }}
           >
-            <HelpCircle style={{ width: '36px', height: '36px', color }} />
+            {/* Blinking green status indicator dot */}
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: color,
+                boxShadow: `0 0 8px ${color}`,
+                display: 'inline-block',
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'Orbitron', sans-serif",
+                fontSize: '14px',
+                fontWeight: 700,
+                color: color,
+                letterSpacing: '0.05em',
+              }}
+            >
+              {solvedCount} / {TOTAL_PROBLEMS} solved
+            </span>
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px', maxWidth: '500px', margin: '0 auto' }}>
-            {t('learnViews', 'problemsDesc').replace('{count}', TOTAL_PROBLEMS)}
-          </p>
         </motion.div>
 
         {/* Grid of numbered squares */}
@@ -59,6 +171,10 @@ export default function ProblemsView() {
             flexDirection: 'column',
             gap: '8px',
             alignItems: 'center',
+            background: 'radial-gradient(ellipse at 50% 40%, rgba(74,222,128,0.06) 0%, transparent 70%)',
+            padding: '24px',
+            borderRadius: '20px',
+            width: '100%',
           }}
         >
           {rows.map((row, rowIdx) => (
