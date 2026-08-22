@@ -1,6 +1,6 @@
 # Handover — state of the work on 22 August 2026
 
-Branch `fix/audit-critical`, 25 commits ahead of `origin/main`, **not merged
+Branch `fix/audit-critical`, 28 commits ahead of `origin/main`, **not merged
 back, not pushed**. `origin/main` has been merged *in*, so the branch contains
 everyone's work. Everything below is committed on it.
 
@@ -17,8 +17,8 @@ everyone's work. Everything below is committed on it.
 Verify the state in one go:
 
 ```bash
-cd backend  && python manage.py test apps base   # expect 281 OK
-cd frontend && npm run build && npm test          # expect 183 OK
+cd backend  && python manage.py test apps base   # expect 296 OK
+cd frontend && npm run build && npm test          # expect 193 OK
 cd frontend && npm run build && npm run check:locales && npm run content:check
 ```
 
@@ -27,7 +27,7 @@ cd frontend && npm run build && npm run check:locales && npm run content:check
 ## What changed
 
 An audit on 22 August found 42 defects across ~30 000 lines; 20 were reproduced
-by running the code. The project had **zero tests**. It now has **464**, and CI
+by running the code. The project had **zero tests**. It now has **489**, and CI
 that blocks a red merge.
 
 ### Security
@@ -166,6 +166,28 @@ because 115 of the entries were generated filler.
 
 ---
 
+### Third pass: the browser was doing work only the server should
+
+Two more, both structural.
+
+- **The answer keys were in the bundle.** Covered above; the short version is
+  that three server-side leaks were closed while the client kept its own copies
+  and graded against them.
+- **A broken screen was a broken site.** `SpaceLabView` reaches eight textures
+  on third-party hosts through `useLoader`, which throws on a failed load, and
+  the only error boundary was the root one — so a blocked host replaced the
+  whole application with the crash screen. There is now a `RouteErrorBoundary`
+  inside the chrome, and the textures degrade instead of raising. The audit had
+  left a test saying no route boundary existed and asking for it to be updated
+  deliberately; it has been.
+
+And the gap B1 knowingly left is closed: a moderator can suspend an account
+from chat for 1–90 days while resolving a report, rather than only deleting the
+message. It is chat-scoped on purpose — `User.is_active` would take the
+student's lessons too.
+
+---
+
 ### The redesign merged from `main`
 
 One commit on `main` ("backend changes baby") is a frontend redesign of the nine
@@ -205,7 +227,7 @@ second merge from the old base would reintroduce all three of the above.
 | | |
 |---|---|
 | **Q1 — credential exposure** | The repository is **public** and history holds a database with two superuser password hashes. **Step 1 of `docs/SECURITY-INCIDENT-2026-08-22.md` needs doing today**; it is now one command, `manage.py rotate_leaked_credentials`, and depends on nothing. It deliberately will not set the two superuser passwords — run `changepassword` for those. Steps 2–3 rewrite history and should wait until this branch is merged. |
-| **B1 — review, then decide about DMs** | The moderation floor is built and DMs are **off** (`DM_ENABLED=false`). Turning them on is a product decision about a duty of care to 10-to-18-year-olds, not a code change. Before flipping it: decide who reads `GET /chat/reports/queue/` and how often, and what happens to an account after a report is actioned — there is no suspension mechanism, only message deletion. |
+| **B1 — review, then decide about DMs** | The moderation floor is built and DMs are **off** (`DM_ENABLED=false`). Turning them on is a product decision about a duty of care to 10-to-18-year-olds, not a code change. Before flipping it: decide who reads `GET /chat/reports/queue/` and how often, and how long a first suspension should be — the mechanism exists (`suspend_days`, 1-90, chat-scoped and time-boxed) but nobody has decided the policy. |
 
 ### Free to pick up
 
@@ -216,7 +238,7 @@ second merge from the old base would reintroduce all three of the above.
 | **Lesson quizzes, content** | The plumbing is done end to end — `/quiz/:category?lesson=<slug>` runs a quiz for one lesson. What is missing is content: no `ChallengeQuestion` is attached to a lesson yet. That is admin-panel work. |
 | **115 missing problems** | The Masalalar set advertises itself as a set and holds 30. The other 115 entries were placeholders and were dropped rather than seeded; someone has to write them. |
 | **Lesson text** | `TopicLesson.content` is a bare `TextField` described as "text/markdown" and nobody renders markdown. Decide what a lesson body is before anyone writes into it. |
-| **SpaceLabView's textures** | It loads three Earth textures from `unpkg.com` at runtime, on every visit. That is a third-party dependency in the render path and a CSP problem waiting to happen. Host them, or accept it deliberately. |
+| **SpaceLabView's textures** | It loads **eight** at runtime — three from `unpkg.com` and five from `raw.githubusercontent.com`, which is not an asset host: GitHub rate-limits it and does not support it for production traffic, so it fails on the day a whole class opens the page at once. A failed load no longer crashes anything (see below), but the Earth renders untextured. Hosting them means downscaling and re-encoding first; they are several megabytes raw and the repository is under a large-asset budget. |
 
 ---
 
