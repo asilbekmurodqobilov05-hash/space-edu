@@ -95,7 +95,7 @@ Suggested order, each step shippable on its own:
 5. Add the nullable `TopicLesson` foreign key to `ChallengeQuestion` and wire
    the per-lesson quiz.
 
-Steps 1–4 are done. Step 5 is not — see "Still open" below.
+Steps 1–4 are done, and step 5 on the server. See "Still open" below.
 
 Step 4 landed as an adapter rather than a rewrite of eleven screens. The API
 tree is reshaped into the exact shape the static files gave (`lessons` of
@@ -143,9 +143,17 @@ work: the seeded content is video-first and sets no lesson text at all. If
 lessons need images, formulas and embedded quizzes, that field needs a real
 answer before anyone writes into it.
 
-**Per-lesson quizzes.** Step 5 — the nullable `TopicLesson` foreign key on
-`ChallengeQuestion` — is not done. The `challenges` question bank works and is
-reachable; it is simply not addressable per lesson yet.
+**Per-lesson quizzes, on the client.** Step 5 is done server-side:
+`ChallengeQuestion.lesson` exists, `POST /challenges/quiz/start/` takes a lesson
+slug instead of a category, and the lesson tree carries `question_count` so a
+screen can tell whether to offer one. Deleting a lesson is `SET_NULL`, so its
+questions fall back into the category pool rather than disappearing.
+
+What is missing is the screen. `QuizSessionView` runs entirely off the static
+`quizData` and never calls the API, so putting a lesson quiz in front of a
+student means moving that view onto the API first — a separate piece of work
+with its own ten regression tests, not a step-5 tail. No question is attached to
+a lesson yet either; that is content work for the admin panel.
 
 ## Measurements this is based on
 

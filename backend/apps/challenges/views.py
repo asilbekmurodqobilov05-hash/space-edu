@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.courses.models import TopicLesson
 from apps.gamification.models import UserGamificationProfile
 from apps.permissions import AdminWriteOrReadOnly
 
@@ -192,24 +193,41 @@ class DailyLeaderboardView(APIView):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class QuizStartView(APIView):
-    """Start a new quiz session. Returns questions WITHOUT correct answers."""
+    """Start a new quiz session. Returns questions WITHOUT correct answers.
+
+    Takes either a category (the whole pool for a subject) or a lesson slug
+    (only the questions attached to that lesson — ADR 0001, step 5).
+    """
+
     permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = QuizStartSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        category = serializer.validated_data['category']
+        category = serializer.validated_data.get('category')
+        lesson_slug = serializer.validated_data.get('lesson')
         count = serializer.validated_data.get('count', 30)
 
-        # Get questions for this category
-        pool = list(ChallengeQuestion.objects.filter(
-            category=category, is_active=True
-        ))
-
-        if not pool:
-            return Response({'detail': f'No questions found for category: {category}'},
-                            status=status.HTTP_404_NOT_FOUND)
+        if lesson_slug:
+            lesson = TopicLesson.objects.filter(slug=lesson_slug).first()
+            if lesson is None:
+                return Response({'detail': 'Lesson not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            # A lesson quiz stays inside its own sphere for the category label,
+            # so history and stats keep grouping the way they always did.
+            category = category or lesson.topic.sphere.slug
+            if category not in dict(QuizSession.QUIZ_CATEGORIES):
+                category = 'courses'
+            pool = list(ChallengeQuestion.objects.filter(lesson=lesson, is_active=True))
+            if not pool:
+                return Response({'detail': 'This lesson has no questions yet.'},
+                                status=status.HTTP_404_NOT_FOUND)
+        else:
+            pool = list(ChallengeQuestion.objects.filter(category=category, is_active=True))
+            if not pool:
+                return Response({'detail': f'No questions found for category: {category}'},
+                                status=status.HTTP_404_NOT_FOUND)
 
         import random
         selected = random.sample(pool, min(count, len(pool)))

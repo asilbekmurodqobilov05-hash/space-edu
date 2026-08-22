@@ -223,3 +223,90 @@ class DailyChallengeTests(TestCase):
         before = DailyChallenge.objects.count()
         APIClient().get('/api/v1/challenges/today/')
         self.assertEqual(DailyChallenge.objects.count(), before)
+
+
+class LessonQuizTests(TestCase):
+    """ADR 0001, step 5: a question can belong to one lesson, and a quiz can be
+    started for that lesson rather than for a whole subject.
+
+    `courses.QuizQuestion` was the alternative — a second question model with no
+    readers, no admin and no submit flow. This bank already has all three."""
+
+    def setUp(self):
+        from apps.courses.models import Sphere, Topic, TopicLesson
+
+        self.client = APIClient()
+        sphere = Sphere.objects.create(slug='physics', title='Fizika', title_en='Physics')
+        topic = Topic.objects.create(sphere=sphere, slug='physics-kinematics', title='Kinematika')
+        self.lesson = TopicLesson.objects.create(
+            topic=topic, slug='kin-one', name='Straight-line motion',
+        )
+        self.other_lesson = TopicLesson.objects.create(
+            topic=topic, slug='kin-two', name='Relativity of motion',
+        )
+
+        self.attached = ChallengeQuestion.objects.create(
+            category='physics', difficulty='easy', lesson=self.lesson,
+            question='Tezlik nima?', options=['a', 'b', 'c', 'd'], correct_answer=1,
+        )
+        # In the category pool but attached to nothing.
+        ChallengeQuestion.objects.create(
+            category='physics', difficulty='easy',
+            question='Loose question', options=['a', 'b', 'c', 'd'], correct_answer=0,
+        )
+
+    def test_a_lesson_quiz_only_draws_that_lesson_s_questions(self):
+        r = self.client.post(
+            '/api/v1/challenges/quiz/start/', {'lesson': 'kin-one', 'count': 10}, format='json',
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED, r.data)
+        self.assertEqual(r.data['total'], 1)
+        self.assertEqual(r.data['questions'][0]['id'], self.attached.id)
+
+    def test_it_still_hides_the_answer_key(self):
+        r = self.client.post(
+            '/api/v1/challenges/quiz/start/', {'lesson': 'kin-one'}, format='json',
+        )
+        for question in r.data['questions']:
+            self.assertNotIn('correct_answer', question)
+            self.assertNotIn('explanation', question)
+
+    def test_a_lesson_with_no_questions_says_so_rather_than_serving_the_category(self):
+        r = self.client.post(
+            '/api/v1/challenges/quiz/start/', {'lesson': 'kin-two'}, format='json',
+        )
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_an_unknown_lesson_is_404_not_500(self):
+        r = self.client.post(
+            '/api/v1/challenges/quiz/start/', {'lesson': 'nope'}, format='json',
+        )
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_neither_a_category_nor_a_lesson_is_a_400(self):
+        r = self.client.post('/api/v1/challenges/quiz/start/', {}, format='json')
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_a_category_quiz_still_works_and_ignores_the_lesson_link(self):
+        r = self.client.post(
+            '/api/v1/challenges/quiz/start/', {'category': 'physics', 'count': 10}, format='json',
+        )
+        self.assertEqual(r.data['total'], 2)
+
+    def test_deleting_a_lesson_keeps_its_questions_in_the_category_pool(self):
+        self.lesson.delete()
+        self.attached.refresh_from_db()
+        self.assertIsNone(self.attached.lesson)
+        r = self.client.post(
+            '/api/v1/challenges/quiz/start/', {'category': 'physics', 'count': 10}, format='json',
+        )
+        self.assertEqual(r.data['total'], 2)
+
+    def test_the_lesson_tree_reports_whether_a_lesson_has_a_quiz(self):
+        r = self.client.get('/api/v1/courses/spheres/physics/tree/')
+        counts = {
+            node['slug']: node['question_count']
+            for topic in r.data['topics'] for node in topic['lessons']
+        }
+        self.assertEqual(counts['kin-one'], 1)
+        self.assertEqual(counts['kin-two'], 0)

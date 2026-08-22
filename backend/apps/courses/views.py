@@ -59,7 +59,12 @@ class SphereViewSet(viewsets.ModelViewSet):
         """
         sphere = self.get_object()
         topics = list(sphere.topics.all())
-        lessons = TopicLesson.objects.filter(topic__sphere=sphere).order_by('order', 'id')
+        lessons = (
+            TopicLesson.objects
+            .filter(topic__sphere=sphere)
+            .annotate(question_count=Count('questions'))
+            .order_by('order', 'id')
+        )
 
         by_parent = {}
         for lesson in lessons:
@@ -78,6 +83,8 @@ class SphereViewSet(viewsets.ModelViewSet):
                     'content': lesson.content,
                     'xp_reward': lesson.xp_reward,
                     'fuel_reward': lesson.fuel_reward,
+                    # Whether to offer a quiz on this lesson (ADR 0001, step 5).
+                    'question_count': lesson.question_count,
                     'children': nodes(lesson.id, topic_id),
                 }
                 for lesson in by_parent.get(parent_id, [])

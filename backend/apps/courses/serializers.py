@@ -13,11 +13,13 @@ class TopicLessonSerializer(serializers.ModelSerializer):
     """
 
     children = serializers.SerializerMethodField()
+    question_count = serializers.IntegerField(source='questions.count', read_only=True)
 
     class Meta:
         model = TopicLesson
         fields = ('id', 'slug', 'order', 'name', 'name_en', 'name_ru',
-                  'video_url', 'content', 'xp_reward', 'fuel_reward', 'children')
+                  'video_url', 'content', 'xp_reward', 'fuel_reward',
+                  'question_count', 'children')
 
     def get_children(self, obj):
         return TopicLessonSerializer(

@@ -22,6 +22,12 @@ class ChallengeQuestion(models.Model):
 
     category = models.CharField(max_length=20, choices=CATEGORIES, default='general')
     difficulty = models.CharField(max_length=10, choices=DIFFICULTIES, default='medium')
+    lesson = models.ForeignKey(
+        'courses.TopicLesson',
+        on_delete=models.SET_NULL, null=True, blank=True, related_name='questions',
+        help_text='Attach this question to one lesson. Empty means it is only in '
+                  'the category pool.',
+    )
     question = models.TextField(help_text='Question text (Uzbek)')
     question_en = models.TextField(blank=True, default='')
     question_ru = models.TextField(blank=True, default='')

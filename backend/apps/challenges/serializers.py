@@ -86,10 +86,24 @@ class LeaderboardEntrySerializer(serializers.Serializer):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class QuizStartSerializer(serializers.Serializer):
-    """Input for starting a quiz."""
-    category = serializers.ChoiceField(choices=['physics', 'astronomy', 'problems', 'courses'])
-    count = serializers.IntegerField(min_value=5, max_value=50, default=30,
+    """Input for starting a quiz.
+
+    `lesson` narrows the pool to the questions attached to one lesson (ADR 0001,
+    step 5). Without it the quiz is the whole category, which is what the
+    category pages do.
+    """
+
+    category = serializers.ChoiceField(
+        choices=['physics', 'astronomy', 'problems', 'courses'], required=False,
+    )
+    lesson = serializers.SlugField(required=False, allow_blank=False)
+    count = serializers.IntegerField(min_value=1, max_value=50, default=30,
                                      help_text='Number of questions to include')
+
+    def validate(self, attrs):
+        if not attrs.get('category') and not attrs.get('lesson'):
+            raise serializers.ValidationError('Give either a category or a lesson.')
+        return attrs
 
 
 # Kept as an alias so existing imports keep working.
