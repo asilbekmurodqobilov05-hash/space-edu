@@ -409,7 +409,7 @@ function ProductModal({ item, onClose, onBuy, buying }) {
  */
 const MAX_PAGES = 50;
 
-async function fetchAllPages(url) {
+export async function fetchAllPages(url) {
   const collected = [];
   let next = url;
   for (let page = 0; next && page < MAX_PAGES; page += 1) {
