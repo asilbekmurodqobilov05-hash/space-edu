@@ -1,7 +1,8 @@
 # Handover — state of the work on 22 August 2026
 
-Branch `fix/audit-critical`, 19 commits ahead of `main`, **not merged, not
-pushed**. Everything below is committed on that branch.
+Branch `fix/audit-critical`, 20 commits ahead of `origin/main`, **not merged
+back, not pushed**. `origin/main` has been merged *in*, so the branch contains
+everyone's work. Everything below is committed on it.
 
 ---
 
@@ -17,7 +18,7 @@ Verify the state in one go:
 
 ```bash
 cd backend  && python manage.py test apps base   # expect 252 OK
-cd frontend && npm test                          # expect 137 OK
+cd frontend && npm test                          # expect 161 OK
 cd frontend && npm run build && npm run check:locales && npm run content:check
 ```
 
@@ -26,7 +27,7 @@ cd frontend && npm run build && npm run check:locales && npm run content:check
 ## What changed
 
 An audit on 22 August found 42 defects across ~30 000 lines; 20 were reproduced
-by running the code. The project had **zero tests**. It now has **389**, and CI
+by running the code. The project had **zero tests**. It now has **413**, and CI
 that blocks a red merge.
 
 ### Security
@@ -116,6 +117,36 @@ afternoon writing lessons in the panel and nothing changed on the site.
   nothing to verify server-side.
 - Quiz questions can attach to a lesson (`ChallengeQuestion.lesson`), and
   `POST /challenges/quiz/start/` takes a lesson slug.
+
+### The redesign merged from `main`
+
+One commit on `main` ("backend changes baby") is a frontend redesign of the nine
+learn screens, written against the pre-audit tree. It is merged in: his layout,
+our data path, resolved file by file.
+
+Three things in it were **not** taken, and the reasons matter if he asks:
+
+- **`zustand` had been dropped from `package.json`.** Seven modules import it,
+  including every store the app has. A clean `npm ci` would have produced a
+  build that cannot start.
+- **`three` 0.183.2 → 0.184.0 and `@react-three/fiber` 9.5.0 → 9.6.1** were
+  picked up incidentally by an `npm install` during a CSS change. Nothing in the
+  redesign needs them. Worth doing, in its own commit, with the game exercised.
+- **`.agent/skills/ui-ux-pro-max/`** — 31 files of AI tooling, three of them
+  compiled `.pyc`. CI's hygiene job fails on any tracked `__pycache__`, so this
+  alone would have turned `main` red. Untracked; `.agent/` and `.claude/` are
+  now in `.gitignore`.
+
+Two of his changes would have quietly reverted work on this branch and were
+re-applied on top of his layout: `UniversalLessonView` was back to awarding XP
+client-side with no server call (R2), and `PhysicsView` was back to its inline
+copy of the physics curriculum. Everything else of his is kept as written,
+including the locale edits that drop the unsupportable "Managed by
+NASA-Inspired Learning Systems" line from all three languages.
+
+**Before he pulls:** he is working from the old tree, so tell him to re-clone or
+hard-reset onto this branch rather than merging his local copy forward — a
+second merge from the old base would reintroduce all three of the above.
 
 ---
 
