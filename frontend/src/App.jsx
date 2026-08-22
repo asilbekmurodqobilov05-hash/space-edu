@@ -17,6 +17,7 @@ import HomeView     from '@/views/home/HomeView';
 import NotFoundView from '@/views/misc/NotFoundView';
 
 // Lazy — everything else
+import RouteErrorBoundary from '@/components/RouteErrorBoundary';
 const SolarSystemView     = lazy(() => import('@/views/explore/SolarSystemView'));
 const StarFinderView      = lazy(() => import('@/views/explore/StarFinderView'));
 const SpaceRunView        = lazy(() => import('@/views/game/SpaceRunView'));
@@ -70,6 +71,12 @@ export default function App() {
       {!isGame && !isAuth && !isAdmin && <Navigation />}
 
       <main className="relative z-10">
+        {/* One broken screen is a broken screen, not a broken site. The only
+            boundary used to be the root one, which replaces the whole
+            application with a crash page — and SpaceLabView reaches
+            `useLoader` at unpkg.com and raw.githubusercontent.com, which throws
+            when a third-party host is blocked or rate-limited. */}
+        <RouteErrorBoundary>
         <Suspense fallback={<CosmicLoader />}>
           <Routes>
             {/* Public */}
@@ -125,6 +132,7 @@ export default function App() {
             <Route path="*" element={<NotFoundView />} />
           </Routes>
         </Suspense>
+        </RouteErrorBoundary>
       </main>
 
       {!isGame && !isAuth && !isAdmin && !isHome && <ChatSystem />}

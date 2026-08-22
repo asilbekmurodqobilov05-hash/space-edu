@@ -65,11 +65,13 @@ describe('RewardsStoreView', () => {
   });
 });
 
-describe('the crash screen is the only safety net', () => {
-  it('there is no per-route ErrorBoundary, so a view crash is a site crash', async () => {
+describe('a view crash is no longer a site crash', () => {
+  it('the routes sit inside a per-route boundary', async () => {
+    // This test used to assert the opposite — that no route-level boundary
+    // existed — and said it should be updated deliberately if one appeared.
+    // One has: see src/components/RouteErrorBoundary.jsx. The rule above still
+    // matters, because a boundary contains a crash rather than preventing it.
     const appSource = await import('@/App.jsx?raw').then((m) => m.default);
-    // Documents why the rule above matters. If someone adds route-level
-    // boundaries later, this expectation should be updated deliberately.
-    expect(appSource).not.toMatch(/<ErrorBoundary/);
+    expect(appSource).toMatch(/<RouteErrorBoundary>/);
   });
 });
