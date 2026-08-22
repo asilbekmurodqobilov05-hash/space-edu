@@ -62,22 +62,14 @@ class MissionClaimTests(TestCase):
         self.assertEqual(profile.fuel, 100)  # starting balance, unchanged
 
     def test_claiming_an_earned_mission_pays_out_once(self):
-        from apps.courses.models import Lesson, Level, Unit
+        from apps.courses.models import Sphere, Topic, TopicLesson
         from apps.progress.models import UserLessonProgress
 
-        common = dict(
-            description_en='d', description_uz='d', description_ru='d', icon='i', color='#fff'
-        )
-        level = Level.objects.create(
-            slug='lvl', order=1, title_en='A', title_uz='A', title_ru='A', **common
-        )
-        unit = Unit.objects.create(
-            level=level, slug='u', order=1, title_en='U', title_uz='U', title_ru='U'
-        )
+        sphere = Sphere.objects.create(slug='physics', title='Fizika', title_en='Physics')
+        topic = Topic.objects.create(sphere=sphere, slug='physics-kinematics', title='Kinematika')
         for i in range(5):
-            lesson = Lesson.objects.create(
-                unit=unit, slug=f'l{i}', order=i,
-                title_en='L', title_uz='L', title_ru='L', lesson_type='quiz',
+            lesson = TopicLesson.objects.create(
+                topic=topic, slug=f'physics-kinematics-l{i}', order=i, name=f'L{i}',
             )
             UserLessonProgress.objects.create(user=self.user, lesson=lesson, score=100)
 

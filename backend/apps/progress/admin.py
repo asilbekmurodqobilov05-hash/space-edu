@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import UserLessonProgress, UserUnitEnrollment
+from .models import UserLessonProgress, UserTopicEnrollment
 
 
 @admin.register(UserLessonProgress)
@@ -10,7 +10,7 @@ class LessonProgressAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'lesson__slug')
 
 
-@admin.register(UserUnitEnrollment)
-class UnitEnrollmentAdmin(admin.ModelAdmin):
-    list_display = ('user', 'unit', 'enrolled_at', 'completed_at')
-    search_fields = ('user__username', 'unit__slug')
+@admin.register(UserTopicEnrollment)
+class TopicEnrollmentAdmin(admin.ModelAdmin):
+    list_display = ('user', 'topic', 'enrolled_at', 'completed_at')
+    search_fields = ('user__username', 'topic__slug')

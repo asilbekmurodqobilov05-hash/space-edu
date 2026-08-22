@@ -6,7 +6,6 @@ import { OrbitControls, Stars, Line } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { twoline2satrec, propagate, gstime, eciToEcf, eciToGeodetic } from 'satellite.js';
-import { useGamificationStore } from '@/store/useGamificationStore';
 import UpcomingLaunches from '@/components/live/UpcomingLaunches';
 import NasaApod from '@/components/live/NasaApod';
 
@@ -433,7 +432,10 @@ async function fetchSatCatalogDetails(noradId) {
 }
 
 export default function LiveSpaceView() {
-  const { addXp } = useGamificationStore();
+  // This used to award 20 XP here, on mount. Not for watching anything —
+  // for the page rendering, once per visit, unbounded. Ticket R2 asked whether
+  // to give it a server endpoint; there is nothing to verify server-side, so
+  // the award went instead.
   const [satellites, setSatellites] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSatId, setSelectedSatId] = useState(null);
@@ -443,7 +445,6 @@ export default function LiveSpaceView() {
   const [catalogLoading, setCatalogLoading] = useState(false);
 
   useEffect(() => {
-    addXp(20);
     let mounted = true;
     loadRealSatellites()
       .then((data) => {
@@ -463,7 +464,7 @@ export default function LiveSpaceView() {
     return () => {
       mounted = false;
     };
-  }, [addXp]);
+  }, []);
 
   const filteredSats = useMemo(() => {
     if (!searchQuery) return satellites.slice(0, 800);

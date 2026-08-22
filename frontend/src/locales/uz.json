@@ -1009,7 +1009,8 @@
     "greatResult": "Ajoyib natija!",
     "successDesc": "Siz darsni muvaffaqiyatli yakunladingiz va quyidagi mukofotlarga ega bo'ldingiz:",
     "gotIt": "Tushunarli",
-    "progressSaved": "Natija saqlandi!"
+    "progressSaved": "Natija saqlandi!",
+    "progressNotSaved": "Faqat shu qurilmada saqlandi — serverga ulanib bo'lmadi."
   },
   "learnViews": {
     "lessonCount": "{count} dars",

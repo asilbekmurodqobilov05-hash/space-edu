@@ -1009,7 +1009,8 @@
     "greatResult": "Great Result!",
     "successDesc": "You have successfully completed the lesson and earned the following rewards:",
     "gotIt": "Got it",
-    "progressSaved": "Progress saved locally!"
+    "progressSaved": "Progress saved!",
+    "progressNotSaved": "Saved on this device only — could not reach the server."
   },
   "learnViews": {
     "lessonCount": "{count} lessons",

@@ -4,60 +4,147 @@ Findings from the 2026-08-22 audit: `seed` raised ValueError on its first
 question and rolled everything back, so the documented "seed demo content"
 command had never worked; `seed_courses` targeted Level slugs that do not exist,
 created nothing, printed "Seed complete" and exited 0.
+
+`seed_courses` and `seed_learn_data` are gone with the Level branch (ADR 0001).
+`seed_learn_content` replaces them and is what these tests now cover.
 """
+import json
 from io import StringIO
+from pathlib import Path
 
 from django.core.management import CommandError, call_command
 from django.test import TestCase
 
-from .models import Lesson, Level, QuizQuestion, Unit
+from apps.gamification.models import Badge
+
+from .models import Sphere, Topic, TopicLesson
+
+FIXTURE = Path(__file__).resolve().parent / 'fixtures' / 'learn_content.json'
+
+
+def _seed(*args, **kwargs):
+    call_command(*args, stdout=StringIO(), stderr=StringIO(), **kwargs)
 
 
 class SeedCommandTests(TestCase):
     def test_seed_creates_the_demo_content(self):
-        out = StringIO()
-        call_command('seed', stdout=out, stderr=StringIO())
-
-        self.assertGreater(Level.objects.count(), 0, 'seed created no levels')
-        self.assertGreater(Unit.objects.count(), 0, 'seed created no units')
-        self.assertGreater(Lesson.objects.count(), 0, 'seed created no lessons')
-        self.assertGreater(QuizQuestion.objects.count(), 0, 'seed created no questions')
+        _seed('seed')
+        self.assertGreater(Badge.objects.count(), 0, 'seed created no badges')
 
     def test_seed_is_idempotent(self):
-        call_command('seed', stdout=StringIO(), stderr=StringIO())
-        counts = (Level.objects.count(), Unit.objects.count(), Lesson.objects.count())
-        call_command('seed', stdout=StringIO(), stderr=StringIO())
+        _seed('seed')
+        before = Badge.objects.count()
+        _seed('seed')
+        self.assertEqual(before, Badge.objects.count(), 'running seed twice duplicated rows')
+
+    def test_the_deleted_seed_commands_are_gone(self):
+        for name in ('seed_courses', 'seed_learn_data'):
+            with self.assertRaises(CommandError, msg=f'{name} still exists'):
+                call_command(name, stdout=StringIO(), stderr=StringIO())
+
+
+class SeedLearnContentTests(TestCase):
+    def test_it_loads_every_subject(self):
+        _seed('seed_learn_content')
+        self.assertEqual(
+            sorted(Sphere.objects.values_list('slug', flat=True)),
+            ['astronomy', 'creativity', 'interviews', 'physics'],
+        )
+        # 23 topics is the count the ADR was written against.
+        self.assertEqual(Topic.objects.count(), 23)
+        self.assertGreater(TopicLesson.objects.count(), 400)
+
+    def test_it_is_idempotent(self):
+        _seed('seed_learn_content')
+        counts = (Sphere.objects.count(), Topic.objects.count(), TopicLesson.objects.count())
+        _seed('seed_learn_content')
         self.assertEqual(
             counts,
-            (Level.objects.count(), Unit.objects.count(), Lesson.objects.count()),
-            'running seed twice duplicated rows',
+            (Sphere.objects.count(), Topic.objects.count(), TopicLesson.objects.count()),
+            'running it twice duplicated rows',
         )
 
-    def test_every_seeded_question_has_a_valid_answer_index(self):
-        call_command('seed', stdout=StringIO(), stderr=StringIO())
-        for q in QuizQuestion.objects.all():
-            option_ids = [o['id'] for o in q.options if isinstance(o, dict) and 'id' in o]
-            self.assertIn(
-                q.correct_answer, option_ids,
-                f'{q.lesson.slug} Q{q.order}: correct_answer {q.correct_answer!r} '
-                f'is not one of {option_ids}',
-            )
+    def test_reordering_a_topic_does_not_orphan_its_lessons(self):
+        """The audit found seeds keyed on (parent, order). Re-ordering content
+        then created a second copy of everything beneath it."""
+        _seed('seed_learn_content')
+        topic = Topic.objects.get(slug='physics-kinematics')
+        lesson_ids = set(topic.lessons.values_list('id', flat=True))
+        topic.order = 99
+        topic.save(update_fields=['order'])
 
-    def test_seed_courses_refuses_rather_than_silently_doing_nothing(self):
-        """It used to print success after creating zero rows."""
+        _seed('seed_learn_content')
+        topic.refresh_from_db()
+        self.assertEqual(set(topic.lessons.values_list('id', flat=True)), lesson_ids)
+
+    def test_it_rebuilds_the_nesting_the_fixed_tree_could_not_hold(self):
+        _seed('seed_learn_content')
+        section = TopicLesson.objects.get(slug='interviews-professors-astronomy')
+        self.assertIsNone(section.parent)
+        lesson = section.children.first()
+        self.assertIsNotNone(lesson)
+        self.assertGreater(lesson.children.count(), 0, 'third level lost')
+        # Every node keeps its topic, child included, so progress counting stays flat.
+        self.assertEqual(lesson.children.first().topic_id, section.topic_id)
+
+    def test_lessons_count_on_the_sphere_card_is_computed_not_typed(self):
+        """The old seed hard-coded these and every one of them was wrong."""
+        _seed('seed_learn_content')
+        for sphere in Sphere.objects.all():
+            leaves = TopicLesson.objects.filter(
+                topic__sphere=sphere, children__isnull=True,
+            ).count()
+            self.assertEqual(sphere.lessons_count, leaves, sphere.slug)
+
+    def test_prune_removes_what_left_the_fixture(self):
+        _seed('seed_learn_content')
+        sphere = Sphere.objects.get(slug='physics')
+        Topic.objects.create(sphere=sphere, slug='physics-retired', title='Retired')
+
+        _seed('seed_learn_content', prune=True)
+        self.assertFalse(Topic.objects.filter(slug='physics-retired').exists())
+
+    def test_without_prune_extra_rows_survive(self):
+        """An admin-authored topic must not vanish because the seed ran."""
+        _seed('seed_learn_content')
+        sphere = Sphere.objects.get(slug='physics')
+        Topic.objects.create(sphere=sphere, slug='physics-hand-written', title='By hand')
+
+        _seed('seed_learn_content')
+        self.assertTrue(Topic.objects.filter(slug='physics-hand-written').exists())
+
+    def test_a_missing_fixture_fails_loudly(self):
         with self.assertRaises(CommandError) as ctx:
-            call_command('seed_courses', stdout=StringIO(), stderr=StringIO())
-        self.assertIn('do not exist', str(ctx.exception))
+            _seed('seed_learn_content', fixture='does-not-exist.json')
+        self.assertIn('export-learn-content', str(ctx.exception))
 
 
-class SeedScriptTests(TestCase):
-    def test_seed_badges_points_at_a_real_settings_module(self):
-        """It named `config.settings`, which this project has never had, so the
-        script died on import — and badges have no management command."""
-        from pathlib import Path
+class FixtureShapeTests(TestCase):
+    """The fixture is generated, so the thing worth testing is that what is
+    committed is loadable and internally consistent."""
 
-        source = (Path(__file__).resolve().parent.parent.parent / 'seed_badges.py').read_text(
-            encoding='utf8'
-        )
-        self.assertIn('base.settings', source)
-        self.assertNotIn('config.settings', source)
+    def setUp(self):
+        self.data = json.loads(FIXTURE.read_text(encoding='utf-8'))
+
+    def test_every_slug_is_unique(self):
+        slugs = []
+
+        def walk(nodes):
+            for node in nodes:
+                slugs.append(node['slug'])
+                walk(node['children'])
+
+        for sphere in self.data['spheres']:
+            slugs.append(sphere['slug'])
+            for topic in sphere['topics']:
+                slugs.append(topic['slug'])
+                walk(topic['lessons'])
+
+        duplicates = {s for s in slugs if slugs.count(s) > 1}
+        self.assertEqual(duplicates, set())
+
+    def test_every_topic_carries_all_three_languages(self):
+        for sphere in self.data['spheres']:
+            for topic in sphere['topics']:
+                for field in ('title', 'title_en', 'title_ru'):
+                    self.assertTrue(topic[field], f"{topic['slug']} is missing {field}")

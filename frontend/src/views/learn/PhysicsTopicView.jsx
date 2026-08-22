@@ -1,7 +1,7 @@
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-import { physicsTopicsData } from '@/data/physicsTopicsData';
+import { useLearnTopics } from '@/hooks/useLearnTopics';
 import { BookOpen, Beaker } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -53,7 +53,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
           {index + 1}
         </div>
         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 500, color: hovered ? '#fff' : 'rgba(255,255,255,0.85)', transition: 'color 0.2s ease' }}>
-          {lesson}
+          {typeof lesson === 'object' ? lesson.name : lesson}
         </h3>
       </div>
       
@@ -112,7 +112,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
 export default function PhysicsTopicView() {
   const { i18n } = useTranslation();
   const { topicId } = useParams();
-  const topic = physicsTopicsData[topicId];
+  const topic = useLearnTopics('physics').topics[topicId];
   const navigate = useNavigate(); // ADDED: import useNavigate from react-router-dom above if not present
 
   if (!topic) {

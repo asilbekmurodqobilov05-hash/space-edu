@@ -33,8 +33,6 @@ const InterviewsView      = lazy(() => import('@/views/learn/InterviewsView'));
 const InterviewsTopicView = lazy(() => import('@/views/learn/InterviewsTopicView'));
 const ProblemsView        = lazy(() => import('@/views/learn/ProblemsView'));
 const ProblemDetailView   = lazy(() => import('@/views/learn/ProblemDetailView'));
-const UnitView            = lazy(() => import('@/views/learn/UnitView'));
-const LessonView          = lazy(() => import('@/views/learn/LessonView'));
 const UniversalLessonView = lazy(() => import('@/views/learn/UniversalLessonView'));
 const DailyChallengeView  = lazy(() => import('@/views/community/DailyChallengeView'));
 const LeaderboardView     = lazy(() => import('@/views/community/LeaderboardView'));
@@ -107,8 +105,6 @@ export default function App() {
             <Route path="/learn/:subject/:topicId/lesson/:lessonIdx"                    element={<PT><UniversalLessonView /></PT>} />
             <Route path="/learn/problems"                 element={<PT><ProblemsView /></PT>} />
             <Route path="/learn/problems/:id"             element={<PT><ProblemDetailView /></PT>} />
-            <Route path="/unit/:unitId"                   element={<PT><UnitView /></PT>} />
-            <Route path="/lesson/:unitId/:lessonId"       element={<PT><LessonView /></PT>} />
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>

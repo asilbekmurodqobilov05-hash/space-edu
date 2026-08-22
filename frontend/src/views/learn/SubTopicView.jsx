@@ -1,9 +1,8 @@
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-import { astronomyTopicsData } from '@/data/astronomyTopicsData';
-import { interviewsTopicsData } from '@/data/interviewsTopicsData';
-import { creativityTopicsData } from '@/data/creativityTopicsData';
+import { useLearnTopics } from '@/hooks/useLearnTopics';
+import { SUBJECTS } from '@/lib/learnContent';
 import { BookOpen, Beaker } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -92,26 +91,20 @@ export default function SubTopicView() {
   const { subject, topicId, subIdx } = useParams();
   const navigate = useNavigate();
 
-  let dataSource = null;
-  let backPath = "/learn";
+  const { topics } = useLearnTopics(subject);
+  const backPath = SUBJECTS.includes(subject) ? `/learn/${subject}/${topicId}` : '/learn';
 
-  if (subject === 'astronomy') { dataSource = astronomyTopicsData; backPath = `/learn/astronomy/${topicId}`; }
-  else if (subject === 'interviews') { dataSource = interviewsTopicsData; backPath = `/learn/interviews/${topicId}`; }
-  else if (subject === 'creativity') { dataSource = creativityTopicsData; backPath = `/learn/creativity/${topicId}`; }
+  const topic = topics[topicId] ?? null;
 
-  const topic = dataSource ? dataSource[topicId] : null;
-  
   let subTopic = null;
   if (topic) {
-    if (topic.sections) {
-      const allLessons = topic.sections.flatMap(s => s.lessons);
-      subTopic = allLessons[parseInt(subIdx)];
-    } else {
-      subTopic = topic.lessons[parseInt(subIdx)];
-    }
+    const items = topic.sections
+      ? topic.sections.flatMap((section) => section.lessons)
+      : (topic.lessons ?? []);
+    subTopic = items[parseInt(subIdx)];
   }
 
-  if (!subTopic) {
+  if (!subTopic?.subLessons) {
     return <Navigate to={backPath} replace />;
   }
 

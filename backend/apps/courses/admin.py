@@ -1,14 +1,6 @@
 from django.contrib import admin
 
-from .models import (
-    Sphere, Topic, TopicLesson, SubLesson, Problem,
-    Level, Unit, Lesson, LessonSection, QuizQuestion,
-)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  NEW SPHERE-BASED ADMIN
-# ══════════════════════════════════════════════════════════════════════════════
+from .models import Problem, Sphere, Topic, TopicLesson
 
 class TopicInline(admin.TabularInline):
     model = Topic
@@ -19,15 +11,20 @@ class TopicInline(admin.TabularInline):
 
 class TopicLessonInline(admin.TabularInline):
     model = TopicLesson
+    fk_name = 'topic'
     extra = 0
-    fields = ('order', 'name', 'name_en', 'video_url')
+    fields = ('order', 'slug', 'name', 'name_en', 'parent', 'video_url')
     show_change_link = True
 
 
-class SubLessonInline(admin.TabularInline):
-    model = SubLesson
+class ChildLessonInline(admin.TabularInline):
+    """Sub-lessons are the same model now — see ADR 0001."""
+
+    model = TopicLesson
+    fk_name = 'parent'
+    verbose_name_plural = 'Sub-lessons'
     extra = 0
-    fields = ('order', 'name', 'name_en', 'video_url')
+    fields = ('order', 'slug', 'name', 'name_en', 'video_url')
 
 
 class ProblemInline(admin.TabularInline):
@@ -62,18 +59,20 @@ class SphereAdmin(admin.ModelAdmin):
 
 @admin.register(Topic)
 class TopicAdmin(admin.ModelAdmin):
-    list_display = ('title', 'sphere', 'order', 'color')
+    list_display = ('title', 'slug', 'sphere', 'order', 'color', 'fuel_reward')
     list_filter = ('sphere',)
-    search_fields = ('title', 'title_en')
+    prepopulated_fields = {'slug': ('title_en',)}
+    search_fields = ('title', 'title_en', 'slug')
     inlines = [TopicLessonInline]
 
 
 @admin.register(TopicLesson)
 class TopicLessonAdmin(admin.ModelAdmin):
-    list_display = ('name', 'topic', 'order', 'video_url')
+    list_display = ('name', 'slug', 'topic', 'parent', 'order', 'xp_reward')
     list_filter = ('topic__sphere',)
-    search_fields = ('name', 'name_en')
-    inlines = [SubLessonInline]
+    prepopulated_fields = {'slug': ('name_en',)}
+    search_fields = ('name', 'name_en', 'slug')
+    inlines = [ChildLessonInline]
 
 
 @admin.register(Problem)
@@ -85,52 +84,3 @@ class ProblemAdmin(admin.ModelAdmin):
     def question_short(self, obj):
         return obj.question[:80] + '...' if len(obj.question) > 80 else obj.question
     question_short.short_description = 'Question'
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  LEGACY ADMIN
-# ══════════════════════════════════════════════════════════════════════════════
-
-class UnitInline(admin.TabularInline):
-    model = Unit
-    extra = 0
-    fields = ('slug', 'order', 'title_en', 'xp_reward', 'fuel_reward')
-
-
-class LessonInline(admin.TabularInline):
-    model = Lesson
-    extra = 0
-    fields = ('slug', 'order', 'title_en', 'lesson_type', 'xp_reward')
-
-
-class SectionInline(admin.TabularInline):
-    model = LessonSection
-    extra = 0
-    fields = ('order', 'section_type', 'content_en')
-
-
-class QuizInline(admin.TabularInline):
-    model = QuizQuestion
-    extra = 0
-    fields = ('order', 'text_en', 'correct_answer')
-
-
-@admin.register(Level)
-class LevelAdmin(admin.ModelAdmin):
-    list_display = ('slug', 'order', 'title_en')
-    prepopulated_fields = {'slug': ('title_en',)}
-    inlines = [UnitInline]
-
-
-@admin.register(Unit)
-class UnitAdmin(admin.ModelAdmin):
-    list_display = ('slug', 'level', 'order', 'xp_reward', 'fuel_reward')
-    list_filter = ('level',)
-    inlines = [LessonInline]
-
-
-@admin.register(Lesson)
-class LessonAdmin(admin.ModelAdmin):
-    list_display = ('slug', 'unit', 'order', 'lesson_type', 'xp_reward')
-    list_filter = ('lesson_type', 'unit__level')
-    inlines = [SectionInline, QuizInline]

@@ -4,23 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { Atom, ArrowRight } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLearnTopics } from '@/hooks/useLearnTopics';
 
-const topics = [
-  { id: 1,  title: 'Kinematika',                         titleEn: 'Kinematics', titleRu: 'Кинематика',                    emoji: '🚀', lessonsCount: 12 },
-  { id: 2,  title: 'Dinamika',                            titleEn: 'Dynamics', titleRu: 'Динамика',                      emoji: '⚡', lessonsCount: 10 },
-  { id: 3,  title: 'Statika',                             titleEn: 'Statics', titleRu: 'Статика',                       emoji: '⚖️', lessonsCount: 8 },
-  { id: 4,  title: 'Suyuqlik va gazlar mexanikasi',       titleEn: 'Mechanics of Fluids and Gases', titleRu: 'Механика жидкостей и газов', emoji: '💧', lessonsCount: 9 },
-  { id: 5,  title: 'Tebranishlar va to\'lqinlar',         titleEn: 'Oscillations and Waves', titleRu: 'Колебания и волны',        emoji: '🌊', lessonsCount: 11 },
-  { id: 6,  title: 'Molekulyar fizika',                   titleEn: 'Molecular Physics', titleRu: 'Молекулярная физика',             emoji: '🔬', lessonsCount: 10 },
-  { id: 7,  title: 'Termodinamika',                       titleEn: 'Thermodynamics', titleRu: 'Термодинамика',                emoji: '🌡️', lessonsCount: 8 },
-  { id: 8,  title: 'Elektrostatika',                      titleEn: 'Electrostatics', titleRu: 'Электростатика',                emoji: '⚡', lessonsCount: 9 },
-  { id: 9,  title: 'O\'zgarmas tok qonunlari',            titleEn: 'Laws of Direct Current', titleRu: 'Законы постоянного тока',        emoji: '🔋', lessonsCount: 10 },
-  { id: 10, title: 'Turli muhitlarda elektr qonunlari',   titleEn: 'Electrical Laws in Different Media', titleRu: 'Законы электрического тока в различных средах', emoji: '🧲', lessonsCount: 7 },
-  { id: 11, title: 'Elektromagnit hodisalar',              titleEn: 'Electromagnetic Phenomena', titleRu: 'Электромагнитные явления',     emoji: '🧭', lessonsCount: 8 },
-  { id: 12, title: 'Elektromagnit tebranishlar va to\'lqinlar', titleEn: 'Electromagnetic Oscillations and Waves', titleRu: 'Электромагнитные колебания и волны', emoji: '📡', lessonsCount: 9 },
-  { id: 13, title: 'Optika',                              titleEn: 'Optics', titleRu: 'Оптика',                        emoji: '🔭', lessonsCount: 10 },
-  { id: 14, title: 'Atom va yadro fizikasi',              titleEn: 'Atomic and Nuclear Physics', titleRu: 'Атомная и ядерная физика',    emoji: '⚛️', lessonsCount: 12 },
-];
+// The inline topic list here was a fourth copy of the physics curriculum,
+// hand-maintained and already out of step with physicsTopicsData. Its emoji
+// field was never rendered — the card badge shows the number — so nothing
+// from it survived the move to the API.
+
 
 const cardVariants = {
   hidden: { opacity: 0, y: 24, scale: 0.97 },
@@ -82,7 +72,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
           {t('learnViews', 'lessonCount').split('{count}')[0]}
-          <span style={{ color, fontWeight: 700 }}>{topic.lessonsCount}</span>
+          <span style={{ color, fontWeight: 700 }}>{topic.lessons?.length ?? 0}</span>
           {t('learnViews', 'lessonCount').split('{count}')[1]}
         </span>
         <div
@@ -106,6 +96,7 @@ function TopicCard({ topic, index, color, colorLight, colorBorder }) {
 }
 
 export default function PhysicsView() {
+  const topics = Object.values(useLearnTopics('physics').topics);
   const color = '#a78bfa';
   const colorLight = 'rgba(167,139,250,0.10)';
   const colorBorder = 'rgba(167,139,250,0.20)';

@@ -1,6 +1,6 @@
 # ADR 0001 — One content model
 
-**Status:** proposed, awaiting the lead's decision
+**Status:** accepted 22 August 2026 — Option A
 **Date:** 2026-08-22
 **Ticket:** R1
 **Decides:** C1, and whether the `/learn` section can ever be edited without a deploy
@@ -95,21 +95,57 @@ Suggested order, each step shippable on its own:
 5. Add the nullable `TopicLesson` foreign key to `ChallengeQuestion` and wire
    the per-lesson quiz.
 
-Steps 1–3 are a few days. Step 4 is the bulk and is safely incremental.
+Steps 1–4 are done. Step 5 is not — see "Still open" below.
+
+Step 4 landed as an adapter rather than a rewrite of eleven screens. The API
+tree is reshaped into the exact shape the static files gave (`lessons` of
+strings, `lessons` with `subLessons`, or `sections` — chosen per topic by how
+deep its content actually is), so each screen changed by one import. The static
+file stays as the fallback when the API is unreachable, which also keeps the
+site up during a backend outage. See `frontend/src/lib/learnContent.js`.
 
 ## What this does not settle
 
-- **Whether `SubLesson` should exist at all.** Three of the four subject files
-  use it; `physicsTopicsData` has 14 topics and no sub-lessons. A flat
-  Topic → Lesson tree with an optional parent might be simpler. Worth deciding
-  before step 3, because it changes the seed.
-- **Where lesson text lives.** `TopicLesson.content` is a bare `TextField`
-  described as "text/markdown". Nobody renders markdown today. If lessons need
-  images, formulas and embedded quizzes, that field needs a real answer first.
-- **How XP is earned in the new tree.** Branch B awarded per lesson via
-  `Lesson.xp_reward`; `TopicLesson` has no such field. Related to spike R2,
-  which asks the same question about the two award paths that currently have no
-  server endpoint at all.
+### Decided since, while implementing
+
+**`SubLesson` does not survive.** It is replaced by a nullable
+`TopicLesson.parent`. The deciding fact was not that four levels is one too
+many — it is that four levels is also one too *few*. `interviewsTopicsData`
+nests topic → section → lesson → sub-lesson, three levels below a topic, which
+the fixed tree cannot hold at all. Measured off the generated fixture:
+
+```
+physics     max depth 1        astronomy   max depth 2
+creativity  max depth 2        interviews  max depth 3
+```
+
+A self-reference holds all four, and the admin panel edits children through the
+lessons tab it already has, so nothing had to be built for it. `topic` stays
+set on every node, child included, so "every lesson in this topic" is one flat
+filter rather than a recursive walk.
+
+Only leaves are completable. A node with children is a heading; letting one be
+completed would pay for the parent and each child, and would make the topic
+total unreachable.
+
+**How XP is earned.** `TopicLesson.xp_reward` (25) and `fuel_reward` (25),
+matching what the client used to award itself, plus `Topic.fuel_reward` (50)
+paid once when every leaf under a topic is done. All three are editable per row
+in the admin panel. `POST /progress/lessons/<slug>/complete/` is the only way to
+earn them and it reads the amount off the row — the caller sends a score and
+nothing else. This also answers the first half of R2.
+
+### Still open
+
+**Where lesson text lives.** `TopicLesson.content` is still a bare `TextField`
+described as "text/markdown", and nobody renders markdown. Unchanged by this
+work: the seeded content is video-first and sets no lesson text at all. If
+lessons need images, formulas and embedded quizzes, that field needs a real
+answer before anyone writes into it.
+
+**Per-lesson quizzes.** Step 5 — the nullable `TopicLesson` foreign key on
+`ChallengeQuestion` — is not done. The `challenges` question bank works and is
+reachable; it is simply not addressable per lesson yet.
 
 ## Measurements this is based on
 

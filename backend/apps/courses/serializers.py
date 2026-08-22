@@ -1,70 +1,83 @@
 from rest_framework import serializers
 
-from .models import (
-    Sphere, Topic, TopicLesson, SubLesson, Problem,
-    Level, Unit, Lesson, LessonSection, QuizQuestion,
-)
-
-
-def _is_staff(context):
-    request = context.get('request')
-    return bool(request and request.user.is_authenticated and request.user.is_staff)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  NEW SPHERE-BASED SERIALIZERS
-# ══════════════════════════════════════════════════════════════════════════════
-
-# ── SubLesson ──
-class SubLessonSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SubLesson
-        fields = ('id', 'order', 'name', 'name_en', 'name_ru', 'video_url', 'content')
-
-
-class SubLessonWriteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SubLesson
-        fields = ('id', 'parent_lesson', 'order', 'name', 'name_en', 'name_ru', 'video_url', 'content')
+from .models import Problem, Sphere, Topic, TopicLesson
 
 
 # ── TopicLesson ──
 class TopicLessonSerializer(serializers.ModelSerializer):
-    sub_lessons = SubLessonSerializer(many=True, read_only=True)
+    """A lesson node and, recursively, the nodes under it.
+
+    Replaced the flat `sub_lessons` list when ADR 0001 traded the fixed
+    four-level tree for `TopicLesson.parent`. Depth is content-defined and
+    shallow — three below a topic in the deepest subject (interviews).
+    """
+
+    children = serializers.SerializerMethodField()
 
     class Meta:
         model = TopicLesson
-        fields = ('id', 'order', 'name', 'name_en', 'name_ru', 'video_url', 'content', 'sub_lessons')
+        fields = ('id', 'slug', 'order', 'name', 'name_en', 'name_ru',
+                  'video_url', 'content', 'xp_reward', 'fuel_reward', 'children')
+
+    def get_children(self, obj):
+        return TopicLessonSerializer(
+            obj.children.all(), many=True, context=self.context,
+        ).data
 
 
 class TopicLessonWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = TopicLesson
-        fields = ('id', 'topic', 'order', 'name', 'name_en', 'name_ru', 'video_url', 'content')
+        fields = ('id', 'topic', 'parent', 'slug', 'order', 'name', 'name_en', 'name_ru',
+                  'video_url', 'content', 'xp_reward', 'fuel_reward')
+
+    def validate(self, attrs):
+        """A lesson and its parent must sit in the same topic, and a lesson
+        cannot be its own parent — either one produces a tree the progress
+        queries silently mis-count."""
+        parent = attrs.get('parent', getattr(self.instance, 'parent', None))
+        topic = attrs.get('topic', getattr(self.instance, 'topic', None))
+        if parent is not None:
+            if self.instance is not None and parent.pk == self.instance.pk:
+                raise serializers.ValidationError({'parent': 'A lesson cannot be its own parent.'})
+            if topic is not None and parent.topic_id != topic.id:
+                raise serializers.ValidationError(
+                    {'parent': 'Parent lesson belongs to a different topic.'}
+                )
+        return attrs
 
 
 # ── Topic ──
 class TopicListSerializer(serializers.ModelSerializer):
-    # Same per-row COUNT problem as SphereListSerializer above.
+    # Same per-row COUNT problem as SphereListSerializer below.
     lesson_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Topic
-        fields = ('id', 'order', 'title', 'title_en', 'title_ru', 'color', 'description', 'lesson_count')
+        fields = ('id', 'slug', 'order', 'title', 'title_en', 'title_ru',
+                  'color', 'description', 'fuel_reward', 'lesson_count')
 
 
 class TopicDetailSerializer(serializers.ModelSerializer):
-    lessons = TopicLessonSerializer(many=True, read_only=True)
+    lessons = serializers.SerializerMethodField()
 
     class Meta:
         model = Topic
-        fields = ('id', 'order', 'title', 'title_en', 'title_ru', 'color', 'description', 'lessons')
+        fields = ('id', 'slug', 'order', 'title', 'title_en', 'title_ru',
+                  'color', 'description', 'fuel_reward', 'lessons')
+
+    def get_lessons(self, obj):
+        # Roots only — the rest arrive nested under `children`, so a child would
+        # otherwise be serialised twice and counted twice by the client.
+        roots = obj.lessons.filter(parent__isnull=True)
+        return TopicLessonSerializer(roots, many=True, context=self.context).data
 
 
 class TopicWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Topic
-        fields = ('id', 'sphere', 'order', 'title', 'title_en', 'title_ru', 'color', 'description')
+        fields = ('id', 'sphere', 'slug', 'order', 'title', 'title_en', 'title_ru',
+                  'color', 'description', 'fuel_reward')
 
 
 # ── Problem ──
@@ -128,108 +141,3 @@ class SphereWriteSerializer(serializers.ModelSerializer):
         fields = ('id', 'slug', 'order', 'title', 'title_en', 'title_ru',
                   'description', 'description_en', 'color', 'icon', 'link',
                   'lessons_count', 'is_active')
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  LEGACY SERIALIZERS (kept for backwards compat)
-# ══════════════════════════════════════════════════════════════════════════════
-
-class LevelWriteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Level
-        fields = ('id', 'slug', 'order', 'title_en', 'title_uz', 'title_ru',
-                  'description_en', 'description_uz', 'description_ru', 'icon', 'color')
-
-
-class UnitWriteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Unit
-        fields = ('id', 'level', 'slug', 'order', 'title_en', 'title_uz', 'title_ru',
-                  'xp_reward', 'fuel_reward')
-
-
-class LessonWriteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Lesson
-        fields = ('id', 'unit', 'slug', 'order', 'title_en', 'title_uz', 'title_ru',
-                  'lesson_type', 'xp_reward', 'estimated_minutes')
-
-
-class SectionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = LessonSection
-        fields = ('id', 'lesson', 'order', 'section_type',
-                  'content_en', 'content_uz', 'content_ru')
-
-
-class QuizQuestionSerializer(serializers.ModelSerializer):
-    """Public question — no answer, no explanation."""
-
-    class Meta:
-        model = QuizQuestion
-        fields = ('id', 'lesson', 'order', 'text_en', 'text_uz', 'text_ru', 'options')
-
-
-class QuizQuestionFullSerializer(serializers.ModelSerializer):
-    """Staff view — includes the answer key."""
-
-    class Meta:
-        model = QuizQuestion
-        fields = ('id', 'lesson', 'order', 'text_en', 'text_uz', 'text_ru',
-                  'options', 'correct_answer',
-                  'explanation_en', 'explanation_uz', 'explanation_ru')
-
-
-class LessonListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Lesson
-        fields = ('id', 'slug', 'order', 'title_en', 'title_uz', 'title_ru',
-                  'lesson_type', 'xp_reward', 'estimated_minutes')
-
-
-class LessonDetailSerializer(serializers.ModelSerializer):
-    sections = SectionSerializer(many=True, read_only=True)
-    # Nesting the serializer directly re-exposed correct_answer to anonymous
-    # callers through the lesson endpoint, bypassing the split above.
-    questions = serializers.SerializerMethodField()
-
-    def get_questions(self, obj):
-        serializer = (
-            QuizQuestionFullSerializer if _is_staff(self.context) else QuizQuestionSerializer
-        )
-        return serializer(obj.questions.all(), many=True, context=self.context).data
-
-    class Meta:
-        model = Lesson
-        fields = ('id', 'slug', 'order', 'title_en', 'title_uz', 'title_ru',
-                  'lesson_type', 'xp_reward', 'estimated_minutes',
-                  'sections', 'questions')
-
-
-class UnitListSerializer(serializers.ModelSerializer):
-    lesson_count = serializers.IntegerField(read_only=True, default=0)
-
-    class Meta:
-        model = Unit
-        fields = ('id', 'slug', 'order', 'title_en', 'title_uz', 'title_ru',
-                  'xp_reward', 'fuel_reward', 'lesson_count')
-
-
-class UnitDetailSerializer(serializers.ModelSerializer):
-    lessons = LessonListSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Unit
-        fields = ('id', 'slug', 'order', 'title_en', 'title_uz', 'title_ru',
-                  'xp_reward', 'fuel_reward', 'lessons')
-
-
-class LevelSerializer(serializers.ModelSerializer):
-    unit_count = serializers.IntegerField(source='units.count', read_only=True)
-    units = UnitListSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Level
-        fields = ('id', 'slug', 'order', 'title_en', 'title_uz', 'title_ru',
-                  'description_en', 'description_uz', 'description_ru',
-                  'icon', 'color', 'unit_count', 'units')
