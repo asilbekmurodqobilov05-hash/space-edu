@@ -1,4 +1,4 @@
-from django.db.models import Q, Max
+from django.db.models import Count, Max, Q
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -97,7 +97,15 @@ class ConversationListView(APIView):
         convos = (
             Conversation.objects
             .filter(participants=request.user)
-            .annotate(last_msg_time=Max('messages__created_at'))
+            .prefetch_related('participants', 'messages')
+            .annotate(
+                last_msg_time=Max('messages__created_at'),
+                unread_count_annotated=Count(
+                    'messages',
+                    filter=Q(messages__is_read=False) & ~Q(messages__sender=request.user),
+                    distinct=True,
+                ),
+            )
             .order_by('-last_msg_time', '-updated_at')
         )
         return Response(

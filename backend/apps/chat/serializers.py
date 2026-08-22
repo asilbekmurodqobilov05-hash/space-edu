@@ -90,16 +90,24 @@ class ConversationSerializer(serializers.ModelSerializer):
     def _me(self):
         return self.context['request'].user
 
+    # Each of these used to run its own query, so a list of N conversations
+    # cost 3N + 1. ConversationListView now prefetches the participants and the
+    # messages and annotates the unread count, so these read from memory.
+
     def get_other_user(self, obj):
-        other = obj.other_user(self._me())
+        me = self._me()
+        # `obj.participants.all()` is prefetched; filtering in Python avoids a
+        # fresh query per row that a .exclude() would trigger.
+        other = next((u for u in obj.participants.all() if u.id != me.id), None)
         if not other:
             return None
         return UserMiniSerializer(other, context=self.context).data
 
     def get_last_message(self, obj):
-        msg = obj.messages.order_by('-created_at').first()
-        if not msg:
+        messages = list(obj.messages.all())
+        if not messages:
             return None
+        msg = max(messages, key=lambda m: m.created_at)
         return {
             'content': msg.content[:100],
             'created_at': msg.created_at,
@@ -107,4 +115,10 @@ class ConversationSerializer(serializers.ModelSerializer):
         }
 
     def get_unread_count(self, obj):
-        return obj.messages.filter(is_read=False).exclude(sender=self._me()).count()
+        annotated = getattr(obj, 'unread_count_annotated', None)
+        if annotated is not None:
+            return annotated
+        me_id = self._me().id
+        return sum(
+            1 for m in obj.messages.all() if not m.is_read and m.sender_id != me_id
+        )

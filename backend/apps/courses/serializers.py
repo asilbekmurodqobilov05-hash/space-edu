@@ -45,7 +45,8 @@ class TopicLessonWriteSerializer(serializers.ModelSerializer):
 
 # ── Topic ──
 class TopicListSerializer(serializers.ModelSerializer):
-    lesson_count = serializers.IntegerField(source='lessons.count', read_only=True)
+    # Same per-row COUNT problem as SphereListSerializer above.
+    lesson_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Topic
@@ -98,8 +99,11 @@ class ProblemWriteSerializer(serializers.ModelSerializer):
 
 # ── Sphere ──
 class SphereListSerializer(serializers.ModelSerializer):
-    topic_count = serializers.IntegerField(source='topics.count', read_only=True)
-    problem_count = serializers.IntegerField(source='problems.count', read_only=True)
+    # `source='topics.count'` issues a COUNT per row, per field — two extra
+    # queries for every sphere in the list. The viewset annotates these instead;
+    # the fallback keeps the serializer usable outside that queryset.
+    topic_count = serializers.IntegerField(read_only=True, default=0)
+    problem_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Sphere
@@ -203,7 +207,7 @@ class LessonDetailSerializer(serializers.ModelSerializer):
 
 
 class UnitListSerializer(serializers.ModelSerializer):
-    lesson_count = serializers.IntegerField(source='lessons.count', read_only=True)
+    lesson_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Unit

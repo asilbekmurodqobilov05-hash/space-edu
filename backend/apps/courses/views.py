@@ -1,3 +1,4 @@
+from django.db.models import Count
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -55,6 +56,14 @@ class SphereViewSet(viewsets.ModelViewSet):
     permission_classes = [AdminWriteOrReadOnly]
     lookup_field = 'slug'
 
+    def get_queryset(self):
+        # Two COUNTs in one pass instead of two per row. distinct=True because
+        # joining both relations multiplies the rows.
+        return super().get_queryset().annotate(
+            topic_count=Count('topics', distinct=True),
+            problem_count=Count('problems', distinct=True),
+        )
+
     def get_serializer_class(self):
         if self.request.method in ('POST', 'PUT', 'PATCH'):
             return SphereWriteSerializer
@@ -78,7 +87,9 @@ class TopicViewSet(viewsets.ModelViewSet):
     permission_classes = [AdminWriteOrReadOnly]
 
     def get_queryset(self):
-        qs = Topic.objects.all()
+        qs = Topic.objects.select_related('sphere').annotate(
+            lesson_count=Count('lessons', distinct=True)
+        )
         sphere = self.request.query_params.get('sphere')
         if sphere:
             qs = qs.filter(sphere__slug=sphere)
@@ -178,7 +189,9 @@ class UnitViewSet(viewsets.ModelViewSet):
     get_object = _first_match_by_slug
 
     def get_queryset(self):
-        qs = Unit.objects.all()
+        qs = Unit.objects.select_related('level').annotate(
+            lesson_count=Count('lessons', distinct=True)
+        )
         level = self.request.query_params.get('level')
         if level:
             qs = qs.filter(level__slug=level)

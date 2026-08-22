@@ -33,6 +33,16 @@ class SpaceEvent(models.Model):
     class Meta:
         ordering = ['event_date']
         verbose_name = 'Space Event'
+        indexes = [
+            # SpaceEventViewSet filters by type, year, is_featured and
+            # is_historical, and always orders by event_date.
+            models.Index(fields=['event_type', 'event_date'],
+                         name='event_type_date_idx'),
+            models.Index(fields=['is_featured', 'event_date'],
+                         name='event_featured_date_idx'),
+            models.Index(fields=['is_historical', 'event_date'],
+                         name='event_historical_date_idx'),
+        ]
 
     def __str__(self):
         return f'{self.event_date} — {self.title_en}'
