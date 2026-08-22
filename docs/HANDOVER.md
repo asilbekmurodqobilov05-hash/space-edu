@@ -1,6 +1,6 @@
 # Handover — state of the work on 22 August 2026
 
-Branch `fix/audit-critical`, 22 commits ahead of `origin/main`, **not merged
+Branch `fix/audit-critical`, 25 commits ahead of `origin/main`, **not merged
 back, not pushed**. `origin/main` has been merged *in*, so the branch contains
 everyone's work. Everything below is committed on it.
 
@@ -17,8 +17,8 @@ everyone's work. Everything below is committed on it.
 Verify the state in one go:
 
 ```bash
-cd backend  && python manage.py test apps base   # expect 268 OK
-cd frontend && npm test                          # expect 172 OK
+cd backend  && python manage.py test apps base   # expect 281 OK
+cd frontend && npm run build && npm test          # expect 183 OK
 cd frontend && npm run build && npm run check:locales && npm run content:check
 ```
 
@@ -27,7 +27,7 @@ cd frontend && npm run build && npm run check:locales && npm run content:check
 ## What changed
 
 An audit on 22 August found 42 defects across ~30 000 lines; 20 were reproduced
-by running the code. The project had **zero tests**. It now has **440**, and CI
+by running the code. The project had **zero tests**. It now has **464**, and CI
 that blocks a red merge.
 
 ### Security
@@ -141,6 +141,29 @@ Six findings, five of them in code the first pass had already been through.
 All six have tests, and the ones where a test could pass for the wrong reason
 were checked by mutation.
 
+**And the one that matters most.** The first audit closed three answer-key leaks
+on the server. The client had its own copies the whole time — `quizData.js` with
+24 `correctAnswer` fields and `problemsData.js` with 145 answers — and graded in
+the browser against them, so every answer was one View Source away and nothing
+on the server could stop it. Confirmed in the built bundle before touching
+anything.
+
+The XP those screens showed was never real either: `addXp` is a local
+optimistic update, so the number went up and the next profile fetch wiped it.
+Two more award paths that silently did nothing, on top of R2's two. The
+endpoints that do this properly already existed and nothing called them — the
+same shape as ADR 0001's two content branches.
+
+Four screens now read and submit through the API, both files are deleted, and
+`src/bundleSecrets.test.js` reads `dist/` and fails the build if an answer key
+or a credential appears in it again. **CI builds before it tests for that
+reason — keep that order.**
+
+Two consequences to know about: the daily challenge no longer flashes green or
+red per question (that needed the key in the browser) and grades on the results
+screen instead; and the problem set is honestly 30 rather than dishonestly 145,
+because 115 of the entries were generated filler.
+
 ---
 
 ### The redesign merged from `main`
@@ -190,7 +213,8 @@ second merge from the old base would reintroduce all three of the above.
 |---|---|
 | **Q3 (tail)** | History still carries the originals, so a fresh clone is ~250 MB — bundle that with Q1 step 2. Ten `.glb` models still hold 48 MB of uncompressed texture data; `npm run assets:compress` does it, **on Linux or WSL only** (libvips fails on Windows). CI now fails if that total grows. |
 | **C2 (tail)** | 31 assets the game references and does not have are pinned in `spaceRunAssets.test.js`; loading degrades rather than 404-ing, but the art is still missing. |
-| **Step 5, client half** | Lesson quizzes work server-side but no screen offers one: `QuizSessionView` runs entirely off the static `quizData` and never calls the API. Moving it over is the remaining work, plus attaching actual questions to lessons in the admin panel. |
+| **Lesson quizzes, content** | The plumbing is done end to end — `/quiz/:category?lesson=<slug>` runs a quiz for one lesson. What is missing is content: no `ChallengeQuestion` is attached to a lesson yet. That is admin-panel work. |
+| **115 missing problems** | The Masalalar set advertises itself as a set and holds 30. The other 115 entries were placeholders and were dropped rather than seeded; someone has to write them. |
 | **Lesson text** | `TopicLesson.content` is a bare `TextField` described as "text/markdown" and nobody renders markdown. Decide what a lesson body is before anyone writes into it. |
 | **SpaceLabView's textures** | It loads three Earth textures from `unpkg.com` at runtime, on every visit. That is a third-party dependency in the render path and a CSP problem waiting to happen. Host them, or accept it deliberately. |
 
