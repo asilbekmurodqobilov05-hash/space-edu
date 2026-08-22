@@ -10,3 +10,10 @@ dj-database-url==2.2.*
 gunicorn==23.*
 whitenoise==6.*
 psycopg2-binary==2.9.*
+
+# Only used by apps/tests_repo.py, which parses .github/workflows/*.yml. A
+# workflow that does not parse never runs and reports a zero-second startup
+# failure instead of a red build, so it is the one break CI cannot tell us
+# about — that check has to happen in the test suite, and it has to actually
+# run rather than skip.
+PyYAML==6.*

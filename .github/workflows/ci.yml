@@ -143,18 +143,32 @@ jobs:
           # numbers after a compression run; never raise them.
           BIGGEST_ALLOWED=9411628      # antarctic_meteorite_sample_lar_1232632.glb
           TOTAL_ALLOWED=48473656       # every tracked file over 2 MB, summed
+          LIMIT=2097152                # 2 MB
 
-          over=$(git ls-files -z | xargs -0 -I{} sh -c 'test -f "{}" && find "{}" -size +2M -printf "%s	%p
-"' 2>/dev/null | sort -rn || true)
+          # A plain loop on purpose. This step previously used find -printf with
+          # escape sequences, which is one careless edit away from putting a real
+          # tab and a real newline into the YAML and breaking the whole workflow
+          # file — which is exactly what happened.
+          biggest=0
+          total=0
+          found=0
+          git ls-files > tracked-files.txt
+          while IFS= read -r path; do
+            [ -f "$path" ] || continue
+            size=$(wc -c < "$path")
+            [ "$size" -gt "$LIMIT" ] || continue
+            found=1
+            echo "  $size  $path"
+            total=$((total + size))
+            if [ "$size" -gt "$biggest" ]; then biggest=$size; fi
+          done < tracked-files.txt
+          rm -f tracked-files.txt
 
-          if [ -z "$over" ]; then
+          if [ "$found" -eq 0 ]; then
             echo "No tracked file is over 2 MB. Ticket Q3 can close — drop this step."
             exit 0
           fi
 
-          echo "$over"
-          biggest=$(echo "$over" | head -1 | cut -f1)
-          total=$(echo "$over" | awk -F'	' '{s+=$1} END {print s+0}')
           echo "Biggest: $biggest bytes (budget $BIGGEST_ALLOWED)"
           echo "Total:   $total bytes (budget $TOTAL_ALLOWED)"
 
