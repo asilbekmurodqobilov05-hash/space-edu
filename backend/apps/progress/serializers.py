@@ -1,22 +1,23 @@
 from rest_framework import serializers
 
-from .models import UserLessonProgress, UserUnitEnrollment
+from .models import UserLessonProgress, UserTopicEnrollment
 
 
 class LessonProgressSerializer(serializers.ModelSerializer):
     lesson_slug = serializers.CharField(source='lesson.slug', read_only=True)
+    topic_slug = serializers.CharField(source='lesson.topic.slug', read_only=True)
 
     class Meta:
         model = UserLessonProgress
-        fields = ('lesson_slug', 'score', 'attempts', 'is_mastered', 'completed_at')
+        fields = ('lesson_slug', 'topic_slug', 'score', 'attempts', 'is_mastered', 'completed_at')
 
 
-class UnitEnrollmentSerializer(serializers.ModelSerializer):
-    unit_slug = serializers.CharField(source='unit.slug', read_only=True)
+class TopicEnrollmentSerializer(serializers.ModelSerializer):
+    topic_slug = serializers.CharField(source='topic.slug', read_only=True)
 
     class Meta:
-        model = UserUnitEnrollment
-        fields = ('unit_slug', 'enrolled_at', 'completed_at')
+        model = UserTopicEnrollment
+        fields = ('topic_slug', 'enrolled_at', 'completed_at')
 
 
 class LessonCompleteSerializer(serializers.Serializer):

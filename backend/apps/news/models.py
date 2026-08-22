@@ -31,6 +31,14 @@ class NewsArticle(models.Model):
     class Meta:
         ordering = ['-published_at']
         verbose_name = 'News Article'
+        indexes = [
+            # NewsArticleViewSet filters is_published for non-staff and orders
+            # by -published_at on every request.
+            models.Index(fields=['is_published', '-published_at'],
+                         name='news_published_recent_idx'),
+            models.Index(fields=['category', '-published_at'],
+                         name='news_category_recent_idx'),
+        ]
 
     def __str__(self):
         return self.title_en

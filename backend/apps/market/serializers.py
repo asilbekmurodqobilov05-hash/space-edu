@@ -90,6 +90,8 @@ class ItemReviewSerializer(serializers.ModelSerializer):
 
 
 class ItemReviewWriteSerializer(serializers.ModelSerializer):
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+
     class Meta:
         model = ItemReview
         fields = ('rating', 'comment')

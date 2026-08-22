@@ -29,20 +29,26 @@ class GamificationProfileSerializer(serializers.ModelSerializer):
 
 
 class LeaderboardEntrySerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username', read_only=True)
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
-    avatar_url = serializers.SerializerMethodField()
+    """Public leaderboard row.
+
+    Deliberately minimal. This is served to anonymous callers on a platform for
+    10-18 year-olds, and it used to return first_name, last_name and a link to
+    the child's photo in a public R2 bucket — the full legal name and face of the
+    top 100 users, scrapable with one unauthenticated request.
+
+    Only a display handle is exposed. `astronaut_name` is the nickname the user
+    chose; `username` is derived from their e-mail local part, so it is the
+    fallback rather than the first choice.
+    """
+
+    display_name = serializers.SerializerMethodField()
 
     class Meta:
         model = UserGamificationProfile
-        fields = ('username', 'first_name', 'last_name', 'avatar_url', 'xp', 'level')
+        fields = ('display_name', 'xp', 'level')
 
-    def get_avatar_url(self, obj):
-        if not obj.user.avatar:
-            return None
-        request = self.context.get('request')
-        return request.build_absolute_uri(obj.user.avatar.url) if request else obj.user.avatar.url
+    def get_display_name(self, obj):
+        return (obj.user.astronaut_name or '').strip() or obj.user.username
 
 
 class RewardProductSerializer(serializers.ModelSerializer):

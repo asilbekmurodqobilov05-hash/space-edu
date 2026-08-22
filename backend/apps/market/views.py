@@ -1,7 +1,8 @@
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -49,6 +50,37 @@ class MarketItemViewSet(viewsets.ModelViewSet):
 
         params = self.request.query_params
 
+        def as_int(name):
+            """Parse a numeric filter, or reject the request.
+
+            These used to be bare int() calls on raw query params, so
+            ?min_price=abc raised ValueError and returned 500 to an anonymous
+            caller — which, before the settings fix, rendered Django's debug page
+            with SECRET_KEY and the database URL on it.
+            """
+            raw = params.get(name)
+            if raw in (None, ''):
+                return None
+            try:
+                value = int(raw)
+            except (TypeError, ValueError):
+                raise ValidationError({name: 'Must be a whole number.'})
+            if not 0 <= value <= 2_147_483_647:
+                raise ValidationError({name: 'Out of range.'})
+            return value
+
+        def as_float(name):
+            raw = params.get(name)
+            if raw in (None, ''):
+                return None
+            try:
+                value = float(raw)
+            except (TypeError, ValueError):
+                raise ValidationError({name: 'Must be a number.'})
+            if not 0 <= value <= 5:
+                raise ValidationError({name: 'Must be between 0 and 5.'})
+            return value
+
         # ── Filter: type ──
         item_type = params.get('type')
         if item_type:
@@ -60,20 +92,20 @@ class MarketItemViewSet(viewsets.ModelViewSet):
             qs = qs.filter(category__slug=category)
 
         # ── Filter: price range ──
-        min_price = params.get('min_price')
-        if min_price:
-            qs = qs.filter(price__gte=int(min_price))
-        max_price = params.get('max_price')
-        if max_price:
-            qs = qs.filter(price__lte=int(max_price))
+        min_price = as_int('min_price')
+        if min_price is not None:
+            qs = qs.filter(price__gte=min_price)
+        max_price = as_int('max_price')
+        if max_price is not None:
+            qs = qs.filter(price__lte=max_price)
 
         # ── Filter: fuel range ──
-        min_fuel = params.get('min_fuel')
-        if min_fuel:
-            qs = qs.filter(cost_fuel__gte=int(min_fuel))
-        max_fuel = params.get('max_fuel')
-        if max_fuel:
-            qs = qs.filter(cost_fuel__lte=int(max_fuel))
+        min_fuel = as_int('min_fuel')
+        if min_fuel is not None:
+            qs = qs.filter(cost_fuel__gte=min_fuel)
+        max_fuel = as_int('max_fuel')
+        if max_fuel is not None:
+            qs = qs.filter(cost_fuel__lte=max_fuel)
 
         # ── Filter: flags ──
         if params.get('bestseller') == 'true':
@@ -88,9 +120,9 @@ class MarketItemViewSet(viewsets.ModelViewSet):
             qs = qs.filter(discount_percent__gt=0)
 
         # ── Filter: rating ──
-        min_rating = params.get('min_rating')
-        if min_rating:
-            qs = qs.filter(rating_avg__gte=float(min_rating))
+        min_rating = as_float('min_rating')
+        if min_rating is not None:
+            qs = qs.filter(rating_avg__gte=min_rating)
 
         # ── Filter: tags (partial match) ──
         tag = params.get('tag')
@@ -152,18 +184,24 @@ class PurchaseView(APIView):
         if UserInventory.objects.filter(user=request.user, item=item).exists():
             return Response({'detail': 'You already own this item.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        profile = request.user.gamification
-        if profile.fuel < item.cost_fuel:
-            return Response(
-                {'detail': f'Not enough fuel. Need {item.cost_fuel}, have {profile.fuel}.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        from apps.gamification.models import UserGamificationProfile
+
+        # get_or_create: for a user created before the post_save signal existed,
+        # request.user.gamification was a RelatedObjectDoesNotExist -> 500.
+        profile, _ = UserGamificationProfile.objects.get_or_create(user=request.user)
 
         with transaction.atomic():
-            profile.spend_fuel(item.cost_fuel)
+            # spend_fuel() re-reads the balance under a row lock and returns False
+            # if it is short. Checking first and debiting afterwards let two
+            # concurrent purchases both pass on the same balance.
+            if not profile.spend_fuel(item.cost_fuel):
+                return Response(
+                    {'detail': f'Not enough fuel. Need {item.cost_fuel}, have {profile.fuel}.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             inventory = UserInventory.objects.create(user=request.user, item=item)
-            item.sold_count += 1
-            item.save(update_fields=['sold_count'])
+            # F() so concurrent buyers cannot overwrite each other's increment.
+            MarketItem.objects.filter(pk=item.pk).update(sold_count=F('sold_count') + 1)
 
         return Response(UserInventorySerializer(inventory).data, status=status.HTTP_201_CREATED)
 

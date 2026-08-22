@@ -9,7 +9,7 @@ const api = axios.create({
 let _getAccess = () => null;
 let _getRefresh = () => null;
 let _onLogout = () => {};
-let _onTokenRefresh = (_newAccess) => {};
+let _onTokenRefresh = (_newAccess, _newRefresh) => {};
 
 export const setupApiAuth = (getAccess, getRefresh, onLogout, onTokenRefresh) => {
   _getAccess = getAccess;
@@ -40,8 +40,12 @@ api.interceptors.response.use(
         `${import.meta.env.VITE_API_URL}/auth/token/refresh/`,
         { refresh }
       );
-      // Persist new access token in store — do NOT reassign _getAccess (breaks dynamic reads)
-      _onTokenRefresh(data.access);
+      // The backend runs ROTATE_REFRESH_TOKENS with BLACKLIST_AFTER_ROTATION, so
+      // this response carries a NEW refresh token and the one we just sent is
+      // now blacklisted. Dropping data.refresh meant the next refresh went out
+      // with a dead token and every user was forced back to /login about an
+      // hour after signing in. Persist both.
+      _onTokenRefresh(data.access, data.refresh);
       error.config.headers.Authorization = `Bearer ${data.access}`;
       return api(error.config);
     } catch {
@@ -50,5 +54,23 @@ api.interceptors.response.use(
     }
   }
 );
+
+/**
+ * Long-running requests.
+ *
+ * The shared client gives up after 10 s while the AI endpoint waits up to 20 s
+ * on Gemini, so every longer answer was cut off in the browser even though the
+ * server had produced it. Same interceptors, longer patience.
+ */
+export const slowApi = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  timeout: 45000,
+});
+
+slowApi.interceptors.request.use((config) => {
+  const token = _getAccess();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
 export default api;

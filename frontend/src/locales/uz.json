@@ -636,7 +636,10 @@
     "achievementLearner": "O'quvchi",
     "achievementPerfect": "Mukammal natija",
     "achievementExpert": "Ekspert",
-    "achievementChallenger": "Da'vogar"
+    "achievementChallenger": "Da'vogar",
+    "scoreNotSaved": "Natija saqlanmadi. Aloqani tekshirib, qayta urinib ko'ring.",
+    "savingScore": "Natija saqlanmoqda…",
+    "lessonQuiz": "Dars boʻyicha test"
   },
   "market": {
     "hub": "Do'kon",
@@ -734,7 +737,8 @@
       "cpu": "Protsessor",
       "ram": "Tezkor xotira",
       "accuracy": "Aniqlik"
-    }
+    },
+    "offlineSample": "Do‘konga ulanib bo‘lmadi. Namunaviy katalog ko‘rsatilmoqda."
   },
   "common": {
     "loading": "Yuklanmoqda...",
@@ -935,7 +939,17 @@
     "selectingRoom": "Xona tanlanmoqda...",
     "initializing": "Aloqa o'rnatilmoqda...",
     "quietChannel": "Kanal jim",
-    "composePlaceholder": "Jamoaga xabar yozing..."
+    "composePlaceholder": "Jamoaga xabar yozing...",
+    "tooFast": "Siz juda tez xabar yuboryapsiz. Biroz kuting.",
+    "notSent": "Xabar yuborilmadi.",
+    "reportPrompt": "Nima uchun shikoyat qilyapsiz?",
+    "reportSent": "Shikoyat yuborildi. Moderator ko'rib chiqadi.",
+    "alreadyReported": "Siz bu xabarga allaqachon shikoyat qilgansiz.",
+    "reportFailed": "Shikoyatni yuborib bo‘lmadi.",
+    "blocked": "Bloklandi. Siz ularning xabarlarini, ular esa sizniknni ko'rmaydi.",
+    "blockFailed": "Bu foydalanuvchini bloklab bo‘lmadi.",
+    "cancel": "Bekor qilish",
+    "suspended": "Moderator xabar yuborishingizni to'xtatib qo'ydi:"
   },
   "notFound": {
     "lostInSpace": "Fazoda adashib qoldingiz",
@@ -1008,7 +1022,8 @@
     "greatResult": "Ajoyib natija!",
     "successDesc": "Siz darsni muvaffaqiyatli yakunladingiz va quyidagi mukofotlarga ega bo'ldingiz:",
     "gotIt": "Tushunarli",
-    "progressSaved": "Natija saqlandi!"
+    "progressSaved": "Natija saqlandi!",
+    "progressNotSaved": "Faqat shu qurilmada saqlandi — serverga ulanib bo'lmadi."
   },
   "learnViews": {
     "lessonCount": "{count} dars",
@@ -1047,7 +1062,10 @@
     "readButton": "O'qish",
     "creativityModule": "IJODKORLIK MODULI",
     "lessonDescription": "{name} ning muhandislik va dizayn tamoyillarini o'rganing. Koinotni o'rganish va rivojlantirishdagi uning rolini tushunish uchun videoni tomosha qiling.",
-    "fullScreenVideo": "To'liq ekran"
+    "fullScreenVideo": "To'liq ekran",
+    "loading": "Yuklanmoqda…",
+    "checkFailed": "Javobni tekshirib bo'lmadi — qayta urinib ko'ring.",
+    "checkTooFast": "Juda ko’p urinish. Biroz kuting."
   },
   "admin": {
     "dashboard": "Boshqaruv paneli",

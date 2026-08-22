@@ -52,6 +52,7 @@ export const interviewsTopicsData = {
   3: {
     id: 3,
     title: 'Boshqa xodimlar',
+    titleRu: 'Другие сотрудники',
     titleEn: 'Other Workers',
     color: '#3b82f6',
     lessons: [

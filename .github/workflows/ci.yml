@@ -1,0 +1,184 @@
+name: CI
+
+# Runs on every pull request and every push to main. A red run blocks the merge.
+# Before this existed, 42 defects reached main unnoticed, including four that
+# meant the system was compromised.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check for missing migrations
+        env:
+          SECRET_KEY: ci-secret-key-not-used-anywhere-else-0123456789
+          DJANGO_ENV: development
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        env:
+          SECRET_KEY: ci-secret-key-not-used-anywhere-else-0123456789
+          DJANGO_ENV: development
+        run: python manage.py test apps base --verbosity 2
+
+      - name: Deployment checks
+        env:
+          SECRET_KEY: ci-secret-key-not-used-anywhere-else-0123456789
+          DJANGO_ENV: production
+          ALLOWED_HOSTS: example.com
+        run: python manage.py check --deploy --fail-level ERROR
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      # Build first: src/bundleSecrets.test.js reads dist/ to check that no
+      # answer key or credential reached the browser, and has nothing to read
+      # if the bundle has not been produced yet.
+      - name: Build
+        env:
+          VITE_API_URL: https://example.invalid/api/v1
+        run: npm run build
+
+      - name: Tests
+        run: npm test
+
+      - name: Learn content fixture is in sync
+        # The backend seeds the /learn tree from a fixture generated out of
+        # src/data/*TopicsData.js. If the two drift, the site and the database
+        # disagree about what the curriculum is, silently.
+        run: node scripts/export-learn-content.mjs --check
+
+      - name: Locale parity
+        # All three locale files must carry the same keys. We are at 1017 with
+        # perfect parity; a missing key silently shows English to a Russian or
+        # Uzbek reader instead of failing.
+        run: node scripts/check-locales.mjs
+
+  hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No secrets, no committed database, no stray build output
+        run: |
+          set -e
+          fail=0
+
+          if git ls-files | grep -E '(^|/)\.env$|\.sqlite3$'; then
+            echo "::error::A .env file or a SQLite database is tracked. Both are forbidden."
+            fail=1
+          fi
+
+          if git ls-files | grep -E '\.pyc$|__pycache__'; then
+            echo "::error::Compiled Python is tracked. Add it to .gitignore and git rm --cached it."
+            fail=1
+          fi
+
+          # VITE_* values are inlined into the public bundle at build time.
+          if git ls-files 'frontend/*' | xargs grep -lE 'VITE_[A-Z_]*(KEY|SECRET|TOKEN)\s*=\s*\S' 2>/dev/null | grep -v '\.example$'; then
+            echo "::error::A VITE_ secret has a value outside .env.example. Vite ships that to every visitor."
+            fail=1
+          fi
+
+          if git ls-files | xargs grep -lE 'AIza[0-9A-Za-z_-]{30,}|sk-[a-zA-Z0-9]{30,}' 2>/dev/null; then
+            echo "::error::What looks like an API key is committed."
+            fail=1
+          fi
+
+          exit $fail
+
+      - name: Large files
+        run: |
+          set -e
+          # Draco took the served assets from 246 MB to 20 MB. What is left is
+          # texture data inside ten .glb models, 48 MB between them — ticket Q3's
+          # tail, and it needs libvips, which only runs on Linux
+          # (frontend/scripts/compress-textures.sh).
+          #
+          # This was a printout nobody read. It is now a budget: the debt is
+          # pinned at what it is today and can only shrink. Lower these two
+          # numbers after a compression run; never raise them.
+          BIGGEST_ALLOWED=9411628      # antarctic_meteorite_sample_lar_1232632.glb
+          TOTAL_ALLOWED=48473656       # every tracked file over 2 MB, summed
+          LIMIT=2097152                # 2 MB
+
+          # A plain loop on purpose. This step previously used find -printf with
+          # escape sequences, which is one careless edit away from putting a real
+          # tab and a real newline into the YAML and breaking the whole workflow
+          # file — which is exactly what happened.
+          biggest=0
+          total=0
+          found=0
+          git ls-files > tracked-files.txt
+          while IFS= read -r path; do
+            [ -f "$path" ] || continue
+            size=$(wc -c < "$path")
+            [ "$size" -gt "$LIMIT" ] || continue
+            found=1
+            echo "  $size  $path"
+            total=$((total + size))
+            if [ "$size" -gt "$biggest" ]; then biggest=$size; fi
+          done < tracked-files.txt
+          rm -f tracked-files.txt
+
+          if [ "$found" -eq 0 ]; then
+            echo "No tracked file is over 2 MB. Ticket Q3 can close — drop this step."
+            exit 0
+          fi
+
+          echo "Biggest: $biggest bytes (budget $BIGGEST_ALLOWED)"
+          echo "Total:   $total bytes (budget $TOTAL_ALLOWED)"
+
+          fail=0
+          if [ "$biggest" -gt "$BIGGEST_ALLOWED" ]; then
+            echo "::error::A tracked file is larger than anything already in the repository."
+            fail=1
+          fi
+          if [ "$total" -gt "$TOTAL_ALLOWED" ]; then
+            echo "::error::Large-asset debt grew. Compress before adding, or lower the budget."
+            fail=1
+          fi
+          exit $fail

@@ -1,21 +1,43 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, XCircle, ArrowLeft, Send } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-import { problemsData } from '@/data/problemsData';
+import { checkProblem, useProblems } from '@/hooks/useProblems';
 import { useProblemsStore } from '@/store/useProblemsStore';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function ProblemDetailView() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const problem = problemsData[id];
+  const { problems, state } = useProblems();
   const setProblemStatus = useProblemsStore((state) => state.setProblemStatus);
   const { t, i18n } = useTranslation();
-  
+
   const [userAnswer, setUserAnswer] = useState('');
   const [status, setStatus] = useState(null); // 'correct', 'wrong', or null
+  const [revealed, setRevealed] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  // The route addresses a problem by its printed number, which is what the old
+  // static file was keyed on; the API addresses it by row id.
+  const problem = useMemo(
+    () => problems.find((row) => String(row.number) === String(id)) ?? null,
+    [problems, id],
+  );
+  const nextNumber = useMemo(() => {
+    const index = problems.findIndex((row) => String(row.number) === String(id));
+    return index >= 0 ? problems[index + 1]?.number ?? null : null;
+  }, [problems, id]);
+
+  if (state === 'loading') {
+    return (
+      <div className="pt-32 text-center text-white/30 text-sm">
+        {t('learnViews', 'loading')}
+      </div>
+    );
+  }
 
   if (!problem) {
     return <Navigate to="/learn/problems" replace />;
@@ -25,9 +47,30 @@ export default function ProblemDetailView() {
   const colorLight = 'rgba(74,222,128,0.10)';
   const colorBorder = 'rgba(74,222,128,0.25)';
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = userAnswer.trim() === problem.answer ? 'correct' : 'wrong';
+    if (submitting || !userAnswer.trim()) return;
+
+    // Graded on the server. This used to be
+    // `userAnswer.trim() === problem.answer` against an answer bundled into the
+    // JavaScript, so every solution was one View Source away — and the strict
+    // comparison also marked "6n" and "14,81 m/s" wrong.
+    setSubmitting(true);
+    setError(null);
+    const graded = await checkProblem(problem.id, userAnswer.trim());
+    setSubmitting(false);
+
+    if (!graded) {
+      setError(t('learnViews', 'checkFailed'));
+      return;
+    }
+    if (graded.throttled) {
+      setError(t('learnViews', 'checkTooFast'));
+      return;
+    }
+
+    const result = graded.correct ? 'correct' : 'wrong';
+    setRevealed(graded);
     setStatus(result);
     setProblemStatus(id, result);
   };
@@ -39,17 +82,19 @@ export default function ProblemDetailView() {
   const handleRetry = () => {
     setUserAnswer('');
     setStatus(null);
+    setRevealed(null);
+    setError(null);
   };
 
   const handleNext = () => {
-    const nextId = parseInt(id) + 1;
-    if (problemsData[nextId]) {
-      navigate(`/learn/problems/${nextId}`);
-      setUserAnswer('');
-      setStatus(null);
-    } else {
+    // Walk the problems that exist rather than assuming the numbers run
+    // consecutively — 115 of the old 145 were filler and are not seeded.
+    if (nextNumber === null) {
       navigate('/learn/problems');
+      return;
     }
+    navigate(`/learn/problems/${nextNumber}`);
+    handleRetry();
   };
 
   return (
@@ -86,6 +131,9 @@ export default function ProblemDetailView() {
              </h2>
           </div>
 
+          {error && (
+            <p style={{ color: '#fda4af', fontSize: '14px', marginBottom: '12px' }}>{error}</p>
+          )}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ position: 'relative' }}>
               <input
@@ -222,7 +270,7 @@ export default function ProblemDetailView() {
                     color: color,
                   }}>
                     <CheckCircle2 size={24} />
-                    <span style={{ fontSize: '18px', fontWeight: 700 }}>{problem.answer}</span>
+                    <span style={{ fontSize: '18px', fontWeight: 700 }}>{revealed?.answer}</span>
                   </div>
                 </div>
               )}

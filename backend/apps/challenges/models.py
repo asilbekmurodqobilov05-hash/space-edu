@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 
@@ -22,6 +22,12 @@ class ChallengeQuestion(models.Model):
 
     category = models.CharField(max_length=20, choices=CATEGORIES, default='general')
     difficulty = models.CharField(max_length=10, choices=DIFFICULTIES, default='medium')
+    lesson = models.ForeignKey(
+        'courses.TopicLesson',
+        on_delete=models.SET_NULL, null=True, blank=True, related_name='questions',
+        help_text='Attach this question to one lesson. Empty means it is only in '
+                  'the category pool.',
+    )
     question = models.TextField(help_text='Question text (Uzbek)')
     question_en = models.TextField(blank=True, default='')
     question_ru = models.TextField(blank=True, default='')
@@ -63,7 +69,10 @@ class DailyChallenge(models.Model):
     @classmethod
     def get_or_create_today(cls):
         """Get today's challenge, or auto-generate one from the question pool."""
-        today = timezone.now().date()
+        # localdate, not now().date(): the server runs on UTC and the site on
+        # Asia/Tashkent, so the naive version rolled the day over at 05:00 local
+        # and filed an evening attempt under yesterday.
+        today = timezone.localdate()
         challenge, created = cls.objects.get_or_create(date=today)
 
         if created:
@@ -138,22 +147,33 @@ class UserStreak(models.Model):
         return f'{self.user.username}: {self.current_streak} days'
 
     def update_streak(self):
-        """Call after completing today's challenge."""
-        today = timezone.now().date()
-        if self.last_completed == today:
-            return  # Already counted
+        """Call after completing today's challenge.
 
-        from datetime import timedelta
-        yesterday = today - timedelta(days=1)
+        Read-modify-write on a loaded instance, exactly like the profile streak:
+        two submissions arriving together both saw the day unclaimed and both
+        incremented from the same starting value, so one increment was lost.
+        The decision and the write now happen under one row lock.
+        """
+        today = timezone.localdate()
+        with transaction.atomic():
+            locked = UserStreak.objects.select_for_update().get(pk=self.pk)
+            if locked.last_completed == today:
+                self.refresh_from_db(
+                    fields=['current_streak', 'longest_streak', 'last_completed']
+                )
+                return
 
-        if self.last_completed == yesterday:
-            self.current_streak += 1
-        else:
-            self.current_streak = 1
+            yesterday = today - timezone.timedelta(days=1)
+            locked.current_streak = (
+                locked.current_streak + 1 if locked.last_completed == yesterday else 1
+            )
+            locked.longest_streak = max(locked.longest_streak, locked.current_streak)
+            locked.last_completed = today
+            locked.save(
+                update_fields=['current_streak', 'longest_streak', 'last_completed']
+            )
 
-        self.longest_streak = max(self.longest_streak, self.current_streak)
-        self.last_completed = today
-        self.save()
+        self.refresh_from_db(fields=['current_streak', 'longest_streak', 'last_completed'])
 
 
 # ══════════════════════════════════════════════════════════════════════════════

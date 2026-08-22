@@ -1,4 +1,22 @@
 from django.db import models
+from django.utils.text import slugify
+
+
+def unique_slug(model, source, pk=None):
+    """Derive a slug from the title, and make it unique by suffixing.
+
+    The admin panel posts a title and no slug — that contract predates the
+    field and must keep working (see `apps/admin_api/tests.py`). Content is
+    also written in Uzbek and Russian, which slugify empties, hence the
+    fallback.
+    """
+    base = slugify(source)[:150] or model.__name__.lower()
+    candidate, n = base, 1
+    others = model.objects.exclude(pk=pk) if pk else model.objects.all()
+    while others.filter(slug=candidate).exists():
+        n += 1
+        candidate = f'{base}-{n}'
+    return candidate
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -32,6 +50,11 @@ class Sphere(models.Model):
 # ──────────────────────────────────────────────────────────────────────────────
 class Topic(models.Model):
     sphere = models.ForeignKey(Sphere, on_delete=models.CASCADE, related_name='topics')
+    slug = models.SlugField(
+        max_length=140, unique=True, blank=True,
+        help_text='Stable identifier, e.g. "physics-kinematika". Seeds key on this. '
+                  'Derived from the English title when left empty.',
+    )
     order = models.PositiveSmallIntegerField(default=0)
     title = models.CharField(max_length=200)
     title_en = models.CharField(max_length=200, blank=True, default='')
@@ -39,9 +62,18 @@ class Topic(models.Model):
     color = models.CharField(max_length=24, blank=True, default='')
     description = models.TextField(blank=True, default='')
 
+    fuel_reward = models.PositiveIntegerField(
+        default=50, help_text='Paid once, when every lesson in the topic is complete.',
+    )
+
     class Meta:
         ordering = ['order']
         verbose_name = 'Topic'
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = unique_slug(Topic, self.title_en or self.title, self.pk)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.sphere.slug} / {self.title}'
@@ -51,7 +83,30 @@ class Topic(models.Model):
 #  TOPIC LESSON  —  individual lesson within a Topic
 # ──────────────────────────────────────────────────────────────────────────────
 class TopicLesson(models.Model):
+    """A node in a topic's lesson tree.
+
+    `parent` replaced the old fixed Sphere -> Topic -> TopicLesson -> SubLesson
+    shape (ADR 0001, question left open there). Four levels was both too many and
+    too few: `physicsTopicsData` has no sub-lessons at all, while
+    `interviewsTopicsData` nests topic -> section -> lesson -> sub-lesson, which
+    the fixed tree could not represent. A nullable self-reference holds every
+    subject, and the admin panel edits children through the same lessons tab.
+
+    `topic` stays set on every node, child included, so "all lessons in this
+    topic" is one flat filter rather than a recursive walk.
+    """
+
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='lessons')
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, related_name='children',
+        null=True, blank=True,
+        help_text='Empty for a top-level lesson.',
+    )
+    slug = models.SlugField(
+        max_length=200, unique=True, blank=True,
+        help_text='Stable identifier. Progress and awards key on this, not on '
+                  '(parent, order). Derived from the English name when left empty.',
+    )
     order = models.PositiveSmallIntegerField(default=0)
     name = models.CharField(max_length=300)
     name_en = models.CharField(max_length=300, blank=True, default='')
@@ -59,32 +114,25 @@ class TopicLesson(models.Model):
     video_url = models.URLField(blank=True, default='')
     content = models.TextField(blank=True, default='', help_text='Lesson text/markdown content')
 
+    xp_reward = models.PositiveIntegerField(default=25)
+    fuel_reward = models.PositiveIntegerField(default=25)
+
     class Meta:
         ordering = ['order']
         verbose_name = 'Topic Lesson'
 
-    def __str__(self):
-        return self.name
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-#  SUB-LESSON  —  nested lesson (for Astronomy, Interviews, Creativity)
-# ──────────────────────────────────────────────────────────────────────────────
-class SubLesson(models.Model):
-    parent_lesson = models.ForeignKey(TopicLesson, on_delete=models.CASCADE, related_name='sub_lessons')
-    order = models.PositiveSmallIntegerField(default=0)
-    name = models.CharField(max_length=300)
-    name_en = models.CharField(max_length=300, blank=True, default='')
-    name_ru = models.CharField(max_length=300, blank=True, default='')
-    video_url = models.URLField(blank=True, default='')
-    content = models.TextField(blank=True, default='')
-
-    class Meta:
-        ordering = ['order']
-        verbose_name = 'Sub-Lesson'
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = unique_slug(TopicLesson, self.name_en or self.name, self.pk)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
+
+    @property
+    def is_leaf(self):
+        """Only leaves are completable — a group node is a heading, not a lesson."""
+        return not self.children.exists()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -112,107 +160,3 @@ class Problem(models.Model):
 
     def __str__(self):
         return f'Problem #{self.number}'
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-#  LEGACY MODELS  (kept for backwards compat — existing Levels/Units/Lessons)
-# ──────────────────────────────────────────────────────────────────────────────
-class Level(models.Model):
-    slug = models.SlugField(unique=True)
-    order = models.PositiveSmallIntegerField()
-    title_en = models.CharField(max_length=100)
-    title_uz = models.CharField(max_length=100)
-    title_ru = models.CharField(max_length=100)
-    description_en = models.TextField()
-    description_uz = models.TextField()
-    description_ru = models.TextField()
-    icon = models.CharField(max_length=50)
-    color = models.CharField(max_length=20)
-
-    class Meta:
-        ordering = ['order']
-        verbose_name = 'Level'
-
-    def __str__(self):
-        return self.slug
-
-
-class Unit(models.Model):
-    level = models.ForeignKey(Level, on_delete=models.CASCADE, related_name='units')
-    slug = models.SlugField()
-    order = models.PositiveSmallIntegerField()
-    title_en = models.CharField(max_length=100)
-    title_uz = models.CharField(max_length=100)
-    title_ru = models.CharField(max_length=100)
-    xp_reward = models.PositiveIntegerField(default=100)
-    fuel_reward = models.PositiveIntegerField(default=50)
-
-    class Meta:
-        ordering = ['order']
-        unique_together = ('level', 'slug')
-        verbose_name = 'Unit'
-
-    def __str__(self):
-        return self.slug
-
-
-class Lesson(models.Model):
-    LESSON_TYPES = [
-        ('explanation', 'Explanation'),
-        ('quiz', 'Quiz'),
-        ('video', 'Video'),
-        ('simulation', 'Simulation'),
-    ]
-    unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name='lessons')
-    slug = models.SlugField()
-    order = models.PositiveSmallIntegerField()
-    title_en = models.CharField(max_length=100)
-    title_uz = models.CharField(max_length=100)
-    title_ru = models.CharField(max_length=100)
-    lesson_type = models.CharField(max_length=20, choices=LESSON_TYPES)
-    xp_reward = models.PositiveIntegerField(default=50)
-    estimated_minutes = models.PositiveSmallIntegerField(default=10)
-
-    class Meta:
-        ordering = ['order']
-        unique_together = ('unit', 'slug')
-        verbose_name = 'Lesson'
-
-    def __str__(self):
-        return self.slug
-
-
-class LessonSection(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='sections')
-    order = models.PositiveSmallIntegerField()
-    section_type = models.CharField(max_length=20)
-    content_en = models.JSONField(default=dict)
-    content_uz = models.JSONField(default=dict)
-    content_ru = models.JSONField(default=dict)
-
-    class Meta:
-        ordering = ['order']
-        verbose_name = 'Lesson Section'
-
-    def __str__(self):
-        return f'{self.lesson.slug} — section {self.order}'
-
-
-class QuizQuestion(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='questions')
-    order = models.PositiveSmallIntegerField()
-    text_en = models.TextField()
-    text_uz = models.TextField()
-    text_ru = models.TextField()
-    options = models.JSONField()
-    correct_answer = models.CharField(max_length=1)
-    explanation_en = models.TextField()
-    explanation_uz = models.TextField()
-    explanation_ru = models.TextField()
-
-    class Meta:
-        ordering = ['order']
-        verbose_name = 'Quiz Question'
-
-    def __str__(self):
-        return f'{self.lesson.slug} — Q{self.order}'

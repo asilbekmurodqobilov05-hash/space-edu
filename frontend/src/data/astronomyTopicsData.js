@@ -123,6 +123,7 @@ export const astronomyTopicsData = {
   4: {
     id: 4,
     title: 'Osmon jismlari',
+    titleRu: 'Небесные тела',
     titleEn: 'Celestial Bodies',
     color: '#fbbf24',
     lessons: [

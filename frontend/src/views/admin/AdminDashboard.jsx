@@ -34,6 +34,37 @@ const MENU_GROUPS = [
 ];
 const TABS = MENU_GROUPS.flatMap(g => g.items);
 
+/**
+ * Every write in this panel used to be a bare `.then()` and every read a
+ * `.catch(() => {})`. A failed save left the modal open with nothing said, a
+ * failed delete looked like a no-op, and a 403 — which is exactly what a staff
+ * member gets for touching a privilege flag — reached the user as silence.
+ */
+function ErrorNote({ error, onDismiss }) {
+  if (!error) return null;
+  return (
+    <div className="mb-4 flex items-start justify-between gap-4 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3">
+      <p className="text-sm text-rose-200/90">{error}</p>
+      <button onClick={onDismiss} className="text-rose-200/50 hover:text-rose-200 text-sm">
+        ✕
+      </button>
+    </div>
+  );
+}
+
+/** Turn an axios failure into something a human can act on. */
+function describeFailure(err) {
+  const body = err?.response?.data;
+  if (typeof body === 'string' && body) return body;
+  if (body?.detail) return body.detail;
+  if (body && typeof body === 'object') {
+    const first = Object.entries(body)[0];
+    if (first) return `${first[0]}: ${[].concat(first[1]).join(', ')}`;
+  }
+  if (err?.response?.status) return `Request failed (${err.response.status}).`;
+  return 'Could not reach the server.';
+}
+
 function StatCard({ label, value, sub }) {
   return (
     <div className="bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/10 rounded-2xl p-5 hover:border-violet/30 transition-all">
@@ -118,19 +149,32 @@ function UsersTab() {
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [editing, setEditing] = useState(null);
-  
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQ(q), 300);
     return () => clearTimeout(timer);
   }, [q]);
 
-  const load = () => api.get(`/admin-panel/users/?q=${debouncedQ}`).then(r => setUsers(r.data)).catch(() => {});
+  const load = () => api.get(`/admin-panel/users/?q=${debouncedQ}`)
+    .then(r => { setUsers(r.data); setError(null); })
+    .catch(err => setError(describeFailure(err)));
   useEffect(() => { load(); }, [debouncedQ]);
-  const save = () => { api.patch(`/admin-panel/users/${editing.id}/`, editing).then(() => { setEditing(null); load(); }); };
-  const del = (id) => { if (confirm('Delete user?')) api.delete(`/admin-panel/users/${id}/`).then(load); };
+  const save = () => {
+    api.patch(`/admin-panel/users/${editing.id}/`, editing)
+      .then(() => { setEditing(null); setError(null); load(); })
+      .catch(err => setError(describeFailure(err)));
+  };
+  const del = (id) => {
+    if (!confirm('Delete user?')) return;
+    api.delete(`/admin-panel/users/${id}/`)
+      .then(load)
+      .catch(err => setError(describeFailure(err)));
+  };
   
   return (
     <div>
+      <ErrorNote error={error} onDismiss={() => setError(null)} />
       <div className="flex items-center gap-4 mb-6">
         <h2 className="text-2xl font-black">{t('admin', 'users')}</h2>
         <div className="flex-1 relative">
@@ -176,17 +220,32 @@ function CrudTab({ title, endpoint, fields, defaultItem }) {
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(defaultItem);
-  const load = () => api.get(`/admin-panel/${endpoint}/`).then(r => setItems(r.data)).catch(() => {});
+  const [error, setError] = useState(null);
+  const fail = (err) => setError(describeFailure(err));
+  const load = () => api.get(`/admin-panel/${endpoint}/`)
+    .then(r => { setItems(r.data); setError(null); })
+    .catch(fail);
   useEffect(() => { load(); }, []);
   const save = () => {
-    if (creating) { api.post(`/admin-panel/${endpoint}/`, form).then(() => { setCreating(false); setForm(defaultItem); load(); }); }
-    else { api.patch(`/admin-panel/${endpoint}/${editing.id}/`, editing).then(() => { setEditing(null); load(); }); }
+    if (creating) {
+      api.post(`/admin-panel/${endpoint}/`, form)
+        .then(() => { setCreating(false); setForm(defaultItem); setError(null); load(); })
+        .catch(fail);
+    } else {
+      api.patch(`/admin-panel/${endpoint}/${editing.id}/`, editing)
+        .then(() => { setEditing(null); setError(null); load(); })
+        .catch(fail);
+    }
   };
-  const del = (id) => { if (confirm('Delete?')) api.delete(`/admin-panel/${endpoint}/${id}/`).then(load); };
+  const del = (id) => {
+    if (!confirm('Delete?')) return;
+    api.delete(`/admin-panel/${endpoint}/${id}/`).then(load).catch(fail);
+  };
   const displayField = fields[0]?.name || 'id';
   const subField = fields[1]?.name;
   return (
     <div>
+      <ErrorNote error={error} onDismiss={() => setError(null)} />
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-black">{title}</h2>
         <button onClick={() => { setCreating(true); setForm(defaultItem); }} className="flex items-center gap-2 px-4 py-2 bg-violet text-white rounded-xl text-sm font-bold hover:bg-violet-dark transition-colors"><Plus className="w-4 h-4" />{t('admin', 'addNew')}</button>
@@ -222,16 +281,20 @@ function ChatTab() {
   const [rooms, setRooms] = useState([]);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
-  useEffect(() => { api.get('/admin-panel/chat-rooms/').then(r => setRooms(r.data)).catch(() => {}); }, []);
+  const [error, setError] = useState(null);
+  const loadRooms = () => api.get('/admin-panel/chat-rooms/')
+    .then(r => { setRooms(r.data); setError(null); })
+    .catch(err => setError(describeFailure(err)));
+  useEffect(() => { loadRooms(); }, []);
   const addRoom = () => {
     if (!name || !slug) return;
-    api.post('/admin-panel/chat-rooms/', { name, slug }).then(() => {
-      setName(''); setSlug('');
-      api.get('/admin-panel/chat-rooms/').then(r => setRooms(r.data));
-    });
+    api.post('/admin-panel/chat-rooms/', { name, slug })
+      .then(() => { setName(''); setSlug(''); setError(null); loadRooms(); })
+      .catch(err => setError(describeFailure(err)));
   };
   return (
     <div>
+      <ErrorNote error={error} onDismiss={() => setError(null)} />
       <h2 className="text-2xl font-black mb-6">{t('admin', 'chatRooms')}</h2>
       <div className="flex gap-3 mb-6">
         <input value={name} onChange={e => setName(e.target.value)} placeholder={t('admin', 'roomName')} className="bg-slate-50 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 rounded-xl px-4 py-2 text-sm flex-1 focus:outline-none focus:border-violet/40 text-slate-900 dark:text-white" />

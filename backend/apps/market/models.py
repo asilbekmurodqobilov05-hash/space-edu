@@ -1,5 +1,11 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+
+from apps.validators import image_upload_to
+from django.db.models import Avg, Count
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 from django.utils import timezone
 
 
@@ -78,7 +84,7 @@ class MarketItem(models.Model):
     # Tags (comma-separated for simplicity)
     tags = models.CharField(max_length=500, blank=True, default='', help_text='Comma-separated tags')
 
-    image = models.ImageField(upload_to='market/', blank=True)
+    image = models.ImageField(upload_to=image_upload_to('market'), blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -160,8 +166,14 @@ class ItemReview(models.Model):
         related_name='market_reviews',
     )
     item = models.ForeignKey(MarketItem, on_delete=models.CASCADE, related_name='reviews')
-    rating = models.PositiveSmallIntegerField(help_text='1-5 stars')
-    comment = models.TextField(blank=True, default='')
+    # Documented as 1-5 but declared with no validator, so the write serializer
+    # accepted anything up to 32767 and ItemReview.save() copied it straight
+    # into the public MarketItem.rating_avg.
+    rating = models.PositiveSmallIntegerField(
+        help_text='1-5 stars',
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    comment = models.TextField(blank=True, default='', max_length=2000)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -172,10 +184,26 @@ class ItemReview(models.Model):
     def __str__(self):
         return f'{self.user.username} rated {self.item.slug} {self.rating}/5'
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        # Update cached rating on MarketItem
-        reviews = self.item.reviews.all()
-        self.item.rating_count = reviews.count()
-        self.item.rating_avg = round(sum(r.rating for r in reviews) / max(reviews.count(), 1), 2)
-        self.item.save(update_fields=['rating_avg', 'rating_count'])
+    @staticmethod
+    def recalculate_item_rating(item):
+        """Recompute the cached rating in the database rather than in Python.
+
+        The old version loaded every review into memory and called .count() twice.
+        """
+        agg = item.reviews.aggregate(avg=Avg('rating'), n=Count('id'))
+        item.rating_avg = round(agg['avg'] or 0.0, 2)
+        item.rating_count = agg['n'] or 0
+        item.save(update_fields=['rating_avg', 'rating_count'])
+
+
+@receiver(post_save, sender=ItemReview)
+@receiver(post_delete, sender=ItemReview)
+def _sync_item_rating(sender, instance, **kwargs):
+    """Keep MarketItem.rating_avg / rating_count in step with the reviews.
+
+    Signals rather than a Model.delete() override, because a queryset delete
+    (an admin bulk action, or a cascade from a removed user) never calls the
+    method. Recomputing only on save meant a deleted one-star review kept
+    dragging the public average down for good.
+    """
+    ItemReview.recalculate_item_rating(instance.item)

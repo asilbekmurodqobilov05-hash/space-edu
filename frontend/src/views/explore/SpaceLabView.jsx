@@ -1,21 +1,51 @@
 import { useState, useRef, useMemo, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Rocket, Flame, Globe2, Sparkles, Info, Settings2, Play, Pause, RotateCcw, Satellite } from 'lucide-react';
-import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, Environment, useTexture } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette, Noise, ChromaticAberration } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useGamificationStore } from '@/store/useGamificationStore';
+import { useRemoteTextures } from '@/hooks/useRemoteTextures';
+
+/*
+ * Eight textures on somebody else's servers.
+ *
+ * These were loaded through `useLoader`, which throws when a load fails — and
+ * with no boundary between this view and the root one, an unpkg outage, a
+ * GitHub rate limit or a school network that blocks either replaced the whole
+ * application with the crash screen. `useRemoteTextures` returns null for
+ * whatever did not arrive; the materials fall back to a plain colour.
+ *
+ * `raw.githubusercontent.com` in particular is not an asset host. GitHub
+ * rate-limits it and does not support it for production traffic, so it fails on
+ * exactly the day a whole class opens the page at once. Hosting these ourselves
+ * is the real fix and needs them downscaled first — see docs/HANDOVER.md.
+ */
+const GLOBE_TEXTURES = [
+  'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+  'https://unpkg.com/three-globe/example/img/earth-topology.png',
+  'https://unpkg.com/three-globe/example/img/earth-water.png',
+];
+
+const TOPOLOGY_TEXTURE = ['https://unpkg.com/three-globe/example/img/earth-topology.png'];
+
+const PLANET_TEXTURES = [
+  'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
+  'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_normal_2048.jpg',
+  'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_specular_2048.jpg',
+  'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_lights_2048.png',
+  'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png',
+];
+
+/** What an Earth looks like when its texture never arrived. */
+const UNTEXTURED_EARTH = '#2a5d8f';
 
 // --- Realistic Earth Component ---
 const RealisticEarth = ({ radius = 5, position = [0, 0, 0] }) => {
-  const [colorMap, bumpMap, specularMap] = useLoader(THREE.TextureLoader, [
-    'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
-    'https://unpkg.com/three-globe/example/img/earth-topology.png',
-    'https://unpkg.com/three-globe/example/img/earth-water.png'
-  ]);
+  const [colorMap, bumpMap, specularMap] = useRemoteTextures(GLOBE_TEXTURES);
 
   const earthRef = useRef(null);
   useFrame(() => {
@@ -26,8 +56,9 @@ const RealisticEarth = ({ radius = 5, position = [0, 0, 0] }) => {
     <group position={new THREE.Vector3(...position)}>
       <mesh ref={earthRef} receiveShadow>
         <sphereGeometry args={[radius, 64, 64]} />
-        <meshPhongMaterial 
+        <meshPhongMaterial
           map={colorMap}
+          color={colorMap ? undefined : UNTEXTURED_EARTH}
           bumpMap={bumpMap}
           bumpScale={0.02}
           specularMap={specularMap}
@@ -37,10 +68,10 @@ const RealisticEarth = ({ radius = 5, position = [0, 0, 0] }) => {
       </mesh>
       <mesh>
         <sphereGeometry args={[radius + 0.05, 64, 64]} />
-        <meshPhongMaterial 
-          color="#4ca6ff" 
-          transparent 
-          opacity={0.15} 
+        <meshPhongMaterial
+          color="#4ca6ff"
+          transparent
+          opacity={0.15}
           blending={THREE.AdditiveBlending}
           side={THREE.BackSide}
         />
@@ -75,7 +106,7 @@ const RocketEngineeringLab = () => {
       <div className="w-full md:w-1/3 space-y-6">
         <div className="glass p-6 rounded-2xl">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Settings2 className="text-neon-blue" /> {t('lab', 'controls')}</h3>
-          
+
           <div className="space-y-4 mb-6">
             <div>
               <label className="text-xs text-gray-400 uppercase tracking-wider mb-2 block">{t('lab', 'payloadType')}</label>
@@ -95,7 +126,7 @@ const RocketEngineeringLab = () => {
 
           <div className="flex items-center justify-between mb-4 pt-4 border-t border-white/10">
             <span className="text-gray-300">{t('lab', 'showInternals')}</span>
-            <button 
+            <button
               onClick={() => setShowInternals(!showInternals)}
               className={`w-12 h-6 rounded-full transition-colors relative ${showInternals ? 'bg-neon-blue' : 'bg-space-700'}`}
             >
@@ -135,7 +166,7 @@ const RocketEngineeringLab = () => {
           <ambientLight intensity={0.2} />
           <directionalLight position={[10, 10, 10]} intensity={2} castShadow />
           <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-          
+
           <group position={[0, -4, 0]}>
             {/* Payload */}
             {payloadType === 'fairing' ? (
@@ -174,7 +205,7 @@ const RocketEngineeringLab = () => {
                 <cylinderGeometry args={[1.2, 1.2, 5, 32]} />
                 <meshPhysicalMaterial color={activePart === 'stage1' ? '#00f0ff' : '#dddddd'} metalness={0.7} roughness={0.4} clearcoat={0.2} wireframe={showInternals} />
               </mesh>
-              
+
               {stage1Type === 'heavy' && (
                 <>
                   {/* Side Boosters */}
@@ -186,7 +217,7 @@ const RocketEngineeringLab = () => {
                     <coneGeometry args={[1.2, 2, 32]} />
                     <meshPhysicalMaterial color={activePart === 'stage1' ? '#00f0ff' : '#dddddd'} metalness={0.7} roughness={0.4} clearcoat={0.2} wireframe={showInternals} />
                   </mesh>
-                  
+
                   <mesh position={[-2.5, 0, 0]} castShadow receiveShadow>
                     <cylinderGeometry args={[1.2, 1.2, 5, 32]} />
                     <meshPhysicalMaterial color={activePart === 'stage1' ? '#00f0ff' : '#dddddd'} metalness={0.7} roughness={0.4} clearcoat={0.2} wireframe={showInternals} />
@@ -197,7 +228,7 @@ const RocketEngineeringLab = () => {
                   </mesh>
                 </>
               )}
-              
+
               {/* Grid Fins */}
               <mesh position={[1.3, 2.0, 0]} castShadow>
                 <boxGeometry args={[0.4, 0.1, 0.8]} />
@@ -219,7 +250,7 @@ const RocketEngineeringLab = () => {
                 <cylinderGeometry args={[0.6, 1, 0.8, 32]} />
                 <meshPhysicalMaterial color={activePart === 'engine' ? '#00f0ff' : '#222222'} metalness={0.9} roughness={0.7} wireframe={showInternals} />
               </mesh>
-              
+
               {stage1Type === 'heavy' && (
                 <>
                   <mesh position={[2.5, 0, 0]} castShadow receiveShadow>
@@ -230,7 +261,7 @@ const RocketEngineeringLab = () => {
                     <cylinderGeometry args={[0.6, 1, 0.8, 32]} />
                     <meshPhysicalMaterial color={activePart === 'engine' ? '#00f0ff' : '#222222'} metalness={0.9} roughness={0.7} wireframe={showInternals} />
                   </mesh>
-                  
+
                   <mesh position={[-2.5, 0, 0]} castShadow receiveShadow>
                     <cylinderGeometry args={[1.2, 0.8, 0.5, 32]} />
                     <meshPhysicalMaterial color={activePart === 'engine' ? '#00f0ff' : '#444444'} metalness={0.9} roughness={0.6} wireframe={showInternals} />
@@ -307,11 +338,11 @@ const LaunchAnimator = ({ launchState, rocketRef, stage1Ref, armRef, speed }) =>
     if (launchState === 'launched') {
       const altitude = rocketRef.current?.position.y || 0;
       const shakeIntensity = Math.max(0, 0.08 - altitude * 0.0016);
-      
+
       // Camera shake + follow
       state.camera.position.x = Math.sin(state.clock.elapsedTime * 42) * shakeIntensity;
       state.camera.position.y = 5.5 + Math.cos(state.clock.elapsedTime * 38) * shakeIntensity + altitude * 0.06;
-      
+
       if (rocketRef.current) {
         rocketRef.current.position.y += (0.06 + Math.min(0.22, altitude * 0.006)) * speed;
         rocketRef.current.position.x += 0.004 * speed; // slight gravity turn feel
@@ -392,14 +423,14 @@ const RocketLaunchSimulator = () => {
       <div className="w-full md:w-1/3 space-y-6">
         <div className="glass p-6 rounded-2xl border border-orange-500/20 shadow-[0_0_30px_rgba(255,125,0,0.12)]">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Flame className="text-orange-500" /> {t('lab', 'launchControl')}</h3>
-          
+
           <div className="flex justify-center mb-8 mt-4">
-            <button 
+            <button
               onClick={handleLaunch}
               disabled={launchState === 'countdown'}
               className={`w-32 h-32 rounded-full font-bold text-2xl border-4 flex items-center justify-center transition-all shadow-[0_0_30px_rgba(255,0,0,0.3)] ${
-                launchState === 'idle' 
-                  ? 'bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500 hover:text-white' 
+                launchState === 'idle'
+                  ? 'bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500 hover:text-white'
                   : launchState === 'countdown'
                     ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500'
                     : 'bg-space-700 border-space-600 text-gray-400 hover:bg-space-600'
@@ -422,12 +453,12 @@ const RocketLaunchSimulator = () => {
                 <span>{t('lab', 'launchSpeed')}</span>
                 <span>{speed.toFixed(1)}x</span>
               </div>
-              <input 
-                type="range" 
-                min="0.5" 
-                max="3" 
-                step="0.1" 
-                value={speed} 
+              <input
+                type="range"
+                min="0.5"
+                max="3"
+                step="0.1"
+                value={speed}
                 onChange={(e) => setSpeed(parseFloat(e.target.value))}
                 className="w-full accent-orange-500"
               />
@@ -600,7 +631,7 @@ const MeteorShower = ({ intensity }) => {
       groupRef.current.children.forEach((child, i) => {
         child.position.y -= meteors[i].speed;
         child.position.x -= meteors[i].speed * 0.5;
-        
+
         // Impact effect (scale up slightly before reset)
         if (child.position.y < -2 && child.position.y > -2.2) {
           child.scale.setScalar(2);
@@ -646,36 +677,34 @@ const PlanetaryProcessesLab = () => {
     if (activeEvent !== 'none') trackEvent('lab_planetary_processes');
   }, [activeEvent, trackEvent]);
 
-  const [bumpMap] = useLoader(THREE.TextureLoader, [
-    'https://unpkg.com/three-globe/example/img/earth-topology.png'
-  ]);
+  const [bumpMap] = useRemoteTextures(TOPOLOGY_TEXTURE);
 
   return (
     <div className="flex flex-col md:flex-row h-full gap-6">
       <div className="w-full md:w-1/3 space-y-6">
         <div className="glass p-6 rounded-2xl">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Globe2 className="text-green-400" /> {t('lab', 'environment')}</h3>
-          
+
           <div className="space-y-3 mb-6">
-            <button 
+            <button
               onClick={() => setActiveEvent('none')}
               className={`w-full text-left p-3 rounded-xl border transition-all ${activeEvent === 'none' ? 'border-neon-blue bg-neon-blue/20' : 'border-white/10 hover:bg-white/5'}`}
             >
               {t('lab', 'normalConditions')}
             </button>
-            <button 
+            <button
               onClick={() => setActiveEvent('meteor')}
               className={`w-full text-left p-3 rounded-xl border transition-all ${activeEvent === 'meteor' ? 'border-red-500 bg-red-500/20' : 'border-white/10 hover:bg-white/5'}`}
             >
               {t('lab', 'meteorShower')} в„пёЏ
             </button>
-            <button 
+            <button
               onClick={() => setActiveEvent('volcano')}
               className={`w-full text-left p-3 rounded-xl border transition-all ${activeEvent === 'volcano' ? 'border-orange-500 bg-orange-500/20' : 'border-white/10 hover:bg-white/5'}`}
             >
               {t('lab', 'volcanicEruption')} рџЊ‹
             </button>
-            <button 
+            <button
               onClick={() => setActiveEvent('dust')}
               className={`w-full text-left p-3 rounded-xl border transition-all ${activeEvent === 'dust' ? 'border-yellow-500 bg-yellow-500/20' : 'border-white/10 hover:bg-white/5'}`}
             >
@@ -685,10 +714,10 @@ const PlanetaryProcessesLab = () => {
 
           <div className="space-y-2 mb-6">
             <label className="text-sm text-gray-400">{t('lab', 'eventIntensity')}</label>
-            <input 
-              type="range" 
-              min="10" 
-              max="100" 
+            <input
+              type="range"
+              min="10"
+              max="100"
               value={intensity}
               onChange={(e) => setIntensity(parseInt(e.target.value))}
               className="w-full accent-neon-blue"
@@ -701,11 +730,11 @@ const PlanetaryProcessesLab = () => {
               <span>{t('lab', 'timeOfDay')}</span>
               <span>{timeOfDay}:00</span>
             </div>
-            <input 
-              type="range" 
-              min="0" 
-              max="24" 
-              value={timeOfDay} 
+            <input
+              type="range"
+              min="0"
+              max="24"
+              value={timeOfDay}
               onChange={(e) => setTimeOfDay(parseInt(e.target.value))}
               className="w-full accent-neon-blue"
             />
@@ -716,13 +745,13 @@ const PlanetaryProcessesLab = () => {
       <div className="w-full md:w-2/3 bg-space-900/50 rounded-3xl border border-white/10 overflow-hidden relative min-h-[400px]">
         <Canvas shadows camera={{ position: [0, 0, 6], fov: 45 }} gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping }}>
           <ambientLight intensity={0.05} />
-          <directionalLight 
-            position={[Math.sin((timeOfDay / 24) * Math.PI * 2) * 10, 3, Math.cos((timeOfDay / 24) * Math.PI * 2) * 10]} 
-            intensity={2} 
-            castShadow 
+          <directionalLight
+            position={[Math.sin((timeOfDay / 24) * Math.PI * 2) * 10, 3, Math.cos((timeOfDay / 24) * Math.PI * 2) * 10]}
+            intensity={2}
+            castShadow
           />
           <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-          
+
           <Suspense fallback={null}>
             {activeEvent === 'none' ? (
               <RealisticEarth radius={2} position={[0, 0, 0]} />
@@ -731,11 +760,11 @@ const PlanetaryProcessesLab = () => {
                 {/* Textured Planet */}
                 <mesh castShadow receiveShadow>
                   <sphereGeometry args={[2, 64, 64]} />
-                  <meshStandardMaterial 
-                    color={activeEvent === 'dust' ? '#c1440e' : activeEvent === 'volcano' ? '#2a1511' : '#555555'} 
+                  <meshStandardMaterial
+                    color={activeEvent === 'dust' ? '#c1440e' : activeEvent === 'volcano' ? '#2a1511' : '#555555'}
                     bumpMap={bumpMap}
                     bumpScale={activeEvent === 'volcano' ? 0.05 : 0.02}
-                    roughness={0.9} 
+                    roughness={0.9}
                     metalness={0.1}
                   />
                 </mesh>
@@ -743,11 +772,11 @@ const PlanetaryProcessesLab = () => {
                 {/* Atmosphere */}
                 <mesh>
                   <sphereGeometry args={[2.02, 64, 64]} />
-                  <meshStandardMaterial 
-                    color={activeEvent === 'dust' ? '#e77d11' : '#ffffff'} 
-                    transparent 
-                    opacity={activeEvent === 'dust' ? intensity / 150 : 0.1} 
-                    blending={THREE.AdditiveBlending} 
+                  <meshStandardMaterial
+                    color={activeEvent === 'dust' ? '#e77d11' : '#ffffff'}
+                    transparent
+                    opacity={activeEvent === 'dust' ? intensity / 150 : 0.1}
+                    blending={THREE.AdditiveBlending}
                   />
                 </mesh>
               </group>
@@ -826,7 +855,7 @@ const UniverseChangesSimulator = () => {
       <div className="w-full md:w-1/3 space-y-6">
         <div className="glass p-6 rounded-2xl">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Sparkles className="text-neon-purple" /> {t('lab', 'stellarEvolution')}</h3>
-          
+
           <div className="relative border-l-2 border-space-700 ml-3 space-y-8 py-4">
             {[
               { id: 'nebula', name: t('lab', 'stellarNebula'), desc: t('lab', 'stellarNebulaDesc') },
@@ -836,7 +865,7 @@ const UniverseChangesSimulator = () => {
             ].map((s, idx) => (
               <div key={s.id} className="relative pl-6">
                 <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-space-900 ${stage === s.id ? 'bg-neon-purple scale-125' : 'bg-space-600'} transition-all`} />
-                <button 
+                <button
                   onClick={() => setStage(s.id)}
                   className={`text-left transition-colors ${stage === s.id ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                 >
@@ -853,7 +882,7 @@ const UniverseChangesSimulator = () => {
         <Canvas camera={{ position: [0, 0, 12], fov: 45 }} gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping }}>
           <ambientLight intensity={0.05} />
           <Stars radius={100} depth={50} count={10000} factor={4} saturation={0.5} fade speed={1} />
-          
+
           {stage === 'nebula' && (
             <group>
               <ParticleSystem count={10000} color="#b026ff" size={0.05} radius={5} />
@@ -861,7 +890,7 @@ const UniverseChangesSimulator = () => {
               <ParticleSystem count={2000} color="#ff00aa" size={0.1} radius={1.5} />
             </group>
           )}
-          
+
           {stage === 'star' && (
             <mesh>
               <sphereGeometry args={[1.5, 64, 64]} />
@@ -924,13 +953,7 @@ const OrbitalEarthAndVehicle = ({ altitude, inclination, solarPanelsDeployed, sa
   const inclinationRad = useMemo(() => inclination * (Math.PI / 180), [inclination]);
   const orbitRadius = useMemo(() => 2.8 + altitude / 900, [altitude]);
 
-  const [dayMap, bumpMap, specularMap, nightMap, cloudMap] = useLoader(THREE.TextureLoader, [
-    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
-    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_normal_2048.jpg',
-    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_specular_2048.jpg',
-    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_lights_2048.png',
-    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png',
-  ]);
+  const [dayMap, bumpMap, specularMap, nightMap, cloudMap] = useRemoteTextures(PLANET_TEXTURES);
 
   useFrame((_, delta) => {
     if (earthRef.current) earthRef.current.rotation.y += delta * 0.06;
@@ -1106,7 +1129,7 @@ const SatelliteControlSimulator = () => {
       <div className="w-full md:w-1/3 space-y-6">
         <div className="glass p-6 rounded-2xl">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Globe2 className="text-blue-400" /> {t('lab', 'satelliteControl')}</h3>
-          
+
           <div className="space-y-6">
             <div>
               <label className="text-xs text-gray-400 uppercase tracking-wider mb-2 block">{t('lab', 'spacecraftType')}</label>
@@ -1123,10 +1146,10 @@ const SatelliteControlSimulator = () => {
                 <span>{t('lab', 'altitude')}</span>
                 <span>{altitude} km</span>
               </div>
-              <input 
-                type="range" 
-                min="200" 
-                max="2000" 
+              <input
+                type="range"
+                min="200"
+                max="2000"
                 value={altitude}
                 onChange={(e) => setAltitude(parseInt(e.target.value))}
                 className="w-full accent-blue-400"
@@ -1138,10 +1161,10 @@ const SatelliteControlSimulator = () => {
                 <span>{t('lab', 'orbitalInclination')}</span>
                 <span>{inclination}В°</span>
               </div>
-              <input 
-                type="range" 
-                min="0" 
-                max="90" 
+              <input
+                type="range"
+                min="0"
+                max="90"
                 value={inclination}
                 onChange={(e) => setInclination(parseInt(e.target.value))}
                 className="w-full accent-blue-400"
@@ -1150,7 +1173,7 @@ const SatelliteControlSimulator = () => {
 
             <div className="flex items-center justify-between pt-4 border-t border-white/10">
               <span className="text-gray-300">{t('lab', 'solarPanels')}</span>
-              <button 
+              <button
                 onClick={() => setSolarPanelsDeployed(!solarPanelsDeployed)}
                 className={`w-12 h-6 rounded-full transition-colors relative ${solarPanelsDeployed ? 'bg-blue-400' : 'bg-space-700'}`}
               >
@@ -1164,7 +1187,7 @@ const SatelliteControlSimulator = () => {
                 <span className={power < 20 ? 'text-red-500' : 'text-green-400'}>{Math.round(power)}%</span>
               </div>
               <div className="h-2 bg-space-900 rounded-full overflow-hidden">
-                <div 
+                <div
                   className={`h-full transition-all ${power < 20 ? 'bg-red-500' : 'bg-green-400'}`}
                   style={{ width: `${power}%` }}
                 />
@@ -1242,8 +1265,8 @@ export default function SpaceLabView() {
               key={mod.id}
               onClick={() => setActiveModule(mod.id)}
               className={`flex items-center gap-3 p-4 rounded-2xl transition-all whitespace-nowrap lg:whitespace-normal ${
-                activeModule === mod.id 
-                  ? 'glass border-neon-blue/50 shadow-[0_0_15px_rgba(0,240,255,0.2)]' 
+                activeModule === mod.id
+                  ? 'glass border-neon-blue/50 shadow-[0_0_15px_rgba(0,240,255,0.2)]'
                   : 'bg-white/5 border border-transparent hover:bg-white/10'
               }`}
             >

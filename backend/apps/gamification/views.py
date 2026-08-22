@@ -1,6 +1,5 @@
-from datetime import date
 
-from django.db.models import Count, Sum
+from django.db.models import Avg, Count, Max, Sum
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -71,37 +70,20 @@ class LeaderboardView(generics.ListAPIView):
         return response
 
 
-class GamificationGrantView(APIView):
-    """Endpoint for frontend minigames and quizzes to grant XP and fuel to the user.
-    Also supports spending fuel (negative values) for the rewards store."""
-    def post(self, request):
-        if not request.user.is_authenticated:
-            return Response({'error': 'Not authenticated'}, status=401)
-        
-        xp = int(request.data.get('xp', 0))
-        fuel = int(request.data.get('fuel', 0))
-        
-        profile, _ = UserGamificationProfile.objects.get_or_create(user=request.user)
-        
-        if xp > 0:
-            profile.add_xp(xp)
-        if fuel > 0:
-            profile.add_fuel(fuel)
-        elif fuel < 0:
-            # Spending fuel (e.g. rewards store purchase)
-            cost = abs(fuel)
-            if profile.fuel < cost:
-                return Response(
-                    {'detail': f'Not enough coins. Need {cost}, have {profile.fuel}.'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            profile.spend_fuel(cost)
-            
-        return Response({
-            'xp': profile.xp,
-            'level': profile.level,
-            'fuel': profile.fuel,
-        })
+#
+# REMOVED: GamificationGrantView (POST /gamification/grant/).
+#
+# It accepted arbitrary `xp` and `fuel` from the client with no check that the
+# user had done anything to earn them — one request produced level 101 and
+# enough currency to buy out the store. There is no safe way to validate this
+# endpoint, because the client is not a trustworthy source for "how much did
+# this person earn"; the whole shape is wrong.
+#
+# Rewards are now issued only by the server, at the point where it can see the
+# work: LessonCompleteView, QuizSubmitView, SubmitChallengeView, StreakUpdateView
+# and MissionClaimView. A client reports *what happened* ("finished lesson X",
+# "answered question Y with Z") and the server decides what it is worth.
+#
 
 
 class UserBadgesView(generics.ListAPIView):
@@ -120,23 +102,20 @@ class AllBadgesView(generics.ListAPIView):
 
 
 class StreakUpdateView(APIView):
+    """POST /gamification/streak/ — claim today's streak and its bonus.
+
+    The decision and the write happen inside one row lock; see
+    `UserGamificationProfile.claim_daily_streak`.
+    """
+
     def post(self, request):
         profile, _ = UserGamificationProfile.objects.get_or_create(user=request.user)
-        today = date.today()
-
-        if profile.last_play_date == today:
-            return Response({'streak': profile.streak, 'updated': False})
-
-        if profile.last_play_date and (today - profile.last_play_date).days == 1:
-            profile.streak += 1
-        else:
-            profile.streak = 1
-
-        profile.last_play_date = today
-        profile.save(update_fields=['streak', 'last_play_date'])
-        profile.add_fuel(10)
-
-        return Response({'streak': profile.streak, 'updated': True, 'fuel_bonus': 10})
+        streak, fuel_bonus = profile.claim_daily_streak()
+        return Response({
+            'streak': streak,
+            'updated': bool(fuel_bonus),
+            'fuel_bonus': fuel_bonus,
+        })
 
 
 class QuizLeaderboardView(APIView):
@@ -153,22 +132,28 @@ class QuizLeaderboardView(APIView):
             qs = qs.filter(category=category)
 
         # Best score per user
+        # Was Sum('percentage') / Count('id') labelled `best_pct`: that is a mean,
+        # not a best, and on PostgreSQL integer division truncated it. Also stop
+        # publishing usernames here — see LeaderboardEntrySerializer.
         leaders = (
-            qs.values('user__username')
+            qs.values('user__id', 'user__username', 'user__astronaut_name')
             .annotate(
-                best_pct=Sum('percentage') / Count('id'),
+                avg_pct=Avg('percentage'),
+                best_pct=Max('percentage'),
                 total_quizzes=Count('id'),
                 total_xp=Sum('xp_earned'),
             )
-            .order_by('-best_pct')[:50]
+            .order_by('-avg_pct')[:50]
         )
 
         return Response({
             'category': category or 'all',
             'leaderboard': [
                 {
-                    'username': entry['user__username'],
-                    'avg_percentage': round(entry['best_pct'], 1),
+                    'display_name': (entry['user__astronaut_name'] or '').strip()
+                    or entry['user__username'],
+                    'avg_percentage': round(entry['avg_pct'] or 0, 1),
+                    'best_percentage': round(entry['best_pct'] or 0, 1),
                     'total_quizzes': entry['total_quizzes'],
                     'total_xp': entry['total_xp'] or 0,
                 }
@@ -222,14 +207,16 @@ class RewardPurchaseView(APIView):
             return Response({'detail': 'You already own this reward.'}, status=status.HTTP_400_BAD_REQUEST)
 
         profile, _ = UserGamificationProfile.objects.get_or_create(user=request.user)
-        if profile.fuel < product.cost:
-            return Response(
-                {'detail': f'Not enough coins. Need {product.cost}, have {profile.fuel}.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
+        # spend_fuel() re-reads the balance under a row lock and returns False if
+        # it is short. Checking first and debiting afterwards let two concurrent
+        # purchases of different products both pass on the same balance.
         with transaction.atomic():
-            profile.spend_fuel(product.cost)
+            if not profile.spend_fuel(product.cost):
+                return Response(
+                    {'detail': f'Not enough coins. Need {product.cost}, have {profile.fuel}.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             purchase = UserRewardPurchase.objects.create(user=request.user, product=product)
 
         return Response({
@@ -238,45 +225,82 @@ class RewardPurchaseView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 
+def mission_progress(user, mission):
+    """How far this user has actually got on this mission.
+
+    The claim endpoint used to pay out without consulting this at all, so a
+    mission reading "Complete 5 lessons" handed over its reward to somebody who
+    had completed none.
+    """
+    from apps.market.models import UserInventory
+    from apps.progress.models import UserLessonProgress
+
+    if mission.mission_type == 'streak':
+        profile, _ = UserGamificationProfile.objects.get_or_create(user=user)
+        return profile.streak
+    if mission.mission_type == 'lesson':
+        return UserLessonProgress.objects.filter(user=user).count()
+    if mission.mission_type == 'mastery':
+        return UserLessonProgress.objects.filter(user=user, is_mastered=True).count()
+    if mission.mission_type == 'inventory':
+        return UserInventory.objects.filter(user=user).count()
+    # 'custom' has no machine-checkable definition, so it cannot be self-claimed.
+    return None
+
+
 class MissionClaimView(APIView):
-    """Claim a mission reward."""
+    """Claim a mission reward, once the mission has actually been completed."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        from .models import Mission, UserMission
         from django.utils import timezone
-        
+
+        from .models import Mission, UserMission
+
         mission_id = request.data.get('mission_id')
         if not mission_id:
             return Response({'detail': 'mission_id is required.'}, status=400)
 
         try:
-            mission = Mission.objects.get(id=mission_id, is_active=True)
-        except Mission.DoesNotExist:
+            mission = Mission.objects.get(id=int(mission_id), is_active=True)
+        except (Mission.DoesNotExist, TypeError, ValueError):
             return Response({'detail': 'Mission not found.'}, status=404)
 
-        user_mission, created = UserMission.objects.get_or_create(user=request.user, mission=mission)
-        today = timezone.now().date()
+        progress = mission_progress(request.user, mission)
+        if progress is None:
+            return Response(
+                {'detail': 'This mission is awarded by a mentor, not self-claimed.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if progress < mission.target_value:
+            return Response(
+                {
+                    'detail': 'Mission not completed yet.',
+                    'progress': progress,
+                    'target': mission.target_value,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        if mission.is_daily:
-            if user_mission.last_claimed_date == today:
-                return Response({'detail': 'Already claimed today.'}, status=400)
-            user_mission.last_claimed_date = today
-            # keep is_completed = False for daily missions (or True doesn't matter, we check date)
-            user_mission.is_completed = True
-        else:
-            if user_mission.is_completed:
-                return Response({'detail': 'Already claimed.'}, status=400)
-            user_mission.is_completed = True
+        today = timezone.localdate()
+        with transaction.atomic():
+            user_mission, _ = UserMission.objects.select_for_update().get_or_create(
+                user=request.user, mission=mission
+            )
+            if mission.is_daily:
+                if user_mission.last_claimed_date == today:
+                    return Response({'detail': 'Already claimed today.'}, status=400)
+                user_mission.last_claimed_date = today
+                user_mission.is_completed = True
+            else:
+                if user_mission.is_completed:
+                    return Response({'detail': 'Already claimed.'}, status=400)
+                user_mission.is_completed = True
+            user_mission.save()
 
-        user_mission.save()
-
-        # Grant rewards
         profile, _ = UserGamificationProfile.objects.get_or_create(user=request.user)
-        if mission.reward_xp > 0:
-            profile.add_xp(mission.reward_xp)
-        if mission.reward_fuel > 0:
-            profile.add_fuel(mission.reward_fuel)
+        profile.add_xp(mission.reward_xp)
+        profile.add_fuel(mission.reward_fuel)
 
         return Response({
             'success': True,

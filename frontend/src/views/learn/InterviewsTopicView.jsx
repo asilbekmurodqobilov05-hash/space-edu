@@ -1,7 +1,7 @@
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-import { interviewsTopicsData } from '@/data/interviewsTopicsData';
+import { useLearnTopics } from '@/hooks/useLearnTopics';
 import { BookOpen, Beaker, Satellite, Rocket } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -89,7 +89,7 @@ function LessonBlock({ lesson, index, color, onClick }) {
 export default function InterviewsTopicView() {
   const { i18n } = useTranslation();
   const { topicId } = useParams();
-  const topic = interviewsTopicsData[topicId];
+  const topic = useLearnTopics('interviews').topics[topicId];
   const navigate = useNavigate();
 
   if (!topic) {

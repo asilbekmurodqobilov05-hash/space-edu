@@ -119,6 +119,30 @@ else:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# Must be shared across processes: gunicorn runs 2 workers, and both the e-mail
+# sign-in codes and the DRF throttle counters live here. The Django default
+# (LocMemCache) is per-process, which made codes vanish about half the time and
+# left a verified code replayable in the worker that did not consume it.
+_redis_url = config('REDIS_URL', default=None)
+if _redis_url:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': _redis_url,
+        }
+    }
+else:
+    # No Redis configured — fall back to the database table rather than local
+    # memory, so behaviour stays correct with more than one worker.
+    # Requires: python manage.py createcachetable
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'django_cache',
+        }
+    }
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -128,14 +152,32 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    # How many reverse proxies sit in front of us. Railway terminates at one.
+    # Leaving this unset makes DRF key throttles on the whole client-supplied
+    # X-Forwarded-For header, which a caller can rotate to defeat every limit.
+    'NUM_PROXIES': config('NUM_PROXIES', default=1, cast=int),
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day',
+        # Reads are cheap and the catalogue is public — a single page view costs
+        # several requests, so the old 100/day locked visitors out after a dozen
+        # screens. Writes and AI calls carry their own tighter scopes.
+        'anon': '2000/day',
+        'user': '10000/day',
         'login': '10/hour',
+        'register': '20/day',
+        'ai': '40/hour',
+        'write': '300/day',
+        # Chat had no limit at all. These are set for a classroom, not a
+        # newsroom: a burst is fine, a flood is not.
+        'chat': '20/min',
+        'dm': '20/min',
+        'report': '30/hour',
+        # Grading is server-side now; this bounds walking the set
+        # one submission at a time.
+        'problem_check': '60/hour',
     },
 }
 
@@ -148,3 +190,13 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000').split(',')
+
+# ── Direct messages ───────────────────────────────────────────────────────────
+# Off by default, and deliberately so. The product is used by 10-to-18-year-olds
+# and private messaging between minors is the single largest thing on this
+# system that can go wrong. The moderation floor is now in place — screening,
+# reporting, blocking, moderator deletion, rate limits and a consent step before
+# a stranger's second message — but nobody has yet reviewed the feature as a
+# whole against the duty of care it implies. Turn it on deliberately, with
+# DM_ENABLED=true, when that review has happened. See ticket B1.
+DM_ENABLED = config('DM_ENABLED', default=False, cast=bool)

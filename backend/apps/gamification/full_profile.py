@@ -181,7 +181,8 @@ class FullProfileView(APIView):
         user_missions_map = {um.mission_id: um for um in user_missions}
         
         from django.utils import timezone
-        today = timezone.now().date()
+        # The site runs on Asia/Tashkent; now().date() is the UTC date.
+        today = timezone.localdate()
         
         missions_data = []
         for m in all_missions:

@@ -1,7 +1,7 @@
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-import { creativityTopicsData } from '@/data/creativityTopicsData';
+import { useLearnTopics } from '@/hooks/useLearnTopics';
 import { Play } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -162,7 +162,7 @@ function CreativityLessonCard({ lesson, index, color, onClick }) {
 export default function CreativityTopicView() {
   const { i18n } = useTranslation();
   const { topicId } = useParams();
-  const topic = creativityTopicsData[topicId];
+  const topic = useLearnTopics('creativity').topics[topicId];
   const navigate = useNavigate();
 
   if (!topic) {

@@ -34,6 +34,16 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    test: {
+      // Frontend had zero tests until ticket F1. The three bugs that took the
+      // whole app down live here first: the /store crash, the token-refresh
+      // logout loop, and the reset-data button that reset nothing.
+      environment: 'jsdom',
+      globals: true,
+      setupFiles: ['./vitest.setup.js'],
+      include: ['src/**/*.test.{js,jsx}'],
+      restoreMocks: true,
+    },
     optimizeDeps: {
       esbuildOptions: {
         target: 'esnext',

@@ -32,12 +32,33 @@ class DailyChallengeSerializer(serializers.ModelSerializer):
                   'questions')
 
 
+class AnswerSerializer(serializers.Serializer):
+    """One submitted answer.
+
+    A typed serializer for exactly this existed already (QuizSubmitAnswerSerializer,
+    below) but was never wired up: both submit endpoints used a bare
+    ListField(child=DictField()), which validated nothing. Two consequences —
+    `selected` arrived as whatever JSON contained, so a client sending the string
+    "1" compared unequal to the integer 1 and scored zero on every question; and
+    the list had no ceiling, so one request could drive tens of thousands of
+    queries and rows.
+    """
+
+    question_id = serializers.IntegerField(min_value=1)
+    selected = serializers.IntegerField(min_value=-1, max_value=3)
+    time_spent = serializers.IntegerField(min_value=0, max_value=86400, default=0)
+
+
+# Answers per submission. Generous next to a 5-question daily challenge or a
+# 50-question quiz, but bounded.
+MAX_ANSWERS = 100
+
+
 class SubmitAnswersSerializer(serializers.Serializer):
     answers = serializers.ListField(
-        child=serializers.DictField(), min_length=1,
-        help_text='List of {question_id: int, selected: int}'
+        child=AnswerSerializer(), min_length=1, max_length=MAX_ANSWERS,
     )
-    time_taken = serializers.IntegerField(min_value=0, default=0)
+    time_taken = serializers.IntegerField(min_value=0, max_value=86400, default=0)
 
 
 class UserChallengeResultSerializer(serializers.ModelSerializer):
@@ -65,26 +86,36 @@ class LeaderboardEntrySerializer(serializers.Serializer):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class QuizStartSerializer(serializers.Serializer):
-    """Input for starting a quiz."""
-    category = serializers.ChoiceField(choices=['physics', 'astronomy', 'problems', 'courses'])
-    count = serializers.IntegerField(min_value=5, max_value=50, default=30,
+    """Input for starting a quiz.
+
+    `lesson` narrows the pool to the questions attached to one lesson (ADR 0001,
+    step 5). Without it the quiz is the whole category, which is what the
+    category pages do.
+    """
+
+    category = serializers.ChoiceField(
+        choices=['physics', 'astronomy', 'problems', 'courses'], required=False,
+    )
+    lesson = serializers.SlugField(required=False, allow_blank=False)
+    count = serializers.IntegerField(min_value=1, max_value=50, default=30,
                                      help_text='Number of questions to include')
 
+    def validate(self, attrs):
+        if not attrs.get('category') and not attrs.get('lesson'):
+            raise serializers.ValidationError('Give either a category or a lesson.')
+        return attrs
 
-class QuizSubmitAnswerSerializer(serializers.Serializer):
-    """Input for submitting a single answer during quiz."""
-    question_id = serializers.IntegerField()
-    selected = serializers.IntegerField(min_value=-1, max_value=3)
-    time_spent = serializers.IntegerField(min_value=0, default=0)
+
+# Kept as an alias so existing imports keep working.
+QuizSubmitAnswerSerializer = AnswerSerializer
 
 
 class QuizSubmitAllSerializer(serializers.Serializer):
     """Input for submitting all answers at once."""
     answers = serializers.ListField(
-        child=serializers.DictField(), min_length=1,
-        help_text='List of {question_id, selected, time_spent}'
+        child=AnswerSerializer(), min_length=1, max_length=MAX_ANSWERS,
     )
-    time_taken = serializers.IntegerField(min_value=0, default=0)
+    time_taken = serializers.IntegerField(min_value=0, max_value=86400, default=0)
 
 
 class QuizAnswerSerializer(serializers.ModelSerializer):

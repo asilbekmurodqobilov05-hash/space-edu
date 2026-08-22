@@ -4,23 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { Atom, ArrowRight } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useLearnTopics } from '@/hooks/useLearnTopics';
 
-const topics = [
-  { id: 1,  title: 'Kinematika',                         titleEn: 'Kinematics',                           titleRu: 'Кинематика',                                         lessonsCount: 12 },
-  { id: 2,  title: 'Dinamika',                            titleEn: 'Dynamics',                             titleRu: 'Динамика',                                           lessonsCount: 10 },
-  { id: 3,  title: 'Statika',                             titleEn: 'Statics',                              titleRu: 'Статика',                                            lessonsCount: 8  },
-  { id: 4,  title: 'Suyuqlik va gazlar mexanikasi',       titleEn: 'Mechanics of Fluids and Gases',         titleRu: 'Механика жидкостей и газов',                         lessonsCount: 9  },
-  { id: 5,  title: "Tebranishlar va to'lqinlar",          titleEn: 'Oscillations and Waves',               titleRu: 'Колебания и волны',                                  lessonsCount: 11 },
-  { id: 6,  title: 'Molekulyar fizika',                   titleEn: 'Molecular Physics',                    titleRu: 'Молекулярная физика',                                lessonsCount: 10 },
-  { id: 7,  title: 'Termodinamika',                       titleEn: 'Thermodynamics',                       titleRu: 'Термодинамика',                                      lessonsCount: 8  },
-  { id: 8,  title: 'Elektrostatika',                      titleEn: 'Electrostatics',                       titleRu: 'Электростатика',                                     lessonsCount: 9  },
-  { id: 9,  title: "O'zgarmas tok qonunlari",             titleEn: 'Laws of Direct Current',               titleRu: 'Законы постоянного тока',                            lessonsCount: 10 },
-  { id: 10, title: 'Turli muhitlarda elektr qonunlari',   titleEn: 'Electrical Laws in Different Media',   titleRu: 'Законы электрического тока в различных средах',      lessonsCount: 7  },
-  { id: 11, title: 'Elektromagnit hodisalar',             titleEn: 'Electromagnetic Phenomena',            titleRu: 'Электромагнитные явления',                           lessonsCount: 8  },
-  { id: 12, title: "Elektromagnit tebranishlar va to'lqinlar", titleEn: 'Electromagnetic Oscillations and Waves', titleRu: 'Электромагнитные колебания и волны',          lessonsCount: 9  },
-  { id: 13, title: 'Optika',                              titleEn: 'Optics',                               titleRu: 'Оптика',                                             lessonsCount: 10 },
-  { id: 14, title: 'Atom va yadro fizikasi',              titleEn: 'Atomic and Nuclear Physics',           titleRu: 'Атомная и ядерная физика',                           lessonsCount: 12 },
-];
+// The inline topic list here was a fourth copy of the physics curriculum,
+// hand-maintained and already out of step with the real content. It comes
+// from the API now (ADR 0001), with the static file as the fallback.
+
 
 const cardVariants = {
   hidden:  { opacity: 0, y: 20 },
@@ -149,7 +138,7 @@ function TopicCard({ topic, index, color }) {
             lineHeight: 1,
             transition: 'color 0.2s ease',
           }}>
-            {topic.lessonsCount}
+            {topic.lessons?.length ?? 0}
           </span>
           <span style={{
             fontSize: '11px',
@@ -189,6 +178,7 @@ function TopicCard({ topic, index, color }) {
 
 /* ─── Main view ─── */
 export default function PhysicsView() {
+  const topics = Object.values(useLearnTopics('physics').topics);
   const color = '#a78bfa';
   const colorLight = 'rgba(167,139,250,0.12)';
   const colorBorder = 'rgba(167,139,250,0.22)';

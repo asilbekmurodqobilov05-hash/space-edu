@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.mail import send_mail
@@ -10,7 +12,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .email_code import store_code, verify_and_consume
 from .models import User
 from .serializers import ProfileSerializer, RegisterSerializer, UserSerializer
-from .throttles import LoginRateThrottle
+from .throttles import CredentialRateThrottle, LoginRateThrottle, RegisterRateThrottle
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_tokens(user):
@@ -21,7 +26,9 @@ def _get_tokens(user):
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
-    throttle_classes = [LoginRateThrottle]
+    # Own scope: sharing the login bucket meant a burst of signups locked
+    # legitimate users out of signing in.
+    throttle_classes = [RegisterRateThrottle]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -117,42 +124,50 @@ class DeleteAccountView(APIView):
 
 
 class EmailLoginCodeRequestView(APIView):
-    """POST { email } — sends 6-digit code (email if configured; dev_code in DEBUG)."""
+    """POST { email } — mails a 6-digit sign-in code.
+
+    Always answers 200 with the same body. The old version replied 404
+    'No account for this email', which turned this into an account-enumeration
+    oracle, and echoed the code as `dev_code` whenever DEBUG was on — which, with
+    the settings module failing open to development, meant a two-request takeover
+    of any account.
+    """
     permission_classes = [AllowAny]
-    throttle_classes = [LoginRateThrottle]
+    throttle_classes = [CredentialRateThrottle]
+
+    GENERIC_DETAIL = 'If an account exists for that address, a sign-in code has been sent.'
 
     def post(self, request):
         email = (request.data.get('email') or '').strip()
         if not email or '@' not in email:
             return Response({'detail': 'Valid email is required.'}, status=status.HTTP_400_BAD_REQUEST)
-        if not User.objects.filter(email__iexact=email).exists():
-            return Response({'detail': 'No account for this email.'}, status=status.HTTP_404_NOT_FOUND)
 
-        code = store_code(email)
-        body = {
-            'detail': 'Sign-in code sent. Check your email (or dev_code in DEBUG).',
-        }
-        if settings.DEBUG:
-            body['dev_code'] = code
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
+        if user is not None:
+            code = store_code(email)
+            try:
+                send_mail(
+                    subject='UZ COSMOS — sign-in code',
+                    message=f'Your sign-in code: {code}\n\nValid for 10 minutes.',
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'noreply@localhost',
+                    recipient_list=[email],
+                    fail_silently=True,
+                )
+            except Exception:
+                logger.exception('Failed to send sign-in code')
+            if settings.DEBUG:
+                # Developer convenience without a response-body leak.
+                logger.warning('DEV sign-in code for %s: %s', email, code)
 
-        try:
-            send_mail(
-                subject='UZ COSMOS — sign-in code',
-                message=f'Your sign-in code: {code}\n\nValid for 10 minutes.',
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'noreply@localhost',
-                recipient_list=[email],
-                fail_silently=True,
-            )
-        except Exception:
-            pass
-
-        return Response(body, status=status.HTTP_200_OK)
+        return Response({'detail': self.GENERIC_DETAIL}, status=status.HTTP_200_OK)
 
 
 class EmailLoginCodeVerifyView(APIView):
-    """POST { email, code } — validates 6-digit code and returns JWT + user."""
+    """POST { email, code } — validates the 6-digit code and returns JWT + user."""
     permission_classes = [AllowAny]
-    throttle_classes = [LoginRateThrottle]
+    throttle_classes = [CredentialRateThrottle]
+
+    INVALID = 'Invalid or expired code.'
 
     def post(self, request):
         email = (request.data.get('email') or '').strip()
@@ -166,11 +181,13 @@ class EmailLoginCodeVerifyView(APIView):
             return Response({'detail': 'Code must be 6 digits.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not verify_and_consume(email, code):
-            return Response({'detail': 'Invalid or expired code.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'detail': self.INVALID}, status=status.HTTP_401_UNAUTHORIZED)
 
-        user = User.objects.filter(email__iexact=email).order_by('id').first()
+        # The password path goes through authenticate(), which checks is_active.
+        # This path did not, so a banned account still got a "successful login".
+        user = User.objects.filter(email__iexact=email, is_active=True).order_by('id').first()
         if user is None:
-            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': self.INVALID}, status=status.HTTP_401_UNAUTHORIZED)
 
         return Response({
             'user': UserSerializer(user, context={'request': request}).data,

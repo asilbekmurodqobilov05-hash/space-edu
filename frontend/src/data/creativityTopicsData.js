@@ -2,6 +2,7 @@ export const creativityTopicsData = {
   1: {
     id: 1,
     title: 'Sayyora modullari',
+    titleRu: 'Планетарные модули',
     titleEn: 'Planet Modules',
     color: '#f472b6',
     lessons: [

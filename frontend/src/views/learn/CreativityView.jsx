@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { Palette, ArrowRight } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-import { creativityTopicsData } from '@/data/creativityTopicsData';
+import { useLearnTopics } from '@/hooks/useLearnTopics';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const cardVariants = {
@@ -158,7 +158,7 @@ export default function CreativityView() {
   const color = '#f472b6';
   const colorLight = 'rgba(244,114,182,0.10)';
   const colorBorder = 'rgba(244,114,182,0.22)';
-  const topics = Object.values(creativityTopicsData);
+  const topics = Object.values(useLearnTopics('creativity').topics);
   const { t } = useTranslation();
 
   return (

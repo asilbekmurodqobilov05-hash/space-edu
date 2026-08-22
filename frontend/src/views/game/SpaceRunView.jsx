@@ -14,10 +14,10 @@ import {
   Sparkles,
   Gamepad2,
 } from "lucide-react";
-import { SpaceRunScene } from "@/game/spaceRun/SpaceRunScene";
+import { SpaceRunScene, releaseTextureCache } from "@/game/spaceRun/SpaceRunScene";
 import { useSpaceRunHud } from "@/game/spaceRun/spaceRunHudStore";
 import { useSpaceArcadeStore, SHIP_SKINS, skinPrice } from "@/game/spaceRun/spaceArcadeStore";
-import { resumeAudio, startEngineHum, startSpaceMusic, stopEngineHum, stopSpaceMusic } from "@/game/spaceRun/spaceRunSounds";
+import { closeAudio, resumeAudio, startEngineHum, startSpaceMusic, stopEngineHum, stopSpaceMusic } from "@/game/spaceRun/spaceRunSounds";
 import MiniSolarSystem from "@/components/layout/MiniSolarSystem";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -111,10 +111,14 @@ export default function SpaceRunView() {
     });
   }, [muted, paused, started, gameOver]);
 
+  // Leaving the game must give back what it took: the audio context (browsers
+  // cap concurrent contexts at around six) and every texture the scene uploaded
+  // to the GPU. Neither was released before, so a player who opened and closed
+  // the game a few times kept paying for all of it until the tab was closed.
   useEffect(() => {
     return () => {
-      stopSpaceMusic();
-      stopEngineHum();
+      void closeAudio();
+      releaseTextureCache();
     };
   }, []);
 

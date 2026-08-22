@@ -636,7 +636,10 @@
     "achievementLearner": "Learner",
     "achievementPerfect": "Perfect Score",
     "achievementExpert": "Expert",
-    "achievementChallenger": "Challenger"
+    "achievementChallenger": "Challenger",
+    "scoreNotSaved": "Your score could not be saved. Check your connection and try again.",
+    "savingScore": "Saving your score…",
+    "lessonQuiz": "Lesson quiz"
   },
   "market": {
     "hub": "Shop",
@@ -734,7 +737,8 @@
       "cpu": "CPU",
       "ram": "RAM",
       "accuracy": "Accuracy"
-    }
+    },
+    "offlineSample": "Could not reach the store. Showing a sample catalogue."
   },
   "common": {
     "loading": "Loading...",
@@ -935,7 +939,17 @@
     "selectingRoom": "Selecting room...",
     "initializing": "Initializing Comms...",
     "quietChannel": "The channel is quiet",
-    "composePlaceholder": "Compose a message for the crew..."
+    "composePlaceholder": "Compose a message for the crew...",
+    "tooFast": "You are sending messages too quickly. Wait a moment.",
+    "notSent": "Message not sent.",
+    "reportPrompt": "Why are you reporting this?",
+    "reportSent": "Reported. A moderator will look at it.",
+    "alreadyReported": "You have already reported that message.",
+    "reportFailed": "Could not send that report.",
+    "blocked": "Blocked. You will not see their messages, and they will not see yours.",
+    "blockFailed": "Could not block that person.",
+    "cancel": "Cancel",
+    "suspended": "A moderator has paused your messaging until"
   },
   "notFound": {
     "lostInSpace": "Lost in Space",
@@ -1008,7 +1022,8 @@
     "greatResult": "Great Result!",
     "successDesc": "You have successfully completed the lesson and earned the following rewards:",
     "gotIt": "Got it",
-    "progressSaved": "Progress saved locally!"
+    "progressSaved": "Progress saved!",
+    "progressNotSaved": "Saved on this device only — could not reach the server."
   },
   "learnViews": {
     "lessonCount": "{count} lessons",
@@ -1047,7 +1062,10 @@
     "readButton": "Read",
     "creativityModule": "CREATIVITY MODULE",
     "lessonDescription": "Explore the engineering and design principles behind {name}. Watch the video to understand its role in space exploration and development.",
-    "fullScreenVideo": "Full Screen Video"
+    "fullScreenVideo": "Full Screen Video",
+    "loading": "Loading…",
+    "checkFailed": "Could not check that answer — try again.",
+    "checkTooFast": "Too many attempts. Wait a little before trying again."
   },
   "admin": {
     "dashboard": "Dashboard",

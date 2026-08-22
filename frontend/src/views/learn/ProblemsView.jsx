@@ -4,20 +4,28 @@ import { useNavigate } from 'react-router-dom';
 import { HelpCircle } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
 import { useProblemsStore } from '@/store/useProblemsStore';
+import { useProblems } from '@/hooks/useProblems';
 import { useTranslation } from '@/hooks/useTranslation';
 
-const TOTAL_PROBLEMS = 145;
+/*
+ * The grid used to be 145 numbered squares built from a constant. 115 of those
+ * led to generated filler — "Masala #47: Bu yerda fizika masalasi matni
+ * bo'ladi" with an answer taken off a cycling list — so most of the set was a
+ * dead end dressed up as content. It now draws the problems that exist.
+ */
 const PER_ROW = 10;
 
 export default function ProblemsView() {
   const solvedProblems = useProblemsStore((state) => state.solvedProblems);
+  const { problems } = useProblems();
   const color = '#4ade80';
   const colorLight = 'rgba(74,222,128,0.10)';
   const colorBorder = 'rgba(74,222,128,0.25)';
 
+  const numbers = problems.map((problem) => problem.number);
   const rows = [];
-  for (let i = 1; i <= TOTAL_PROBLEMS; i += PER_ROW) {
-    rows.push(Array.from({ length: Math.min(PER_ROW, TOTAL_PROBLEMS - i + 1) }, (_, k) => i + k));
+  for (let i = 0; i < numbers.length; i += PER_ROW) {
+    rows.push(numbers.slice(i, i + PER_ROW));
   }
 
   const { t, i18n } = useTranslation();
@@ -156,7 +164,7 @@ export default function ProblemsView() {
                 letterSpacing: '0.05em',
               }}
             >
-              {solvedCount} / {TOTAL_PROBLEMS} solved
+              {solvedCount} / {numbers.length} solved
             </span>
           </div>
         </motion.div>

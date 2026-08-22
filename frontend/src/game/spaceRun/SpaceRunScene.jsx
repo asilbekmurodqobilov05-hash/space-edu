@@ -5,6 +5,7 @@ import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { useSpaceRunHud } from "./spaceRunHudStore";
 import { useSpaceArcadeStore } from "./spaceArcadeStore";
 import { playCoinSound, playExplosionSound } from "./spaceRunSounds";
@@ -64,6 +65,41 @@ const _camQ = new THREE.Quaternion();
 const _powerCol = new THREE.Color();
 const TEXTURE_LOADING_MANAGER = new THREE.LoadingManager();
 const TEXTURE_CACHE = new Map();
+
+/**
+ * A GLTFLoader that can read Draco-compressed geometry.
+ *
+ * The .glb files are Draco-compressed (ticket Q3): 126 MB of raw geometry came
+ * down to 49 MB, with rocket.glb alone going from 55.6 MB to 0.32 MB. A plain
+ * GLTFLoader cannot read them — it needs the decoder, which we serve from
+ * /draco/ rather than a CDN so the Content-Security-Policy does not have to
+ * allow a third-party script host.
+ */
+function createGltfLoader() {
+  const loader = new GLTFLoader(TEXTURE_LOADING_MANAGER);
+  const draco = new DRACOLoader();
+  draco.setDecoderPath("/draco/");
+  loader.setDRACOLoader(draco);
+  return loader;
+}
+
+/**
+ * Free every texture the game has loaded.
+ *
+ * TEXTURE_CACHE is module-level and shared between components on purpose — the
+ * same albedo map is used by several meshes and must not be uploaded twice. But
+ * nothing ever emptied it, so the GPU kept every map for the lifetime of the
+ * tab even after the player left the game. Call this when the scene unmounts.
+ *
+ * Worth knowing: 30 of the paths this cache is asked for do not exist in the
+ * repository (ticket Q3), so some entries hold a fallback for a failed load.
+ */
+export function releaseTextureCache() {
+  TEXTURE_CACHE.forEach((tex) => {
+    try { tex?.dispose?.(); } catch { /* already disposed */ }
+  });
+  TEXTURE_CACHE.clear();
+}
 const GEOMETRY_CACHE = new Map();
 
 function clamp01(x) {
@@ -524,14 +560,63 @@ function preloadGameTextures() {
   });
 }
 
-function loadTextureCached(path, isColor = false) {
-  if (!path) return null;
-  if (TEXTURE_CACHE.has(path)) return TEXTURE_CACHE.get(path);
-  const tex = new THREE.TextureLoader(TEXTURE_LOADING_MANAGER).load(path);
-  tex.colorSpace = isColor ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+/**
+ * A flat 1x1 texture, used as the stand-in until (or instead of) a real map.
+ *
+ * `isColor` maps get mid-grey so a material tinted by them keeps its own
+ * colour; normal maps get the neutral (0.5, 0.5, 1) that means "flat"; the
+ * roughness and metalness channels get mid-grey too, which is a plausible
+ * default rather than the black an unloaded map leaves behind.
+ */
+function makePlaceholderTexture(kind) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1;
+  canvas.height = 1;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = kind === "normal" ? "rgb(128,128,255)" : "rgb(128,128,128)";
+  ctx.fillRect(0, 0, 1, 1);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = kind === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace;
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   tex.needsUpdate = true;
+  return tex;
+}
+
+/**
+ * Load a PBR map, or carry on without it.
+ *
+ * This used to be a bare `.load(path)` with no error callback. Thirty-odd of
+ * the paths it is called with do not exist in `public/` (ticket Q3), so every
+ * run fired thirty 404s and left thirty materials sampling an empty texture —
+ * which is why the power-ups and the asteroid render black rather than
+ * untextured. The placeholder is installed first and the real file swapped in
+ * only if it actually arrives, so a missing map degrades to a plain material
+ * instead of a broken one.
+ */
+function loadTextureCached(path, isColor = false) {
+  if (!path) return null;
+  if (TEXTURE_CACHE.has(path)) return TEXTURE_CACHE.get(path);
+
+  const kind = isColor ? "color" : (path.includes("normal") ? "normal" : "linear");
+  const tex = makePlaceholderTexture(kind);
+  if (!tex) return null;
+
+  new THREE.TextureLoader(TEXTURE_LOADING_MANAGER).load(
+    path,
+    (loaded) => {
+      if (!loaded?.image) return;
+      tex.image = loaded.image;
+      tex.needsUpdate = true;
+    },
+    undefined,
+    () => {
+      // Keep the placeholder. See MISSING_ASSETS in spaceRunAssets.test.js for
+      // the list this is currently covering for.
+    },
+  );
+
   TEXTURE_CACHE.set(path, tex);
   return tex;
 }
@@ -675,6 +760,9 @@ function CosmicSkyDome({ speedRef }) {
       fog: false,
     });
   }, []);
+  // A ShaderMaterial holds a compiled GPU program. Leaving the game without
+  // disposing it kept that program alive for the rest of the tab's life.
+  useEffect(() => () => mat.dispose(), [mat]);
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.position.copy(state.camera.position);
@@ -886,6 +974,9 @@ function StarMotionLines({ speedRef }) {
 
 function LeftAsteroidCluster() {
   const rockMap = useMemo(() => createCraterCanvasTexture(11), []);
+  // Canvas textures are uploaded to the GPU; without this the upload survives
+  // every unmount and a player who enters the game repeatedly keeps paying.
+  useEffect(() => () => rockMap?.dispose?.(), [rockMap]);
   const g = useRef(null);
   useFrame((state) => {
     const t = state.clock.elapsedTime;
@@ -1037,11 +1128,19 @@ function CinematicPlanets() {
   
   useEffect(() => {
     let cancelled = false;
-    const loader = new GLTFLoader(TEXTURE_LOADING_MANAGER);
+    const loader = createGltfLoader();
+    // "Safe" in name only until now: no error callback, so a missing .glb —
+    // planet_mercury.glb is not in public/ — surfaced as an unhandled load
+    // error on every mount. The planet is decorative; skipping it is fine.
     const loadSafe = (path, key) => {
-      loader.load(path, (gltf) => {
-        if (!cancelled) setModels((m) => ({ ...m, [key]: gltf.scene }));
-      });
+      loader.load(
+        path,
+        (gltf) => {
+          if (!cancelled) setModels((m) => ({ ...m, [key]: gltf.scene }));
+        },
+        undefined,
+        () => {},
+      );
     };
     loadSafe("/models/space-run/jupiter_1_142984.glb", "jupiter");
     loadSafe("/models/space-run/planet_mars_-_nasa_mars_landing_2021.glb", "mars");
@@ -1569,17 +1668,24 @@ export function SpaceRunScene({ inputRef, runningRef }) {
 
   useEffect(() => {
     let cancelled = false;
-    const loader = new GLTFLoader(TEXTURE_LOADING_MANAGER);
+    const loader = createGltfLoader();
 
     // Load Rocket (complex scene, not just geometry)
-    loader.load("/models/space-run/spaceship_colaid1_50k.glb", (gltf) => {
-      if (cancelled) return;
-      const scene = gltf.scene;
-      // Reset loader rotation to allow parent group (Math.PI) to orient it forward
-      scene.rotation.set(0, 0, 0); 
-      scene.scale.setScalar(SHIP_SIZE_MULTIPLIER); 
-      setRocketScene(scene);
-    });
+    loader.load(
+      "/models/space-run/spaceship_colaid1_50k.glb",
+      (gltf) => {
+        if (cancelled) return;
+        const scene = gltf.scene;
+        // Reset loader rotation to allow parent group (Math.PI) to orient it forward
+        scene.rotation.set(0, 0, 0);
+        scene.scale.setScalar(SHIP_SIZE_MULTIPLIER);
+        setRocketScene(scene);
+      },
+      undefined,
+      // The ship has no fallback geometry; the game renders without it rather
+      // than throwing an unhandled load error into the console every mount.
+      () => {},
+    );
 
     const modelDefs = [
       ["meteor", "/models/space-run/meteorite.glb", meteorFallbackGeom, 0.65],

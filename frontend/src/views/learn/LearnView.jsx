@@ -1,8 +1,17 @@
 import { ArrowRight, Atom, Mic, Palette, Telescope, HelpCircle, Calculator, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useSphereSummaries } from '@/hooks/useSphereSummaries';
 
 /* ─────────── section definitions ─────────── */
+/*
+ * `lessonsCount` here is the fallback shown before the API answers, or if it
+ * does not. Every one of these numbers used to be hand-written and wrong by a
+ * factor of three to six — physics said 24 against 144 real lessons. They are
+ * now seeded from the real counts and superseded at runtime by
+ * `Sphere.lessons_count`, which `seed_learn_content` computes from the leaves
+ * of the actual tree.
+ */
 const sections = [
   {
     id: 'physics',
@@ -16,7 +25,7 @@ const sections = [
     gridClass: 'physics-card',
     description: 'Kosmik mexanika, gravitatsiya va energiya asoslari',
     topics: ['Nyuton qonunlari', 'Gravitatsiya', 'Termodinamika', 'Kvant fizikasi'],
-    lessonsCount: 24,
+    lessonsCount: 144,
   },
   {
     id: 'problems',
@@ -43,7 +52,7 @@ const sections = [
     gridClass: 'creativity-card',
     description: "Kosmik san'at, yozish va dizayn loyihalari",
     topics: ["Kosmik san'at", 'Ilmiy fantastika', '3D modellash', 'Infografika'],
-    lessonsCount: 16,
+    lessonsCount: 57,
   },
   {
     id: 'astronomy',
@@ -56,7 +65,7 @@ const sections = [
     gridClass: 'astronomy-card',
     description: 'Yulduzlar, galaktikalar va koinot tuzilishi',
     topics: ['Quyosh tizimi', 'Yulduzlar evolyutsiyasi', 'Galaktikalar', 'Qora tuynuklar'],
-    lessonsCount: 32,
+    lessonsCount: 126,
   },
   {
     id: 'interviews',
@@ -69,12 +78,12 @@ const sections = [
     gridClass: 'interviews-card',
     description: 'Olimlar, astronavtlar va muhandislar bilan suhbatlar',
     topics: ["O'zbek tadqiqotchilari", "O'zbek olimlari", 'Astronavtlar', 'Muhandislar'],
-    lessonsCount: 12,
+    lessonsCount: 63,
   },
 ];
 
 /* ─────────── BentoCard — Styled course card component ─────────── */
-function BentoCard({ section, index }) {
+function BentoCard({ section, index, lessonsCount }) {
   const navigate = useNavigate();
   const Icon = section.icon;
   const { t } = useTranslation();
@@ -230,7 +239,7 @@ function BentoCard({ section, index }) {
                 color: '#ffffff',
                 lineHeight: 1,
               }}>
-                {section.lessonsCount}
+                {lessonsCount}
               </span>
               <span style={{
                 fontSize: '11px',
@@ -377,7 +386,7 @@ function BentoCard({ section, index }) {
                   color: '#ffffff',
                   lineHeight: 1,
                 }}>
-                  {section.lessonsCount}
+                  {lessonsCount}
                 </span>
                 <span style={{
                   fontSize: '12px',
@@ -416,11 +425,18 @@ function BentoCard({ section, index }) {
 /* ─────────── main LearnView ─────────── */
 export default function LearnView() {
   const { t, i18n } = useTranslation();
+  const summaries = useSphereSummaries();
+
+  const countFor = (section) =>
+    summaries[section.id]?.lessons_count ?? section.lessonsCount;
+  // Was hard-coded at 229 lessons and 6 courses. There are five sections, and
+  // the lesson total is whatever the content currently holds.
+  const totalLessons = sections.reduce((sum, section) => sum + countFor(section), 0);
 
   // Connected bordered stats config
   const stats = [
-    { number: '229', label: i18n.language === 'en' ? 'Lessons' : i18n.language === 'ru' ? 'Уроков' : 'Darslar' },
-    { number: '6', label: i18n.language === 'en' ? 'Courses' : i18n.language === 'ru' ? 'Курсов' : 'Kurslar' },
+    { number: String(totalLessons), label: i18n.language === 'en' ? 'Lessons' : i18n.language === 'ru' ? 'Уроков' : 'Darslar' },
+    { number: String(sections.length), label: i18n.language === 'en' ? 'Courses' : i18n.language === 'ru' ? 'Курсов' : 'Kurslar' },
     { number: '3', label: i18n.language === 'en' ? 'Languages' : i18n.language === 'ru' ? 'Языка' : 'Tillar' },
     { number: '∞', label: i18n.language === 'en' ? 'Universe' : i18n.language === 'ru' ? 'Вселенная' : 'Koinot' },
   ];
@@ -549,7 +565,12 @@ export default function LearnView() {
       {/* Bento Grid */}
       <div className="learn-bento-grid">
         {sections.map((section, index) => (
-          <BentoCard key={section.id} section={section} index={index} />
+          <BentoCard
+            key={section.id}
+            section={section}
+            index={index}
+            lessonsCount={countFor(section)}
+          />
         ))}
       </div>
     </div>

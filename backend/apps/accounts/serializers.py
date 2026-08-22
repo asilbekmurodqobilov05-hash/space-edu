@@ -19,6 +19,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             'first_name': {'required': True},
             'last_name': {'required': True},
             'date_of_birth': {'required': True},
+            # AbstractUser declares email as blank=True, which DRF turns into
+            # required=False. create() then read validated_data['email'] and
+            # raised KeyError -> 500 on any request that omitted it.
+            'email': {'required': True, 'allow_blank': False},
         }
 
     def validate_email(self, value):
@@ -27,8 +31,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value.lower()
 
     def validate_date_of_birth(self, value):
-        from datetime import date
-        if value >= date.today():
+        # localdate, not date.today(): the server runs on UTC and the site on
+        # Asia/Tashkent, so for five hours a day they disagree about the date.
+        from django.utils import timezone
+        if value >= timezone.localdate():
             raise serializers.ValidationError('Date of birth must be in the past.')
         return value
 
@@ -44,15 +50,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password2')
-        email = validated_data['email']
-        # Auto-generate username from email (before the @)
-        base = email.split('@')[0]
-        username = base
-        counter = 1
-        while User.objects.filter(username=username).exists():
-            username = f'{base}{counter}'
-            counter += 1
-        validated_data['username'] = username
+        validated_data['username'] = self._generate_username(validated_data['email'])
         user = User.objects.create_user(**validated_data)
 
         # Auto-create related profiles
@@ -65,6 +63,29 @@ class RegisterSerializer(serializers.ModelSerializer):
             pass
 
         return user
+
+    @staticmethod
+    def _generate_username(email):
+        """Derive a safe handle from the e-mail local part.
+
+        The old version used the local part verbatim. Django's EmailValidator
+        accepts RFC-5321 quoted local parts, so `"<script>alert(1)</script>"@x.com`
+        produced exactly that as a username — bypassing the UnicodeUsernameValidator
+        the model declares, because create_user() never runs model validators. A
+        250-character local part also overflowed the 150-char column on Postgres.
+        """
+        import re
+
+        base = re.sub(r'[^a-z0-9_.-]+', '', email.split('@')[0].lower()).strip('.-_')[:24]
+        if not base:
+            base = 'astronaut'
+        username = base
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            suffix = str(counter)
+            username = f'{base[:24 - len(suffix)]}{suffix}'
+            counter += 1
+        return username
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -96,6 +117,17 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    def validate_avatar(self, value):
+        """Bound the size, the pixel count and the format.
+
+        ImageField alone only runs Pillow.verify(), which accepts a PNG-headed
+        polyglot and never bounds anything.
+        """
+        from apps.validators import validate_image_upload
+
+        validate_image_upload(value)
+        return value
+
     class Meta:
         model = User
         fields = ('first_name', 'last_name', 'avatar', 'astronaut_name', 'bio', 'selected_spaceship', 'language')

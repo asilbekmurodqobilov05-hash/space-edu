@@ -96,6 +96,10 @@ function Toast({ message, type, onClose }) {
 
 // ── Reward Card ───────────────────────────────────────────────────────────────
 function RewardCard({ reward, owned, onPurchase, purchasing, userCoins }) {
+  // `t` lives in RewardsStoreView further down this file; it was never in
+  // scope here, so every render of this component threw ReferenceError.
+  const { t } = useTranslation();
+
   const tier = TIER_CONFIG[reward.tier] || TIER_CONFIG.common;
   const Icon = ICON_MAP[reward.icon] || Star;
   const canAfford = userCoins >= reward.cost;
@@ -182,6 +186,8 @@ function RewardCard({ reward, owned, onPurchase, purchasing, userCoins }) {
 
 // ── Confirmation Modal ────────────────────────────────────────────────────────
 function ConfirmModal({ reward, userCoins, onConfirm, onCancel, purchasing }) {
+  const { t } = useTranslation();
+
   if (!reward) return null;
   const tier = TIER_CONFIG[reward.tier] || TIER_CONFIG.common;
   const Icon = ICON_MAP[reward.icon] || Star;

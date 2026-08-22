@@ -1,16 +1,15 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-import { astronomyTopicsData } from '@/data/astronomyTopicsData';
-import { interviewsTopicsData } from '@/data/interviewsTopicsData';
-import { creativityTopicsData } from '@/data/creativityTopicsData';
-import { physicsTopicsData } from '@/data/physicsTopicsData';
+import { useLearnTopics } from '@/hooks/useLearnTopics';
+import { slugAtPath } from '@/lib/learnContent';
 import { Play, Info, CheckCircle2, Trophy, Coins, Heart, Rocket } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useGamificationStore } from '@/store/useGamificationStore';
 import { useLikesStore } from '@/store/useLikesStore';
 import { useLearningStore } from '@/store/useLearningStore';
 import confetti from 'canvas-confetti';
+import api from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function UniversalLessonView() {
@@ -18,6 +17,7 @@ export default function UniversalLessonView() {
   const { subject, topicId, subIdx, lessonIdx, partIdx } = useParams();
   const navigate = useNavigate();
   const addRewards = useGamificationStore(s => s.addRewards);
+  const pullFromServer = useGamificationStore(s => s.pullFromServer);
   const completeLessonLocal = useLearningStore(s => s.completeLesson);
   const { likeLesson, unlikeLesson, isLiked } = useLikesStore();
   
@@ -28,17 +28,12 @@ export default function UniversalLessonView() {
   const lessonUniqueId = `${subject}-${topicId}-${subIdx || ''}-${lessonIdx || ''}-${partIdx || ''}`;
   const liked = isLiked(lessonUniqueId);
 
-  // Determine data source
-  let dataSource = null;
-  let backPath = "/learn";
+  const { topics } = useLearnTopics(subject);
+  const topic = topics[topicId] ?? null;
+  const backPath = subIdx !== undefined
+    ? `/learn/${subject}/${topicId}/sub/${subIdx}`
+    : `/learn/${subject}/${topicId}`;
 
-  if (subject === 'astronomy') { dataSource = astronomyTopicsData; backPath = `/learn/astronomy/${topicId}/sub/${subIdx}`; }
-  else if (subject === 'interviews') { dataSource = interviewsTopicsData; backPath = `/learn/interviews/${topicId}/sub/${subIdx}`; }
-  else if (subject === 'creativity') { dataSource = creativityTopicsData; backPath = `/learn/creativity/${topicId}/sub/${subIdx}`; }
-  else if (subject === 'physics') { dataSource = physicsTopicsData; backPath = `/learn/physics/${topicId}`; }
-
-  const topic = dataSource ? dataSource[topicId] : null;
-  
   // Handle nested sections and sub-lessons
   let lesson = null;
   if (topic) {
@@ -49,7 +44,7 @@ export default function UniversalLessonView() {
       const allItems = topic.sections.flatMap(s => s.lessons);
       parentItem = allItems[parseInt(pIdx)];
     } else {
-      parentItem = topic.lessons[parseInt(pIdx)];
+      parentItem = (topic.lessons ?? [])[parseInt(pIdx)];
     }
 
     if (parentItem && parentItem.subLessons) {
@@ -59,6 +54,10 @@ export default function UniversalLessonView() {
       lesson = parentItem;
     }
   }
+
+  // The row the server knows this lesson by. Null while the static fallback is
+  // in play, which is why the award below has to cope with not having one.
+  const lessonSlug = slugAtPath(topic, { subIdx, lessonIdx, partIdx });
 
   // Determine video URL
   let finalVideoUrl = "";
@@ -92,17 +91,35 @@ export default function UniversalLessonView() {
   const color = topic.color || '#3b82f6';
   const displayTitle = partIdx ? `${lessonName} - ${parseInt(partIdx) + 1}-qism` : lessonName;
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (completed) return;
     setCompleted(true);
+
+    // Optimistic, so the counter moves at once. The server decides the real
+    // amount — this used to POST /gamification/grant/ with numbers the browser
+    // chose, and one request produced level 101.
     addRewards(25, 25);
     completeLessonLocal(lessonUniqueId, topicId, 100, 25, {
       title: displayTitle,
       subject: subject
     });
     setShowRewardModal(true);
-    
-    setToast({ msg: t('lesson', 'progressSaved'), type: 'success' });
+
+    let saved = false;
+    if (lessonSlug) {
+      try {
+        await api.post(`/progress/lessons/${lessonSlug}/complete/`, { score: 100 });
+        await pullFromServer();
+        saved = true;
+      } catch {
+        // Falls through to the unsaved message below.
+      }
+    }
+
+    setToast({
+      msg: saved ? t('lesson', 'progressSaved') : t('lesson', 'progressNotSaved'),
+      type: saved ? 'success' : 'error',
+    });
     setTimeout(() => setToast(null), 3000);
 
     confetti({

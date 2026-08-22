@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Send, MessageCircle, Loader, Users, Hash } from 'lucide-react';
+import { Send, MessageCircle, Loader, Users, Hash, Flag, Ban, X } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import GlassCard from '@/components/ui/GlassCard';
@@ -14,7 +14,7 @@ function Avatar({ url, username }) {
       </div>;
 }
 
-function Message({ msg, isMe }) {
+function Message({ msg, isMe, onReport, onBlock }) {
   return (
     <motion.div 
       initial={{ opacity: 0, x: isMe ? 20 : -20 }}
@@ -34,9 +34,22 @@ function Message({ msg, isMe }) {
             : 'bg-white/5 border border-white/8 text-white/90 rounded-bl-sm shadow-black/20 backdrop-blur-md'}`}>
           {msg.content}
         </div>
-        <span className="text-[9px] font-[700] text-white/20 px-2 tracking-tighter">
-          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
+        <div className={`flex items-center gap-2 px-2 ${isMe ? 'flex-row-reverse' : ''}`}>
+          <span className="text-[9px] font-[700] text-white/20 tracking-tighter">
+            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          {/* There was no way to report or block anyone at all — ticket B1. */}
+          {!isMe && (
+            <>
+              <button onClick={() => onReport(msg)} title="Report" className="text-white/15 hover:text-rose-400 transition-colors">
+                <Flag className="w-3 h-3" />
+              </button>
+              <button onClick={() => onBlock(msg)} title="Block this person" className="text-white/15 hover:text-rose-400 transition-colors">
+                <Ban className="w-3 h-3" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -48,6 +61,11 @@ export default function ChatView() {
   const [rooms, setRooms] = useState([]);
   const [activeRoom, setActiveRoom] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [sendError, setSendError] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportReasons, setReportReasons] = useState([]);
+  const [suspension, setSuspension] = useState(null);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -76,16 +94,62 @@ export default function ChatView() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    api.get('/chat/settings/')
+      .then(({ data }) => {
+        setReportReasons(data.report_reasons ?? []);
+        setSuspension(data.suspension ?? null);
+      })
+      .catch(() => setReportReasons([]));
+  }, []);
+
   const send = async (e) => {
     e.preventDefault();
     if (!text.trim() || !activeRoom || sending) return;
     setSending(true);
+    setSendError(null);
     try {
       const { data } = await api.post(`/chat/rooms/${activeRoom}/messages/`, { content: text.trim() });
       setMessages((prev) => [...prev, data]);
       setText('');
-    } catch { /* ignore */ } finally {
+    } catch (err) {
+      // This was `catch { }`: a message screened out for language just vanished
+      // from the box, with nothing said about why.
+      const body = err.response?.data;
+      setSendError(
+        body?.content?.[0]
+        ?? body?.detail
+        ?? (err.response?.status === 429
+          ? t('chat', 'tooFast')
+          : t('chat', 'notSent')),
+      );
+    } finally {
       setSending(false);
+    }
+  };
+
+  const submitReport = async (reason) => {
+    if (!reportTarget) return;
+    try {
+      await api.post('/chat/reports/', {
+        message_type: 'room', message_id: reportTarget.id, reason,
+      });
+      setNotice(t('chat', 'reportSent'));
+    } catch (err) {
+      setNotice(err.response?.status === 409 ? t('chat', 'alreadyReported') : t('chat', 'reportFailed'));
+    } finally {
+      setReportTarget(null);
+    }
+  };
+
+  const blockAuthor = async (msg) => {
+    if (!msg.user_id) return;
+    try {
+      await api.post('/chat/blocks/', { user_id: msg.user_id });
+      setMessages((prev) => prev.filter((m) => m.user_id !== msg.user_id));
+      setNotice(t('chat', 'blocked'));
+    } catch {
+      setNotice(t('chat', 'blockFailed'));
     }
   };
 
@@ -150,14 +214,56 @@ export default function ChatView() {
               </div>
             ) : (
               messages.map((msg) => (
-                <Message key={msg.id} msg={msg} isMe={msg.username === user?.username} />
+                <Message
+                  key={msg.id}
+                  msg={msg}
+                  isMe={msg.username === user?.username}
+                  onReport={setReportTarget}
+                  onBlock={blockAuthor}
+                />
               ))
             )}
             <div ref={bottomRef} />
           </div>
 
+          {notice && (
+            <div className="px-6 py-3 bg-white/5 border-t border-white/10 flex items-center justify-between gap-3">
+              <p className="text-xs text-white/60">{notice}</p>
+              <button onClick={() => setNotice(null)} className="text-white/30 hover:text-white/70"><X className="w-3.5 h-3.5" /></button>
+            </div>
+          )}
+
+          {reportTarget && (
+            <div className="px-6 py-4 bg-space-900/80 border-t border-white/10">
+              <p className="text-xs font-bold text-white/70 mb-3">{t('chat', 'reportPrompt')}</p>
+              <div className="flex flex-wrap gap-2">
+                {reportReasons.map((reason) => (
+                  <button
+                    key={reason.value}
+                    onClick={() => submitReport(reason.value)}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/70 hover:bg-white/10 transition-colors"
+                  >
+                    {reason.label}
+                  </button>
+                ))}
+                <button onClick={() => setReportTarget(null)} className="px-3 py-1.5 rounded-lg text-xs text-white/30 hover:text-white/60">
+                  {t('chat', 'cancel')}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Input Area */}
           <div className="p-4 bg-white/[0.02] border-t border-white/5">
+            {/* A refusal with no explanation is how a child learns the site is
+                broken rather than that they were moderated. */}
+            {suspension && (
+              <p className="mb-3 px-2 text-xs text-amber-200/90 leading-snug">
+                {t('chat', 'suspended')} {new Date(suspension.until).toLocaleString()}
+                {suspension.reason ? ` — ${suspension.reason}` : ''}
+              </p>
+            )}
+            {sendError && <p className="mb-3 px-2 text-xs text-rose-300/90 leading-snug">{sendError}</p>}
             <form onSubmit={send} className="flex gap-3">
               <input
                 value={text}
@@ -168,7 +274,7 @@ export default function ChatView() {
               />
               <button 
                 type="submit" 
-                disabled={!text.trim() || sending}
+                disabled={!text.trim() || sending || Boolean(suspension)}
                 className="w-14 h-14 rounded-2xl bg-violet hover:bg-violet-dark disabled:opacity-30 disabled:grayscale flex items-center justify-center shadow-lg shadow-violet/20 transition-all active:scale-[0.95]"
               >
                 {sending ? <Loader className="w-5 h-5 animate-spin text-white" /> : <Send className="w-5 h-5 text-white" />}

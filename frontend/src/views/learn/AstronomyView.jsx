@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { Telescope, ArrowRight } from 'lucide-react';
 import SectionPageHeader from '@/components/layout/SectionPageHeader';
-import { astronomyTopicsData } from '@/data/astronomyTopicsData';
+import { useLearnTopics } from '@/hooks/useLearnTopics';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const cardVariants = {
@@ -163,7 +163,7 @@ export default function AstronomyView() {
   const color = '#fbbf24';
   const colorLight = 'rgba(251,191,36,0.10)';
   const colorBorder = 'rgba(251,191,36,0.22)';
-  const topics = Object.values(astronomyTopicsData);
+  const topics = Object.values(useLearnTopics('astronomy').topics);
   const { t, i18n } = useTranslation();
 
   return (

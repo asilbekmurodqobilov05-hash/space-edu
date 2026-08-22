@@ -6,7 +6,7 @@ from .full_profile import FullProfileView
 urlpatterns = [
     path('profile/',       views.GamificationProfileView.as_view()),
     path('profile/full/',  FullProfileView.as_view()),
-    path('grant/',         views.GamificationGrantView.as_view()),
+    # 'grant/' removed — it let the client award itself arbitrary XP and fuel.
     path('leaderboard/',   views.LeaderboardView.as_view()),
     path('leaderboard/quiz/', views.QuizLeaderboardView.as_view()),
     path('badges/',        views.UserBadgesView.as_view()),
