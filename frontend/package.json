@@ -10,7 +10,10 @@
     "clean": "rm -rf dist",
     "check:locales": "node ./scripts/check-locales.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "assets:compress": "bash scripts/compress-textures.sh",
+    "content:export": "node scripts/export-learn-content.mjs",
+    "content:check": "node scripts/export-learn-content.mjs --check"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

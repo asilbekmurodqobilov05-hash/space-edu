@@ -129,10 +129,39 @@ jobs:
 
       - name: Large files
         run: |
-          # The repository already carries 246 MB of unoptimised assets, including
-          # a 56 MB .glb. Stop it growing while ticket Q3 is open.
-          over=$(git ls-files -z | xargs -0 -I{} sh -c 'test -f "{}" && find "{}" -size +2M -print' 2>/dev/null || true)
-          if [ -n "$over" ]; then
-            echo "Files over 2 MB (existing debt, tracked as Q3):"
-            echo "$over"
+          set -e
+          # Draco took the served assets from 246 MB to 20 MB. What is left is
+          # texture data inside ten .glb models, 48 MB between them — ticket Q3's
+          # tail, and it needs libvips, which only runs on Linux
+          # (frontend/scripts/compress-textures.sh).
+          #
+          # This was a printout nobody read. It is now a budget: the debt is
+          # pinned at what it is today and can only shrink. Lower these two
+          # numbers after a compression run; never raise them.
+          BIGGEST_ALLOWED=9411628      # antarctic_meteorite_sample_lar_1232632.glb
+          TOTAL_ALLOWED=48473656       # every tracked file over 2 MB, summed
+
+          over=$(git ls-files -z | xargs -0 -I{} sh -c 'test -f "{}" && find "{}" -size +2M -printf "%s	%p
+"' 2>/dev/null | sort -rn || true)
+
+          if [ -z "$over" ]; then
+            echo "No tracked file is over 2 MB. Ticket Q3 can close — drop this step."
+            exit 0
           fi
+
+          echo "$over"
+          biggest=$(echo "$over" | head -1 | cut -f1)
+          total=$(echo "$over" | cut -f1 | paste -sd+ | bc)
+          echo "Biggest: $biggest bytes (budget $BIGGEST_ALLOWED)"
+          echo "Total:   $total bytes (budget $TOTAL_ALLOWED)"
+
+          fail=0
+          if [ "$biggest" -gt "$BIGGEST_ALLOWED" ]; then
+            echo "::error::A tracked file is larger than anything already in the repository."
+            fail=1
+          fi
+          if [ "$total" -gt "$TOTAL_ALLOWED" ]; then
+            echo "::error::Large-asset debt grew. Compress before adding, or lower the budget."
+            fail=1
+          fi
+          exit $fail
