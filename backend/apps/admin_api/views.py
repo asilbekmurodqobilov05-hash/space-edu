@@ -1,92 +1,78 @@
-"""
-Admin API — exposes dashboard stats + CRUD endpoints for all major models.
-All views require `is_staff` or `is_superuser`.
+"""Admin API — dashboard stats plus CRUD for the models the panel manages.
+
+Everything requires `is_staff`; the two privilege flags require `is_superuser`.
+
+Rewritten for ticket B4. This module used to hand-roll serialisation with dict
+literals and `setattr` loops across roughly 700 lines, duplicating what
+`courses`, `challenges` and `market` already had. It had no validation, so
+ordinary caller mistakes came back as 500s — a duplicate slug as IntegrityError,
+a missing foreign key the same, a non-numeric price as ValueError — and
+`{"is_staff": "false"}` was stored as True, because a non-empty string is truthy.
+
+Two contracts the rewrite has to preserve, both load-bearing for the existing
+dashboard:
+  * responses are bare arrays, not DRF's paginated envelope. The frontend does
+    `items.map(...)` directly, so `pagination_class = None` everywhere.
+  * the URL shapes stay `<resource>/` and `<resource>/<pk>/`.
 """
 from datetime import timedelta
 
-from django.db import IntegrityError
-from django.db.models import Count, Sum, Q, Max
+from django.contrib.auth import get_user_model
+from django.db.models import Count, Max, Q
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.models import User
-from apps.courses.models import Sphere, Topic, TopicLesson, Problem
-from apps.gamification.models import Badge, UserGamificationProfile, RewardProduct
-from apps.market.models import MarketItem, MarketCategory
-from apps.news.models import NewsArticle
+from apps.challenges.models import ChallengeQuestion, UserChallengeResult
+from apps.chat.models import ChatMessage, ChatRoom, Conversation, DirectMessage
+from apps.courses.models import Problem, Sphere, Topic, TopicLesson
 from apps.events.models import SpaceEvent
-from apps.challenges.models import ChallengeQuestion, DailyChallenge, UserChallengeResult
-from apps.chat.models import ChatRoom, ChatMessage, Conversation, DirectMessage
-from apps.gamification.models import Mission
-from apps.progress.models import UserLessonProgress
+from apps.gamification.models import Badge, Mission, RewardProduct
+from apps.market.models import MarketCategory, MarketItem
+from apps.news.models import NewsArticle
+
+from .serializers import (
+    AdminChatRoomSerializer,
+    AdminEventSerializer,
+    AdminMarketItemSerializer,
+    AdminMissionSerializer,
+    AdminNewsSerializer,
+    AdminQuestionSerializer,
+    AdminSphereSerializer,
+    AdminTopicLessonSerializer,
+    AdminTopicSerializer,
+    AdminUserSerializer,
+    PrivilegeSerializer,
+)
+
+User = get_user_model()
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-#  INPUT HANDLING
-#
-#  This module hand-rolls serialisation with dict literals and setattr loops
-#  instead of using DRF serializers, so bad input surfaced as an unhandled
-#  IntegrityError or ValueError -> 500: a duplicate slug, a missing foreign key,
-#  a non-numeric price. These helpers give the same endpoints a 400 instead.
-#  Replacing them with real ModelSerializers is the proper fix and is tracked
-#  separately; this keeps the surface honest in the meantime.
-# ──────────────────────────────────────────────────────────────────────────────
-class BadInput(Exception):
-    """Raised for caller error; turned into 400 by @validated."""
+class AdminModelViewSet(viewsets.ModelViewSet):
+    """Base for every admin resource.
 
-
-def to_int(value, field, default=None, minimum=None, maximum=None):
-    if value is None or (isinstance(value, str) and not value.strip()):
-        return default
-    try:
-        parsed = int(value)
-    except (TypeError, ValueError):
-        raise BadInput(f'{field}: must be a whole number.')
-    if minimum is not None and parsed < minimum:
-        raise BadInput(f'{field}: must be at least {minimum}.')
-    if maximum is not None and parsed > maximum:
-        raise BadInput(f'{field}: must be at most {maximum}.')
-    return parsed
-
-
-def to_bool(value, default=False):
-    """Coerce a JSON or form value to a real boolean.
-
-    Raw setattr stored the *string* "false", which is truthy — so sending
-    {"is_staff": "false"} granted staff rather than removing it.
+    `pagination_class = None` is deliberate and load-bearing: the dashboard reads
+    the response as a plain array. Turning pagination on here would empty every
+    table in the panel at once.
     """
-    if value is None:
-        return default
-    if isinstance(value, bool):
-        return value
-    return str(value).strip().lower() in ('1', 'true', 'yes', 'on')
 
+    permission_classes = [IsAdminUser]
+    pagination_class = None
 
-def validated(handler):
-    """Turn caller mistakes into 400 responses instead of 500s."""
-    from functools import wraps
+    #: Cap on list responses, so one request cannot pull the whole table.
+    list_limit = 100
 
-    @wraps(handler)
-    def wrapper(*args, **kwargs):
-        try:
-            return handler(*args, **kwargs)
-        except BadInput as exc:
-            return Response({'detail': str(exc)}, status=400)
-        except IntegrityError as exc:
-            return Response(
-                {'detail': f'Conflicts with existing data: {exc}'}, status=400
-            )
-        except (ValueError, TypeError) as exc:
-            return Response({'detail': f'Invalid value: {exc}'}, status=400)
-
-    return wrapper
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        if self.action == 'list' and self.list_limit:
+            return queryset[: self.list_limit]
+        return queryset
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  DASHBOARD STATS
+#  DASHBOARD
 # ═══════════════════════════════════════════════════════════════════
 class DashboardView(APIView):
     permission_classes = [IsAdminUser]
@@ -96,15 +82,11 @@ class DashboardView(APIView):
         week_ago = now - timedelta(days=7)
         month_ago = now - timedelta(days=30)
 
-        total_users = User.objects.count()
-        new_users_week = User.objects.filter(date_joined__gte=week_ago).count()
-        new_users_month = User.objects.filter(date_joined__gte=month_ago).count()
-
         return Response({
             'users': {
-                'total': total_users,
-                'new_week': new_users_week,
-                'new_month': new_users_month,
+                'total': User.objects.count(),
+                'new_week': User.objects.filter(date_joined__gte=week_ago).count(),
+                'new_month': User.objects.filter(date_joined__gte=month_ago).count(),
                 'staff_count': User.objects.filter(is_staff=True).count(),
             },
             'content': {
@@ -143,538 +125,161 @@ class DashboardView(APIView):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  GENERIC CRUD HELPER
+#  USERS
 # ═══════════════════════════════════════════════════════════════════
-def _serialize_user(u):
-    return {
-        'id': u.id, 'username': u.username, 'first_name': u.first_name,
-        'last_name': u.last_name, 'email': u.email, 'is_staff': u.is_staff,
-        'is_active': u.is_active, 'date_joined': u.date_joined,
-        'date_of_birth': u.date_of_birth, 'language': u.language,
-        'astronaut_name': u.astronaut_name, 'bio': u.bio,
-    }
+class UserViewSet(AdminModelViewSet):
+    """Users are never created here — people sign up. Read, edit, delete only."""
 
+    serializer_class = AdminUserSerializer
+    http_method_names = ['get', 'patch', 'delete', 'head', 'options']
 
-class UsersView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def get(self, request):
-        q = request.query_params.get('q', '').strip()
-        qs = User.objects.all().order_by('-date_joined')
+    def get_queryset(self):
+        qs = User.objects.select_related('gamification').order_by('-date_joined')
+        q = self.request.query_params.get('q', '').strip()
         if q:
             qs = qs.filter(
-                Q(username__icontains=q) | Q(first_name__icontains=q) |
-                Q(last_name__icontains=q) | Q(email__icontains=q)
+                Q(username__icontains=q) | Q(first_name__icontains=q)
+                | Q(last_name__icontains=q) | Q(email__icontains=q)
             )
-        return Response([_serialize_user(u) for u in qs[:100]])
+        return qs
 
+    def update(self, request, *args, **kwargs):
+        """Profile fields for staff; the privilege flags for superusers only."""
+        instance = self.get_object()
 
-class UserDetailView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def get(self, request, pk):
-        try:
-            u = User.objects.get(pk=pk)
-        except User.DoesNotExist:
-            return Response({'detail': 'Not found.'}, status=404)
-        data = _serialize_user(u)
-        # Add gamification
-        try:
-            g = u.gamification
-            data['gamification'] = {'xp': g.xp, 'level': g.level, 'fuel': g.fuel, 'streak': g.streak}
-        except Exception:
-            data['gamification'] = None
-        return Response(data)
-
-    # Editable by any staff member.
-    SAFE_FIELDS = ('first_name', 'last_name', 'astronaut_name', 'bio', 'language')
-    # Editable by superusers only. IsAdminUser means plain is_staff, so before
-    # this split any staff member could grant themselves or anyone else staff,
-    # and could set is_active=False on a superuser and lock the owner out.
-    PRIVILEGED_FIELDS = ('is_staff', 'is_active')
-
-    LANGUAGES = {'en', 'uz', 'ru'}
-
-    @validated
-    def patch(self, request, pk):
-        try:
-            u = User.objects.get(pk=pk)
-        except User.DoesNotExist:
-            return Response({'detail': 'Not found.'}, status=404)
-
-        requested_privileged = [f for f in self.PRIVILEGED_FIELDS if f in request.data]
-        if requested_privileged and not request.user.is_superuser:
+        privileged = {k: v for k, v in request.data.items() if k in ('is_staff', 'is_active')}
+        if privileged and not request.user.is_superuser:
             return Response(
-                {'detail': f'Only a superuser may change {", ".join(requested_privileged)}.'},
-                status=403,
+                {'detail': f'Only a superuser may change {", ".join(sorted(privileged))}.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
-        for field in self.SAFE_FIELDS:
-            if field in request.data:
-                value = request.data[field]
-                if field == 'language' and value not in self.LANGUAGES:
-                    raise BadInput(f'language: must be one of {sorted(self.LANGUAGES)}.')
-                setattr(u, field, value)
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-        for field in requested_privileged:
-            setattr(u, field, to_bool(request.data[field]))
+        if privileged:
+            # Through a serializer so "false" is parsed as a boolean rather than
+            # stored as a truthy string, which is what raw setattr did.
+            flags = PrivilegeSerializer(data=privileged)
+            flags.is_valid(raise_exception=True)
+            for field, value in flags.validated_data.items():
+                setattr(instance, field, value)
+            instance.save(update_fields=list(flags.validated_data))
 
-        u.save()
-        return Response(_serialize_user(u))
+        instance.refresh_from_db()
+        return Response(self.get_serializer(instance).data)
 
-    def delete(self, request, pk):
-        try:
-            u = User.objects.get(pk=pk)
-        except User.DoesNotExist:
-            return Response({'detail': 'Not found.'}, status=404)
-        if u.is_superuser:
-            return Response({'detail': 'Cannot delete superuser.'}, status=400)
-        u.delete()
-        return Response(status=204)
-
-
-# ═══════════════════════════════════════════════════════════════════
-#  NEWS CRUD
-# ═══════════════════════════════════════════════════════════════════
-def _serialize_news(n):
-    return {
-        'id': n.id, 'title_en': n.title_en, 'title_uz': n.title_uz, 'title_ru': n.title_ru,
-        'summary_en': n.summary_en, 'summary_uz': n.summary_uz, 'summary_ru': n.summary_ru,
-        'content_en': n.content_en, 'content_uz': n.content_uz, 'content_ru': n.content_ru,
-        'category': n.category, 'source': n.source, 'source_url': n.source_url,
-        'is_published': n.is_published, 'published_at': n.published_at,
-        'image': n.image.url if n.image else None,
-    }
-
-
-class NewsListView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def get(self, request):
-        return Response([_serialize_news(n) for n in NewsArticle.objects.all()[:100]])
-
-    @validated
-    def post(self, request):
-        d = request.data
-        n = NewsArticle.objects.create(
-            title_en=d.get('title_en', ''), title_uz=d.get('title_uz', ''), title_ru=d.get('title_ru', ''),
-            summary_en=d.get('summary_en', ''), summary_uz=d.get('summary_uz', ''), summary_ru=d.get('summary_ru', ''),
-            content_en=d.get('content_en', ''), content_uz=d.get('content_uz', ''), content_ru=d.get('content_ru', ''),
-            category=d.get('category', 'science'), source=d.get('source', ''), source_url=d.get('source_url', ''),
-            is_published=d.get('is_published', True),
-        )
-        return Response(_serialize_news(n), status=201)
-
-
-class NewsDetailView(APIView):
-    permission_classes = [IsAdminUser]
-
-    @validated
-    def patch(self, request, pk):
-        try:
-            n = NewsArticle.objects.get(pk=pk)
-        except NewsArticle.DoesNotExist:
-            return Response({'detail': 'Not found.'}, status=404)
-        fields = ['title_en','title_uz','title_ru','summary_en','summary_uz','summary_ru',
-                   'content_en','content_uz','content_ru','category','source','source_url','is_published']
-        for f in fields:
-            if f in request.data:
-                setattr(n, f, request.data[f])
-        n.save()
-        return Response(_serialize_news(n))
-
-    def delete(self, request, pk):
-        NewsArticle.objects.filter(pk=pk).delete()
-        return Response(status=204)
+    def destroy(self, request, *args, **kwargs):
+        user = self.get_object()
+        if user.is_superuser:
+            return Response(
+                {'detail': 'Cannot delete a superuser.'}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if user.pk == request.user.pk:
+            return Response(
+                {'detail': 'You cannot delete your own account from here.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  EVENTS CRUD
+#  CONTENT
 # ═══════════════════════════════════════════════════════════════════
-def _serialize_event(e):
-    return {
-        'id': e.id, 'title_en': e.title_en, 'title_uz': e.title_uz, 'title_ru': e.title_ru,
-        'description_en': e.description_en, 'description_uz': e.description_uz, 'description_ru': e.description_ru,
-        'event_date': e.event_date, 'event_type': e.event_type, 'event_time': e.event_time,
-        'is_featured': e.is_featured, 'is_historical': e.is_historical,
-        'source_url': e.source_url, 'visibility': e.visibility,
-        'image': e.image.url if e.image else None,
-    }
+class OrderedCreateMixin:
+    """Append to the end of the list when `order` is not supplied.
+
+    The old code repeated this block three times with a bare `int(order)` that
+    turned a typo into a 500.
+    """
+
+    order_scope_field = None
+
+    def perform_create(self, serializer):
+        if serializer.validated_data.get('order') in (None, 0):
+            qs = self.get_serializer().Meta.model.objects.all()
+            scope = self.order_scope_field
+            if scope and serializer.validated_data.get(scope) is not None:
+                qs = qs.filter(**{scope: serializer.validated_data[scope]})
+            highest = qs.aggregate(Max('order'))['order__max']
+            serializer.validated_data['order'] = (highest or 0) + 1
+        serializer.save()
 
 
-class EventsListView(APIView):
-    permission_classes = [IsAdminUser]
+class SphereViewSet(OrderedCreateMixin, AdminModelViewSet):
+    serializer_class = AdminSphereSerializer
 
-    def get(self, request):
-        return Response([_serialize_event(e) for e in SpaceEvent.objects.all()[:100]])
-
-    @validated
-    def post(self, request):
-        d = request.data
-        e = SpaceEvent.objects.create(
-            title_en=d.get('title_en',''), title_uz=d.get('title_uz',''), title_ru=d.get('title_ru',''),
-            description_en=d.get('description_en',''), description_uz=d.get('description_uz',''), description_ru=d.get('description_ru',''),
-            event_date=d.get('event_date'), event_type=d.get('event_type','discovery'),
-            event_time=d.get('event_time',''), is_featured=d.get('is_featured', False),
-            is_historical=d.get('is_historical', False), source_url=d.get('source_url',''),
-        )
-        return Response(_serialize_event(e), status=201)
+    def get_queryset(self):
+        return Sphere.objects.annotate(
+            topics_count=Count('topics', distinct=True),
+            lessons_count_actual=Count('topics__lessons', distinct=True),
+        ).order_by('order', 'id')
 
 
-class EventDetailView(APIView):
-    permission_classes = [IsAdminUser]
+class TopicViewSet(OrderedCreateMixin, AdminModelViewSet):
+    serializer_class = AdminTopicSerializer
+    order_scope_field = 'sphere'
 
-    @validated
-    def patch(self, request, pk):
-        try:
-            e = SpaceEvent.objects.get(pk=pk)
-        except SpaceEvent.DoesNotExist:
-            return Response({'detail': 'Not found.'}, status=404)
-        fields = ['title_en','title_uz','title_ru','description_en','description_uz','description_ru',
-                   'event_date','event_type','event_time','is_featured','is_historical','source_url','visibility']
-        for f in fields:
-            if f in request.data:
-                setattr(e, f, request.data[f])
-        e.save()
-        return Response(_serialize_event(e))
-
-    def delete(self, request, pk):
-        SpaceEvent.objects.filter(pk=pk).delete()
-        return Response(status=204)
+    def get_queryset(self):
+        qs = Topic.objects.select_related('sphere').order_by('order', 'id')
+        sphere_id = self.request.query_params.get('sphere_id')
+        return qs.filter(sphere_id=sphere_id) if sphere_id else qs
 
 
-# ═══════════════════════════════════════════════════════════════════
-#  CHALLENGE QUESTIONS CRUD
-# ═══════════════════════════════════════════════════════════════════
-def _serialize_question(q):
-    return {
-        'id': q.id, 'category': q.category, 'difficulty': q.difficulty,
-        'question': q.question, 'question_en': q.question_en, 'question_ru': q.question_ru,
-        'options': q.options, 'correct_answer': q.correct_answer,
-        'explanation': q.explanation, 'time_seconds': q.time_seconds,
-        'is_active': q.is_active,
-    }
+class TopicLessonViewSet(OrderedCreateMixin, AdminModelViewSet):
+    serializer_class = AdminTopicLessonSerializer
+    order_scope_field = 'topic'
+    list_limit = 300
+
+    def get_queryset(self):
+        qs = TopicLesson.objects.select_related('topic').order_by('order', 'id')
+        topic_id = self.request.query_params.get('topic_id')
+        return qs.filter(topic_id=topic_id) if topic_id else qs
 
 
-class QuestionsListView(APIView):
-    permission_classes = [IsAdminUser]
+class QuestionViewSet(AdminModelViewSet):
+    serializer_class = AdminQuestionSerializer
+    list_limit = 200
 
-    def get(self, request):
-        qs = ChallengeQuestion.objects.all()
-        cat = request.query_params.get('category')
-        if cat:
-            qs = qs.filter(category=cat)
-        return Response([_serialize_question(q) for q in qs[:200]])
-
-    @validated
-    def post(self, request):
-        d = request.data
-        q = ChallengeQuestion.objects.create(
-            category=d.get('category','general'), difficulty=d.get('difficulty','medium'),
-            question=d.get('question',''), question_en=d.get('question_en',''), question_ru=d.get('question_ru',''),
-            options=d.get('options',[]), correct_answer=d.get('correct_answer',0),
-            explanation=d.get('explanation',''), time_seconds=d.get('time_seconds',60),
-            is_active=d.get('is_active',True),
-        )
-        return Response(_serialize_question(q), status=201)
-
-
-class QuestionDetailView(APIView):
-    permission_classes = [IsAdminUser]
-
-    @validated
-    def patch(self, request, pk):
-        try:
-            q = ChallengeQuestion.objects.get(pk=pk)
-        except ChallengeQuestion.DoesNotExist:
-            return Response({'detail': 'Not found.'}, status=404)
-        fields = ['category','difficulty','question','question_en','question_ru',
-                   'options','correct_answer','explanation','time_seconds','is_active']
-        for f in fields:
-            if f in request.data:
-                setattr(q, f, request.data[f])
-        q.save()
-        return Response(_serialize_question(q))
-
-    def delete(self, request, pk):
-        ChallengeQuestion.objects.filter(pk=pk).delete()
-        return Response(status=204)
+    def get_queryset(self):
+        qs = ChallengeQuestion.objects.order_by('category', 'difficulty', 'id')
+        category = self.request.query_params.get('category')
+        return qs.filter(category=category) if category else qs
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  COURSES (Spheres / Topics / Lessons)
+#  COMMUNITY AND COMMERCE
 # ═══════════════════════════════════════════════════════════════════
-class SpheresListView(APIView):
-    permission_classes = [IsAdminUser]
+class NewsViewSet(AdminModelViewSet):
+    serializer_class = AdminNewsSerializer
+    queryset = NewsArticle.objects.all()
 
-    def get(self, request):
-        data = []
-        for s in Sphere.objects.prefetch_related('topics').all():
-            data.append({
-                'id': s.id, 'slug': s.slug, 'title': s.title, 'title_en': s.title_en,
-                'is_active': s.is_active, 'order': s.order, 'color': s.color,
-                'topics_count': s.topics.count(),
-                'lessons_count': sum(t.lessons.count() for t in s.topics.all()),
-            })
-        return Response(data)
 
-    @validated
-    def post(self, request):
-        d = request.data
-        if not str(d.get('slug', '')).strip():
-            raise BadInput('slug: required.')
-        order = d.get('order')
-        if order is None or str(order).strip() == '':
-            max_order = Sphere.objects.aggregate(Max('order'))['order__max']
-            order = (max_order or 0) + 1
-        else:
-            order = to_int(order, 'order', minimum=0, maximum=32767)
-            
-        s = Sphere.objects.create(
-            slug=d.get('slug', ''), title=d.get('title', ''), title_en=d.get('title_en', ''),
-            title_ru=d.get('title_ru', ''), description=d.get('description', ''), description_en=d.get('description_en', ''),
-            color=d.get('color', '#a78bfa'), icon=d.get('icon', 'BookOpen'), link=d.get('link', ''),
-            order=order, is_active=d.get('is_active', True)
-        )
-        return Response({'id': s.id, 'slug': s.slug, 'title': s.title, 'title_en': s.title_en, 'is_active': s.is_active, 'order': s.order, 'color': s.color}, status=201)
+class EventViewSet(AdminModelViewSet):
+    serializer_class = AdminEventSerializer
+    queryset = SpaceEvent.objects.all()
 
-class SphereDetailView(APIView):
-    permission_classes = [IsAdminUser]
 
-    @validated
-    def patch(self, request, pk):
-        try:
-            s = Sphere.objects.get(pk=pk)
-        except Sphere.DoesNotExist:
-            return Response(status=404)
-        for f in ['slug', 'title', 'title_en', 'title_ru', 'description', 'description_en', 'color', 'icon', 'link', 'order', 'is_active']:
-            if f in request.data: setattr(s, f, request.data[f])
-        s.save()
-        return Response({'id': s.id, 'slug': s.slug, 'title': s.title, 'title_en': s.title_en, 'is_active': s.is_active, 'order': s.order, 'color': s.color})
+class MarketItemViewSet(AdminModelViewSet):
+    serializer_class = AdminMarketItemSerializer
+    queryset = MarketItem.objects.select_related('category').all()
 
-    def delete(self, request, pk):
-        Sphere.objects.filter(pk=pk).delete()
-        return Response(status=204)
 
-class TopicListView(APIView):
-    permission_classes = [IsAdminUser]
+class ChatRoomViewSet(AdminModelViewSet):
+    serializer_class = AdminChatRoomSerializer
 
-    def get(self, request):
-        qs = Topic.objects.all()
-        sphere_id = request.query_params.get('sphere_id')
-        if sphere_id: qs = qs.filter(sphere_id=sphere_id)
-        return Response([{'id': t.id, 'sphere_id': t.sphere_id, 'title': t.title, 'title_en': t.title_en, 'order': t.order, 'color': t.color} for t in qs])
+    def get_queryset(self):
+        return ChatRoom.objects.annotate(msg_count=Count('messages')).order_by('id')
 
-    @validated
-    def post(self, request):
-        d = request.data
-        sphere_id = to_int(d.get('sphere_id'), 'sphere_id', minimum=1)
-        if sphere_id is None:
-            raise BadInput('sphere_id: required.')
-        if not Sphere.objects.filter(pk=sphere_id).exists():
-            raise BadInput('sphere_id: no such sphere.')
-        order = d.get('order')
-        if order is None or str(order).strip() == '':
-            max_order = Topic.objects.filter(sphere_id=sphere_id).aggregate(Max('order'))['order__max']
-            order = (max_order or 0) + 1
-        else:
-            order = to_int(order, 'order', minimum=0, maximum=32767)
-            
-        t = Topic.objects.create(
-            sphere_id=sphere_id, title=d.get('title', ''), title_en=d.get('title_en', ''),
-            title_ru=d.get('title_ru', ''), color=d.get('color', ''), description=d.get('description', ''),
-            order=order
-        )
-        return Response({'id': t.id, 'sphere_id': t.sphere_id, 'title': t.title, 'title_en': t.title_en, 'order': t.order, 'color': t.color}, status=201)
 
-class TopicDetailView(APIView):
-    permission_classes = [IsAdminUser]
+class MissionViewSet(AdminModelViewSet):
+    """This listing used to raise NameError on every request.
 
-    @validated
-    def patch(self, request, pk):
-        try:
-            t = Topic.objects.get(pk=pk)
-        except Topic.DoesNotExist:
-            return Response(status=404)
-        for f in ['sphere_id', 'title', 'title_en', 'title_ru', 'color', 'description', 'order']:
-            if f in request.data: setattr(t, f, request.data[f])
-        t.save()
-        return Response({'id': t.id, 'sphere_id': t.sphere_id, 'title': t.title, 'title_en': t.title_en, 'order': t.order, 'color': t.color})
+    It referenced `apps.gamification.models.Mission`, but `from apps.x import y`
+    does not bind the name `apps`, so the panel's Missions tab could not be
+    opened at all. The write methods worked because each did a local import.
+    """
 
-    def delete(self, request, pk):
-        Topic.objects.filter(pk=pk).delete()
-        return Response(status=204)
-
-class TopicLessonListView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def get(self, request):
-        qs = TopicLesson.objects.all()
-        topic_id = request.query_params.get('topic_id')
-        if topic_id: qs = qs.filter(topic_id=topic_id)
-        return Response([{'id': l.id, 'topic_id': l.topic_id, 'name': l.name, 'name_en': l.name_en, 'order': l.order, 'video_url': l.video_url} for l in qs])
-
-    @validated
-    def post(self, request):
-        d = request.data
-        topic_id = to_int(d.get('topic_id'), 'topic_id', minimum=1)
-        if topic_id is None:
-            raise BadInput('topic_id: required.')
-        if not Topic.objects.filter(pk=topic_id).exists():
-            raise BadInput('topic_id: no such topic.')
-        order = d.get('order')
-        if order is None or str(order).strip() == '':
-            max_order = TopicLesson.objects.filter(topic_id=topic_id).aggregate(Max('order'))['order__max']
-            order = (max_order or 0) + 1
-        else:
-            order = to_int(order, 'order', minimum=0, maximum=32767)
-            
-        l = TopicLesson.objects.create(
-            topic_id=topic_id, name=d.get('name', ''), name_en=d.get('name_en', ''),
-            name_ru=d.get('name_ru', ''), video_url=d.get('video_url', ''), content=d.get('content', ''),
-            order=order
-        )
-        return Response({'id': l.id, 'topic_id': l.topic_id, 'name': l.name, 'name_en': l.name_en, 'order': l.order, 'video_url': l.video_url}, status=201)
-
-class TopicLessonDetailView(APIView):
-    permission_classes = [IsAdminUser]
-
-    @validated
-    def patch(self, request, pk):
-        try:
-            l = TopicLesson.objects.get(pk=pk)
-        except TopicLesson.DoesNotExist:
-            return Response(status=404)
-        for f in ['topic_id', 'name', 'name_en', 'name_ru', 'video_url', 'content', 'order']:
-            if f in request.data: setattr(l, f, request.data[f])
-        l.save()
-        return Response({'id': l.id, 'topic_id': l.topic_id, 'name': l.name, 'name_en': l.name_en, 'order': l.order, 'video_url': l.video_url})
-
-    def delete(self, request, pk):
-        TopicLesson.objects.filter(pk=pk).delete()
-        return Response(status=204)
-
-# ═══════════════════════════════════════════════════════════════════
-#  MARKET ITEMS CRUD
-# ═══════════════════════════════════════════════════════════════════
-def _serialize_market_item(m):
-    return {
-        'id': m.id, 'slug': m.slug, 'title_en': m.title_en, 'title_uz': m.title_uz,
-        'item_type': m.item_type, 'price': m.price, 'cost_fuel': m.cost_fuel,
-        'stock': m.stock, 'is_active': m.is_active, 'is_bestseller': m.is_bestseller
-    }
-
-class MarketItemListView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def get(self, request):
-        return Response([_serialize_market_item(m) for m in MarketItem.objects.all()[:100]])
-
-    @validated
-    def post(self, request):
-        d = request.data
-        if not str(d.get('slug', '')).strip():
-            raise BadInput('slug: required.')
-        m = MarketItem.objects.create(
-            slug=d.get('slug', ''), title_en=d.get('title_en', ''), title_uz=d.get('title_uz', ''),
-            title_ru=d.get('title_ru', ''), description_en=d.get('description_en', ''),
-            description_uz=d.get('description_uz', ''), description_ru=d.get('description_ru', ''),
-            item_type=d.get('item_type', 'other'),
-            price=to_int(d.get('price'), 'price', default=0, minimum=0),
-            cost_fuel=to_int(d.get('cost_fuel'), 'cost_fuel', default=0, minimum=0),
-            stock=to_int(d.get('stock'), 'stock', default=0, minimum=0),
-            is_active=to_bool(d.get('is_active'), True),
-            is_bestseller=to_bool(d.get('is_bestseller'), False),
-        )
-        return Response(_serialize_market_item(m), status=201)
-
-class MarketItemDetailView(APIView):
-    permission_classes = [IsAdminUser]
-
-    @validated
-    def patch(self, request, pk):
-        try:
-            m = MarketItem.objects.get(pk=pk)
-        except MarketItem.DoesNotExist:
-            return Response(status=404)
-        fields = ['slug', 'title_en', 'title_uz', 'title_ru', 'description_en', 'description_uz', 'description_ru',
-                  'item_type', 'price', 'cost_fuel', 'stock', 'is_active', 'is_bestseller']
-        for f in fields:
-            if f in request.data: setattr(m, f, request.data[f])
-        m.save()
-        return Response(_serialize_market_item(m))
-
-    def delete(self, request, pk):
-        MarketItem.objects.filter(pk=pk).delete()
-        return Response(status=204)
-
-class ChatRoomsView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def get(self, request):
-        rooms = ChatRoom.objects.annotate(msg_count=Count('messages'))
-        return Response([
-            {'id': r.id, 'slug': r.slug, 'name': r.name, 'is_global': r.is_global, 'messages': r.msg_count}
-            for r in rooms
-        ])
-
-    @validated
-    def post(self, request):
-        d = request.data
-        r = ChatRoom.objects.create(
-            slug=d.get('slug',''), name=d.get('name',''), is_global=d.get('is_global', True)
-        )
-        return Response({'id': r.id, 'slug': r.slug, 'name': r.name, 'is_global': r.is_global}, status=201)
-
-# ═══════════════════════════════════════════════════════════════════
-#  MISSIONS CRUD
-# ═══════════════════════════════════════════════════════════════════
-def _serialize_mission(m):
-    return {
-        'id': m.id, 'slug': m.slug, 'title_en': m.title_en, 'title_uz': m.title_uz, 'title_ru': m.title_ru,
-        'description_en': m.description_en, 'description_uz': m.description_uz, 'description_ru': m.description_ru,
-        'mission_type': m.mission_type, 'target_value': m.target_value, 'reward_xp': m.reward_xp, 'reward_fuel': m.reward_fuel,
-        'is_active': m.is_active, 'is_daily': m.is_daily, 'order': m.order,
-    }
-
-class MissionsListView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def get(self, request):
-        return Response([_serialize_mission(m) for m in Mission.objects.all().order_by('order')])
-
-    @validated
-    def post(self, request):
-        d = request.data
-        m = Mission.objects.create(
-            slug=d.get('slug', ''), title_en=d.get('title_en', ''), title_uz=d.get('title_uz', ''), title_ru=d.get('title_ru', ''),
-            description_en=d.get('description_en', ''), description_uz=d.get('description_uz', ''), description_ru=d.get('description_ru', ''),
-            mission_type=d.get('mission_type', 'custom'),
-            target_value=to_int(d.get('target_value'), 'target_value', default=1, minimum=1),
-            reward_xp=to_int(d.get('reward_xp'), 'reward_xp', default=0, minimum=0),
-            reward_fuel=to_int(d.get('reward_fuel'), 'reward_fuel', default=10, minimum=0),
-            is_active=to_bool(d.get('is_active'), True),
-            is_daily=to_bool(d.get('is_daily'), False),
-            order=to_int(d.get('order'), 'order', default=0, minimum=0, maximum=32767)
-        )
-        return Response(_serialize_mission(m), status=201)
-
-class MissionDetailView(APIView):
-    permission_classes = [IsAdminUser]
-
-    @validated
-    def patch(self, request, pk):
-        try:
-            m = Mission.objects.get(pk=pk)
-        except Mission.DoesNotExist:
-            return Response(status=404)
-        fields = ['slug', 'title_en', 'title_uz', 'title_ru', 'description_en', 'description_uz', 'description_ru',
-                  'mission_type', 'target_value', 'reward_xp', 'reward_fuel', 'is_active', 'is_daily', 'order']
-        for f in fields:
-            if f in request.data: setattr(m, f, request.data[f])
-        m.save()
-        return Response(_serialize_mission(m))
-
-    def delete(self, request, pk):
-        Mission.objects.filter(pk=pk).delete()
-        return Response(status=204)
+    serializer_class = AdminMissionSerializer
+    queryset = Mission.objects.all().order_by('order', 'id')
