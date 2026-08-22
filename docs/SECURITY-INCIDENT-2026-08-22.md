@@ -40,46 +40,46 @@ Two do not: a personal Gmail address, and both superusers.
 Rotating the credentials is what actually ends the exposure. It is independent
 of anything to do with git, and it should not wait for the history rewrite.
 
+This used to be a copy-paste `manage.py shell` session. It is now one command,
+so it is repeatable, reports what it did, and cannot be half-applied by a typo
+in the middle:
+
 ```bash
 cd backend
 
-# 1. Change both superuser passwords
+python manage.py rotate_leaked_credentials --dry-run   # read the report first
+python manage.py rotate_leaked_credentials
+```
+
+It does three things, in one transaction:
+
+1. `set_unusable_password()` on every non-superuser account in the leak. The old
+   hash stops verifying, so the leaked copy is worthless, and the account is not
+   deleted — it comes back through the e-mail sign-in flow.
+2. Deletes every `django_session` row.
+3. Blacklists every outstanding JWT refresh token.
+
+Running it a second time is safe and reports `Accounts locked out: 0`.
+
+### The part it will not do for you
+
+**Superuser passwords.** The command lists them and stops:
+
+```bash
 python manage.py changepassword qweqwe
 python manage.py changepassword admin1
-
-# 2. Force every other listed account to reset
-python manage.py shell
 ```
 
-```python
-from django.contrib.auth import get_user_model
-User = get_user_model()
+A password the command generated would have to be printed to be usable, which
+puts a live credential into a terminal scrollback and a CI log. So it refuses.
 
-leaked = [
-    'cosmonauttest', 'yusuf', 'alisher', 'shokhanasserprojr',
-    'john.doe', 'qweqweqwe', 'qqq',
-]
-# set_unusable_password() means the old hash stops working and the account can
-# only come back through the e-mail sign-in flow.
-for u in User.objects.filter(username__in=leaked):
-    u.set_unusable_password()
-    u.save(update_fields=['password'])
+**Everything that lives outside the database.** Rotate these by hand: the
+`SECRET_KEY` (rotating it invalidates every existing session and JWT, which is
+what we want here), the Cloudflare R2 keys, and `GEMINI_API_KEY`. If the same
+password was reused anywhere else — Railway, Vercel, the GitHub account itself —
+change it there too.
 
-# 3. Clear sessions and blacklist outstanding refresh tokens
-from django.contrib.sessions.models import Session
-Session.objects.all().delete()
-
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
-for token in OutstandingToken.objects.all():
-    BlacklistedToken.objects.get_or_create(token=token)
-```
-
-If the same password was reused anywhere else — Railway, Vercel, the GitHub
-account itself — change it there too.
-
-Also rotate anything that was ever in a `.env` alongside this: `SECRET_KEY`
-(rotating it invalidates every existing session and JWT, which is what we want
-here), the Cloudflare R2 keys, and `GEMINI_API_KEY`.
+Covered by `apps/accounts/tests_incident.py`.
 
 ---
 
