@@ -65,6 +65,7 @@ export default function ChatView() {
   const [notice, setNotice] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [reportReasons, setReportReasons] = useState([]);
+  const [suspension, setSuspension] = useState(null);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -95,7 +96,10 @@ export default function ChatView() {
 
   useEffect(() => {
     api.get('/chat/settings/')
-      .then(({ data }) => setReportReasons(data.report_reasons ?? []))
+      .then(({ data }) => {
+        setReportReasons(data.report_reasons ?? []);
+        setSuspension(data.suspension ?? null);
+      })
       .catch(() => setReportReasons([]));
   }, []);
 
@@ -251,6 +255,14 @@ export default function ChatView() {
 
           {/* Input Area */}
           <div className="p-4 bg-white/[0.02] border-t border-white/5">
+            {/* A refusal with no explanation is how a child learns the site is
+                broken rather than that they were moderated. */}
+            {suspension && (
+              <p className="mb-3 px-2 text-xs text-amber-200/90 leading-snug">
+                {t('chat', 'suspended')} {new Date(suspension.until).toLocaleString()}
+                {suspension.reason ? ` — ${suspension.reason}` : ''}
+              </p>
+            )}
             {sendError && <p className="mb-3 px-2 text-xs text-rose-300/90 leading-snug">{sendError}</p>}
             <form onSubmit={send} className="flex gap-3">
               <input
@@ -262,7 +274,7 @@ export default function ChatView() {
               />
               <button 
                 type="submit" 
-                disabled={!text.trim() || sending}
+                disabled={!text.trim() || sending || Boolean(suspension)}
                 className="w-14 h-14 rounded-2xl bg-violet hover:bg-violet-dark disabled:opacity-30 disabled:grayscale flex items-center justify-center shadow-lg shadow-violet/20 transition-all active:scale-[0.95]"
               >
                 {sending ? <Loader className="w-5 h-5 animate-spin text-white" /> : <Send className="w-5 h-5 text-white" />}

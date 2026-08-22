@@ -26,9 +26,13 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import User
 
-from .models import ChatMessage, ChatRoom, Conversation, DirectMessage, MessageReport, UserBlock
+from .models import (
+    ChatMessage, ChatRoom, ChatSuspension, Conversation, DirectMessage,
+    MessageReport, UserBlock,
+)
 from .serializers import (
-    BlockSerializer, ChatMessageSerializer, ChatRoomSerializer, ConversationSerializer,
+    BlockSerializer, ChatMessageSerializer, ChatRoomSerializer, ChatSuspensionSerializer,
+    ConversationSerializer,
     DirectMessageSerializer, ModerationDeleteSerializer, PostDirectMessageSerializer,
     PostMessageSerializer, ReportCreateSerializer, ReportSerializer, UserMiniSerializer,
     dm_enabled,
@@ -39,6 +43,29 @@ DM_DISABLED_RESPONSE = {
     'detail': 'Direct messages are turned off on this site.',
     'code': 'dm_disabled',
 }
+
+
+def suspension_refusal(user):
+    """Refuse a post while a moderator has this account stopped.
+
+    Deleting a message removes what was said and does nothing about someone who
+    keeps saying it, so this is the piece that was missing: a moderator could
+    hide a message but not stop its author. Scoped to chat rather than the
+    account, because a child who was unkind in chat should lose the chat, not
+    their lessons.
+    """
+    suspension = ChatSuspension.active_for(user)
+    if suspension is None:
+        return None
+    return Response(
+        {
+            'detail': 'A moderator has paused your messaging.',
+            'code': 'suspended',
+            'until': suspension.until,
+            'reason': suspension.reason,
+        },
+        status=status.HTTP_403_FORBIDDEN,
+    )
 
 
 class DirectMessagesEnabledMixin:
@@ -100,6 +127,10 @@ class RoomMessagesView(APIView):
             room = ChatRoom.objects.get(slug=slug)
         except ChatRoom.DoesNotExist:
             return Response({'detail': 'Room not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        refusal = suspension_refusal(request.user)
+        if refusal:
+            return refusal
 
         serializer = PostMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -270,6 +301,31 @@ class ReportResolveView(APIView):
             if target is not None and not target.is_deleted:
                 target.soft_delete(request.user, f'report #{report.id}')
 
+        suspend_days = request.data.get('suspend_days')
+        # Present-and-empty is a form default and means "no suspension"; a value
+        # that is present and nonsense is a client bug, and answering 200 to it
+        # would tell a moderator the account was stopped when it was not.
+        asked_to_suspend = suspend_days not in (None, '')
+        if action == MessageReport.ACTIONED and asked_to_suspend:
+            try:
+                days = int(suspend_days)
+            except (TypeError, ValueError):
+                return Response({'detail': 'suspend_days must be a number.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if not 1 <= days <= 90:
+                return Response({'detail': 'suspend_days must be between 1 and 90.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            target = report.message
+            author = getattr(target, 'user', None) or getattr(target, 'sender', None)
+            if author is not None:
+                ChatSuspension.objects.create(
+                    user=author,
+                    until=timezone.now() + timezone.timedelta(days=days),
+                    reason=f'{report.get_reason_display()} (report #{report.id})',
+                    created_by=request.user,
+                )
+
         report.status = action
         report.handled_by = request.user
         report.handled_at = timezone.now()
@@ -437,7 +493,7 @@ class ConversationMessagesView(DirectMessagesEnabledMixin, APIView):
             return Response({'detail': 'You cannot message this person.'},
                             status=status.HTTP_403_FORBIDDEN)
 
-        refusal = self._consent_refusal(convo, request.user)
+        refusal = suspension_refusal(request.user) or self._consent_refusal(convo, request.user)
         if refusal:
             return refusal
 
@@ -550,9 +606,12 @@ class ChatSettingsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        suspension = ChatSuspension.active_for(request.user)
         return Response({
             'dm_enabled': dm_enabled(),
             'report_reasons': [
                 {'value': value, 'label': label} for value, label in MessageReport.REASONS
             ],
+            # So the composer can explain itself rather than just refusing.
+            'suspension': ChatSuspensionSerializer(suspension).data if suspension else None,
         })

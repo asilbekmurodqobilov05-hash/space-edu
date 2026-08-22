@@ -948,7 +948,8 @@
     "reportFailed": "Shikoyatni yuborib bo‘lmadi.",
     "blocked": "Bloklandi. Siz ularning xabarlarini, ular esa sizniknni ko'rmaydi.",
     "blockFailed": "Bu foydalanuvchini bloklab bo‘lmadi.",
-    "cancel": "Bekor qilish"
+    "cancel": "Bekor qilish",
+    "suspended": "Moderator xabar yuborishingizni to'xtatib qo'ydi:"
   },
   "notFound": {
     "lostInSpace": "Fazoda adashib qoldingiz",

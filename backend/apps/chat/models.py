@@ -249,3 +249,58 @@ class MessageReport(models.Model):
     @property
     def message(self):
         return self.chat_message or self.direct_message
+
+
+class ChatSuspension(models.Model):
+    """A moderator stopping one account from posting, for a while.
+
+    Deleting a message removes what was said; it does nothing about someone who
+    keeps saying it. The alternative already on the User model is `is_active`,
+    which is an account ban — it locks the student out of their lessons too.
+    A child who was unkind in chat should lose the chat, not their education.
+
+    Not deleted when it expires: a moderator looking at a repeat report needs to
+    see that this account has been here before.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chat_suspensions',
+    )
+    until = models.DateTimeField(help_text='Posting is refused until this moment.')
+    reason = models.CharField(max_length=200, blank=True, default='')
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    lifted_at = models.DateTimeField(
+        null=True, blank=True, help_text='Set when a moderator ends it early.',
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Chat Suspension'
+        indexes = [models.Index(fields=['user', 'until'])]
+
+    def __str__(self):
+        return f'{self.user.username} until {self.until:%Y-%m-%d %H:%M}'
+
+    @property
+    def is_active(self):
+        from django.utils import timezone
+
+        return self.lifted_at is None and self.until > timezone.now()
+
+    @classmethod
+    def active_for(cls, user):
+        """The suspension in force for this user, or None. One query."""
+        from django.utils import timezone
+
+        if not user.is_authenticated:
+            return None
+        return (
+            cls.objects
+            .filter(user=user, lifted_at__isnull=True, until__gt=timezone.now())
+            .order_by('-until')
+            .first()
+        )

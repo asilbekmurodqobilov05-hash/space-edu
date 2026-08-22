@@ -948,7 +948,8 @@
     "reportFailed": "Could not send that report.",
     "blocked": "Blocked. You will not see their messages, and they will not see yours.",
     "blockFailed": "Could not block that person.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "suspended": "A moderator has paused your messaging until"
   },
   "notFound": {
     "lostInSpace": "Lost in Space",

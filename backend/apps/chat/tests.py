@@ -593,3 +593,171 @@ class UserSearchTests(TestCase):
 
     def test_you_do_not_find_yourself(self):
         self.assertEqual(self._search('searcher'), [])
+
+
+class SuspensionTests(TestCase):
+    """The gap B1 left: a moderator could hide a message but not stop its author.
+
+    Deleting removes what was said and does nothing about someone who keeps
+    saying it. The alternative already on the User model is `is_active`, which
+    is an account ban and takes the student's lessons with it — a child who was
+    unkind in chat should lose the chat, not their education.
+    """
+
+    def setUp(self):
+        cache.clear()
+        self.room = ChatRoom.objects.create(slug='general', name='General')
+        self.author = User.objects.create_user(username='author', email='a@e.com', password='x')
+        self.reporter = User.objects.create_user(username='rep', email='r@e.com', password='x')
+        self.staff = User.objects.create_user(
+            username='mod', email='m@e.com', password='x', is_staff=True,
+        )
+        self.client = _client(self.author)
+
+    def _post(self, content='salom', client=None):
+        return (client or self.client).post(
+            f'/api/v1/chat/rooms/{self.room.slug}/messages/', {'content': content}, format='json',
+        )
+
+    def _suspend(self, days=7):
+        from django.utils import timezone
+
+        from .models import ChatSuspension
+        return ChatSuspension.objects.create(
+            user=self.author,
+            until=timezone.now() + timezone.timedelta(days=days),
+            reason='bullying',
+            created_by=self.staff,
+        )
+
+    def test_a_suspended_account_cannot_post_to_a_room(self):
+        self._suspend()
+        r = self._post()
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(r.data['code'], 'suspended')
+
+    def test_the_refusal_says_when_it_ends(self):
+        self._suspend()
+        r = self._post()
+        self.assertIn('until', r.data)
+        self.assertEqual(r.data['reason'], 'bullying')
+
+    def test_everyone_else_still_posts(self):
+        self._suspend()
+        self.assertEqual(self._post(client=_client(self.reporter)).status_code,
+                         status.HTTP_201_CREATED)
+
+    def test_reading_is_still_allowed(self):
+        """A suspension is not an exclusion. They can still follow the room."""
+        self._suspend()
+        r = self.client.get(f'/api/v1/chat/rooms/{self.room.slug}/messages/')
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+    def test_an_expired_suspension_does_not_bite(self):
+        from django.utils import timezone
+
+        from .models import ChatSuspension
+        ChatSuspension.objects.create(
+            user=self.author, until=timezone.now() - timezone.timedelta(minutes=1),
+        )
+        self.assertEqual(self._post().status_code, status.HTTP_201_CREATED)
+
+    def test_lifting_it_early_restores_posting(self):
+        from django.utils import timezone
+
+        suspension = self._suspend()
+        suspension.lifted_at = timezone.now()
+        suspension.save(update_fields=['lifted_at'])
+        self.assertEqual(self._post().status_code, status.HTTP_201_CREATED)
+
+    def test_the_client_is_told_so_the_box_can_explain_itself(self):
+        self._suspend()
+        r = self.client.get('/api/v1/chat/settings/')
+        self.assertIsNotNone(r.data['suspension'])
+        self.assertEqual(r.data['suspension']['reason'], 'bullying')
+
+    def test_the_student_is_not_told_which_moderator(self):
+        """Naming a moderator to the person they moderated invites exactly the
+        situation the suspension was meant to end."""
+        self._suspend()
+        r = self.client.get('/api/v1/chat/settings/')
+        self.assertNotIn('created_by', r.data['suspension'])
+
+    def test_an_unsuspended_account_sees_nothing(self):
+        r = self.client.get('/api/v1/chat/settings/')
+        self.assertIsNone(r.data['suspension'])
+
+
+class SuspendFromTheReportQueueTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.room = ChatRoom.objects.create(slug='general', name='General')
+        self.author = User.objects.create_user(username='author', email='a@e.com', password='x')
+        self.reporter = User.objects.create_user(username='rep', email='r@e.com', password='x')
+        self.staff = User.objects.create_user(
+            username='mod', email='m@e.com', password='x', is_staff=True,
+        )
+        self.message = ChatMessage.objects.create(
+            room=self.room, user=self.author, content='something unpleasant',
+        )
+        self.report = MessageReport.objects.create(
+            reporter=self.reporter, chat_message=self.message, reason='bullying',
+        )
+
+    def _resolve(self, **extra):
+        payload = {'action': 'actioned'}
+        payload.update(extra)
+        return _client(self.staff).post(
+            f'/api/v1/chat/reports/{self.report.id}/resolve/', payload, format='json',
+        )
+
+    def test_a_moderator_can_suspend_the_author_while_resolving(self):
+        from .models import ChatSuspension
+
+        r = self._resolve(delete_message=True, suspend_days=7)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+        suspension = ChatSuspension.objects.get(user=self.author)
+        self.assertTrue(suspension.is_active)
+        self.assertIn('report #', suspension.reason)
+        self.assertEqual(suspension.created_by, self.staff)
+
+    def test_the_author_then_cannot_post(self):
+        self._resolve(suspend_days=3)
+        r = _client(self.author).post(
+            f'/api/v1/chat/rooms/{self.room.slug}/messages/', {'content': 'again'}, format='json',
+        )
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_resolving_without_asking_suspends_nobody(self):
+        from .models import ChatSuspension
+
+        self._resolve(delete_message=True)
+        self.assertFalse(ChatSuspension.objects.exists())
+
+    def test_a_nonsense_length_is_refused(self):
+        from .models import ChatSuspension
+
+        for value in (0, -1, 91, 'forever'):
+            r = self._resolve(suspend_days=value)
+            self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, value)
+        self.assertFalse(ChatSuspension.objects.exists())
+
+    def test_dismissing_a_report_never_suspends(self):
+        from .models import ChatSuspension
+
+        _client(self.staff).post(
+            f'/api/v1/chat/reports/{self.report.id}/resolve/',
+            {'action': 'dismissed', 'suspend_days': 7}, format='json',
+        )
+        self.assertFalse(ChatSuspension.objects.exists())
+
+    def test_an_ordinary_user_cannot_suspend_anyone(self):
+        from .models import ChatSuspension
+
+        r = _client(self.reporter).post(
+            f'/api/v1/chat/reports/{self.report.id}/resolve/',
+            {'action': 'actioned', 'suspend_days': 7}, format='json',
+        )
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(ChatSuspension.objects.exists())

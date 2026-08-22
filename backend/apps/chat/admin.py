@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.utils import timezone
 
 from .models import (
-    ChatMessage, ChatRoom, Conversation, DirectMessage, MessageReport, UserBlock,
+    ChatMessage, ChatRoom, ChatSuspension, Conversation, DirectMessage,
+    MessageReport, UserBlock,
 )
 
 
@@ -89,3 +90,20 @@ class MessageReportAdmin(admin.ModelAdmin):
     def reported_content(self, obj):
         target = obj.message
         return target.content[:80] if target else '(gone)'
+
+
+@admin.register(ChatSuspension)
+class ChatSuspensionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'until', 'currently_active', 'reason', 'created_by', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('user__username', 'reason')
+    readonly_fields = ('created_by', 'created_at')
+    actions = ['lift']
+
+    @admin.display(boolean=True, description='In force')
+    def currently_active(self, obj):
+        return obj.is_active
+
+    @admin.action(description='Lift the selected suspensions now')
+    def lift(self, request, queryset):
+        queryset.filter(lifted_at__isnull=True).update(lifted_at=timezone.now())

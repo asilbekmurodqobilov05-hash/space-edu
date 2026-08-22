@@ -1,7 +1,10 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from .models import ChatMessage, ChatRoom, Conversation, DirectMessage, MessageReport, UserBlock
+from .models import (
+    ChatMessage, ChatRoom, ChatSuspension, Conversation, DirectMessage,
+    MessageReport, UserBlock,
+)
 from .moderation import find_profanity
 
 
@@ -233,3 +236,14 @@ class ModerationDeleteSerializer(serializers.Serializer):
 def dm_enabled():
     """Read at call time, not at import, so tests and staging can override it."""
     return bool(getattr(settings, 'DM_ENABLED', False))
+
+
+class ChatSuspensionSerializer(serializers.ModelSerializer):
+    """What a suspended student is told. Not who suspended them — that is a
+    staff detail and naming a moderator to the person they moderated invites
+    exactly the situation the suspension was meant to end."""
+
+    class Meta:
+        model = ChatSuspension
+        fields = ('until', 'reason', 'created_at')
+        read_only_fields = fields
