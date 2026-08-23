@@ -5,7 +5,26 @@ from decouple import config
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+def _csv(name, default=''):
+    """Comma-separated environment variable to a clean list.
+
+    `.split(',')` alone leaves the space in "a.com, b.com" attached to the second
+    entry, so it silently never matches. Every list below is typed into a
+    dashboard by hand, which makes that a matter of when rather than if.
+    """
+    return [item.strip() for item in config(name, default=default).split(',') if item.strip()]
+
+
+ALLOWED_HOSTS = _csv('ALLOWED_HOSTS', default='localhost,127.0.0.1')
+
+# Railway injects the service's own hostname. Trusting it automatically means a
+# deploy answers on its railway.app URL even when ALLOWED_HOSTS was never set.
+# Worth doing because the failure is so badly signposted: Django rejects the
+# request before CORS middleware runs, so the browser reports a missing
+# Access-Control-Allow-Origin header and sends you to the wrong setting.
+_railway_host = config('RAILWAY_PUBLIC_DOMAIN', default='').strip()
+if _railway_host and _railway_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_railway_host)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -189,7 +208,22 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000').split(',')
+CORS_ALLOWED_ORIGINS = _csv('CORS_ALLOWED_ORIGINS', default='http://localhost:3000')
+
+# Vercel gives every preview deployment its own subdomain, so an exact list
+# covers production and nothing else. Opt in deliberately: a regex as broad as
+# ^https://.*\.vercel\.app$ lets any page hosted on Vercel call this API.
+CORS_ALLOWED_ORIGIN_REGEXES = _csv('CORS_ALLOWED_ORIGIN_REGEXES')
+
+# Django checks Origin on every unsafe request from an HTTPS page, whether or
+# not CORS is involved. Without this, signing in to /admin/ behind Railway's
+# proxy fails with "CSRF verification failed" and no other clue. Defaults to the
+# CORS list because in practice they are the same set of front ends.
+CSRF_TRUSTED_ORIGINS = _csv('CSRF_TRUSTED_ORIGINS') or [
+    origin for origin in CORS_ALLOWED_ORIGINS if '://' in origin
+]
+if _railway_host and f'https://{_railway_host}' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{_railway_host}')
 
 # ── Direct messages ───────────────────────────────────────────────────────────
 # Off by default, and deliberately so. The product is used by 10-to-18-year-olds

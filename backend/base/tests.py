@@ -142,3 +142,74 @@ class PublicSurfaceTests(TestCase):
             'this page forged a session on any failed login and took its API base '
             'from a ?api= query parameter',
         )
+
+
+class OriginConfigTests(SimpleTestCase):
+    """The prod outage of 2026-08-23: the Vercel front end could not reach the
+    Railway API at all, because every cross-origin request was refused before it
+    started. Three separate settings can produce that one browser message, and
+    two of them look nothing like a CORS problem, so each gets a test."""
+
+    def _reload_settings(self, **env):
+        original = {name: os.environ.get(name) for name in env}
+        os.environ.update({name: value for name, value in env.items()})
+        try:
+            for name in [m for m in sys.modules if m.startswith('base.settings')]:
+                sys.modules.pop(name, None)
+            return importlib.import_module('base.settings')
+        finally:
+            for name, value in original.items():
+                if value is None:
+                    os.environ.pop(name, None)
+                else:
+                    os.environ[name] = value
+            for name in [m for m in sys.modules if m.startswith('base.settings')]:
+                sys.modules.pop(name, None)
+            importlib.import_module('base.settings')
+
+    def test_a_space_after_the_comma_does_not_silently_void_an_origin(self):
+        """These lists are typed into the Railway dashboard by hand. Plain
+        .split(',') kept the space, so the second origin never matched and the
+        symptom was indistinguishable from not having set it at all."""
+        settings = self._reload_settings(
+            CORS_ALLOWED_ORIGINS='https://a.example, https://b.example',
+            ALLOWED_HOSTS='a.example, b.example',
+        )
+        self.assertIn('https://b.example', settings.CORS_ALLOWED_ORIGINS)
+        self.assertIn('b.example', settings.ALLOWED_HOSTS)
+
+    def test_an_empty_entry_from_a_trailing_comma_is_dropped(self):
+        settings = self._reload_settings(CORS_ALLOWED_ORIGINS='https://a.example,')
+        self.assertEqual(settings.CORS_ALLOWED_ORIGINS, ['https://a.example'])
+
+    def test_the_railway_hostname_is_trusted_without_being_configured(self):
+        """Django rejects a disallowed Host before CORS middleware ever runs, so
+        a missing ALLOWED_HOSTS entry surfaces in the browser as a missing
+        Access-Control-Allow-Origin header — pointing at the wrong setting."""
+        settings = self._reload_settings(
+            RAILWAY_PUBLIC_DOMAIN='space-edu-production.up.railway.app',
+            ALLOWED_HOSTS='localhost',
+        )
+        self.assertIn('space-edu-production.up.railway.app', settings.ALLOWED_HOSTS)
+
+    def test_csrf_trusts_the_railway_origin_so_the_admin_can_be_signed_into(self):
+        settings = self._reload_settings(
+            RAILWAY_PUBLIC_DOMAIN='space-edu-production.up.railway.app',
+        )
+        self.assertIn(
+            'https://space-edu-production.up.railway.app',
+            settings.CSRF_TRUSTED_ORIGINS,
+        )
+
+    def test_csrf_falls_back_to_the_cors_front_ends(self):
+        settings = self._reload_settings(
+            CORS_ALLOWED_ORIGINS='https://space-edu-two.vercel.app',
+            CSRF_TRUSTED_ORIGINS='',
+        )
+        self.assertIn('https://space-edu-two.vercel.app', settings.CSRF_TRUSTED_ORIGINS)
+
+    def test_preview_origins_are_not_opened_up_by_default(self):
+        """A regex broad enough to match Vercel previews also matches every
+        other page hosted on vercel.app. It stays opt-in."""
+        settings = self._reload_settings(CORS_ALLOWED_ORIGINS='https://a.example')
+        self.assertEqual(settings.CORS_ALLOWED_ORIGIN_REGEXES, [])
